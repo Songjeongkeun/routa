@@ -1,0 +1,30 @@
+@import "./tokens.css";
+
+:root {
+  font-family: Pretendard, "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-surface-muted);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgb(82 61 245 / 28%);
+  outline-offset: 2px;
+}
+
+.route-status {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  margin: 0;
+}
