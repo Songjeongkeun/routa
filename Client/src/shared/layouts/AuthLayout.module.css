@@ -1,0 +1,58 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(520px, 1.58fr) minmax(420px, 1fr);
+  background: var(--color-surface-muted);
+}
+
+.visual {
+  height: 100vh;
+  overflow: hidden;
+  background: #111938;
+}
+
+.visual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.card {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 56px;
+}
+
+.formContainer {
+  width: min(100%, 390px);
+}
+
+@media (max-width: 960px) {
+  .container {
+    grid-template-columns: minmax(320px, 0.9fr) minmax(390px, 1.1fr);
+  }
+
+  .card {
+    padding: 40px 32px;
+  }
+}
+
+@media (max-width: 720px) {
+  .container {
+    display: block;
+  }
+
+  .visual {
+    display: none;
+  }
+
+  .card {
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+}

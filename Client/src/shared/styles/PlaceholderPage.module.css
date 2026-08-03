@@ -1,0 +1,19 @@
+.page {
+  min-height: calc(100vh - 64px);
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.page h1,
+.page p {
+  margin: 0;
+}
+
+.page a {
+  color: var(--color-primary);
+}
