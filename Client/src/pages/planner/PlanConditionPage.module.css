@@ -1,0 +1,82 @@
+.page {
+  width: min(calc(100% - 48px), 1180px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 28px;
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.selectionSection,
+.summary {
+  border: 1px solid #dfe4f1;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.selectionSection {
+  padding: 38px;
+}
+
+.step {
+  margin: 0 0 8px;
+  color: #6247f5;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.selectionSection h1 {
+  margin: 0 0 34px;
+  color: #15203b;
+  font-size: 30px;
+}
+
+.summary {
+  align-self: start;
+  padding: 26px;
+}
+
+.summary h2 {
+  margin: 0 0 24px;
+  color: #15203b;
+  font-size: 19px;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.summaryRow span {
+  color: #7a87a2;
+  font-size: 14px;
+}
+
+.summaryRow strong {
+  color: #5942eb;
+  font-size: 15px;
+}
+
+@media (max-width: 800px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .summary {
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    width: min(calc(100% - 24px), 1180px);
+    padding: 24px 0;
+  }
+
+  .selectionSection {
+    padding: 24px 18px;
+  }
+}
