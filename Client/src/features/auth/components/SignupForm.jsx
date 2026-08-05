@@ -6,7 +6,7 @@ import { signup } from "../auth.api.js"
 import FormField from "./FormField.jsx"
 import styles from "./AuthForm.module.css"
 
-const initialForm = { nickname: "", loginId: "", email: "", password: "", agreed: false }
+const initialForm = { nickname: "", email: "", password: "", agreed: false }
 
 export default function SignupForm({ onSuccess }) {
   const [form, setForm] = useState(initialForm)
@@ -45,9 +45,6 @@ export default function SignupForm({ onSuccess }) {
     <form className={styles.form} onSubmit={handleSubmit}>
       <FormField label="닉네임" icon={accountIcon} name="nickname" value={form.nickname}
         onChange={handleChange} placeholder="어떻게 불러드릴까요?" autoComplete="nickname" required />
-      <FormField label="아이디" icon={accountIcon} name="loginId" value={form.loginId}
-        onChange={handleChange} placeholder="영문, 숫자 조합" minLength="4" maxLength="30"
-        autoComplete="username" required />
       <FormField label="이메일" icon={emailIcon} name="email" type="email" value={form.email}
         onChange={handleChange} placeholder="example@email.com" autoComplete="email" required />
       <FormField

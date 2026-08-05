@@ -7,7 +7,7 @@ import styles from "./AuthForm.module.css"
 
 export default function LoginForm({ successMessage, onSuccess }) {
   const { login } = useAuth()
-  const [form, setForm] = useState({ loginId: "", password: "", rememberMe: false })
+  const [form, setForm] = useState({ email: "", password: "", rememberMe: false })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -36,8 +36,8 @@ export default function LoginForm({ successMessage, onSuccess }) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <FormField label="아이디" icon={accountIcon} name="loginId" value={form.loginId}
-        onChange={handleChange} placeholder="아이디를 입력해 주세요" autoComplete="username" required />
+      <FormField label="이메일" icon={accountIcon} name="email" type="email" value={form.email}
+        onChange={handleChange} placeholder="이메일을 입력해 주세요" autoComplete="email" required />
       <FormField
         label="비밀번호" icon={lockIcon} name="password"
         type={showPassword ? "text" : "password"} value={form.password}

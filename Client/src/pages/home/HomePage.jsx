@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <main className={styles.page}>
       <h1>ROUTA</h1>
-      <p>{user?.nickname ?? user?.loginId}님, 로그인이 완료되었습니다.</p>
+      <p>{user?.nickname ?? user?.email}님, 로그인이 완료되었습니다.</p>
     </main>
   )
 }

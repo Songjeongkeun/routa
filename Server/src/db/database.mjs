@@ -1,9 +1,20 @@
-import pg from "pg"
+import pg from 'pg';
 import { config } from "../config.mjs"
 import { logger } from "../utils/logger.mjs"
 
-const { Pool } = pg
-const pool = new Pool(config.db)
+const { Pool } = pg;
+const pool = new Pool({
+  connectionString: config.database.url,
+
+  max: 10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
 
 export async function checkDBConnection() {
   try {
