@@ -1,71 +1,159 @@
 .header {
-  height: 64px;
-  display: flex;
+  position: relative;
+  z-index: 10;
+  height: 68px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  border-bottom: 1px solid #e3e7f0;
-  background: #ffffff;
+  padding: 0 29px;
+  color: #fff;
+  background: #06132e;
 }
 
-.inner {
-  width: min(100% - 48px, 1200px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 auto;
-}
-
-.logo {
-  color: var(--color-text);
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.7px;
-  text-decoration: none;
-}
-
-.profileLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-}
-
-.profileLink:hover {
-  background-color: #f1f4f9;
-}
-
-.profileIcon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-}
-
-.navigation {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.navigation a,
-.navigation button {
-  padding: 0;
+.header button {
   border: 0;
-  color: #657089;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
   background: transparent;
 }
 
-.navigation a:hover,
-.navigation button:hover {
-  color: var(--color-primary);
+.logo {
+  justify-self: start;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-decoration: none;
 }
 
-@media (max-width: 480px) {
-  .inner {
-    width: min(100% - 32px, 1200px);
+.primaryNav {
+  align-self: stretch;
+  display: flex;
+  gap: 22px;
+}
+
+.primaryNav button {
+  position: relative;
+  min-width: 132px;
+  padding: 2px 18px 0;
+  color: #69748d;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.primaryNav .activeMenu {
+  color: #fff;
+}
+
+.activeMenu::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  background: #6447ff;
+  content: "";
+}
+
+.userNav {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.userNav button,
+.userNav a {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.profileButton {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid #fff !important;
+  border-radius: 50%;
+}
+
+.profileButton span {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  display: block;
+  color: transparent;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.profileButton span::after {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 17px;
+  height: 8px;
+  border-radius: 9px 9px 4px 4px;
+  background: #fff;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.logoutButton {
+  padding: 8px 12px !important;
+  border: 1px solid rgb(255 255 255 / 55%) !important;
+  border-radius: 8px;
+  font-size: 14px !important;
+}
+
+.header button:hover,
+.header a:hover {
+  color: #bdb4ff;
+}
+
+@media (max-width: 760px) {
+  .header {
+    height: auto;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 14px 18px 0;
+  }
+
+  .logo {
+    font-size: 23px;
+  }
+
+  .userNav {
+    gap: 10px;
+  }
+
+  .userNav button,
+  .userNav a {
+    font-size: 13px;
+  }
+
+  .profileButton {
+    width: 34px;
+    height: 34px;
+  }
+
+  .logoutButton {
+    display: none;
+  }
+
+  .primaryNav {
+    grid-column: 1 / -1;
+    justify-self: center;
+    height: 48px;
+  }
+
+  .primaryNav button {
+    min-width: auto;
+    padding-inline: 14px;
+    font-size: 15px;
   }
 }
