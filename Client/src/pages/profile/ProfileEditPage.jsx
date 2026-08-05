@@ -14,19 +14,34 @@ export default function ProfileEditPage() {
   async function handleImageChange(event) {
     const file = event.target.files[0]
     if (!file) return
+
+    const previewUrl = URL.createObjectURL(file)
+    const prevImageUrl = user?.profileImageUrl
     setImageError("")
+    updateUser({ profileImageUrl: previewUrl })
+
     try {
       const { profileImageUrl } = await updateProfileImage(file)
       updateUser({ profileImageUrl })
     } catch (error) {
+      updateUser({ profileImageUrl: prevImageUrl })
       setImageError(error.message)
+    } finally {
+      URL.revokeObjectURL(previewUrl)
     }
   }
 
   function handleSubmit(event) {
     event.preventDefault()
     // 프로필 수정 API 호출
+    navigate(-1)
   }
+
+  const avartarSrc = user?.profileImageUrl 
+    ? user.profileImageUrl.startsWith("blob:")
+      ? user.profileImageUrl
+      : `${API_URL}${user.profileImageUrl}`
+    : accountIcon
 
   return (
     <div className={styles.overlay}>
@@ -55,7 +70,7 @@ export default function ProfileEditPage() {
             <div className={styles.avatarWrapper}>
               <img
                 className={styles.avatar}
-                src={user?.profileImageUrl ? `${API_URL}${user.profileImageUrl}` : accountIcon}
+                src={avartarSrc}
                 alt="프로필"
               />
 
