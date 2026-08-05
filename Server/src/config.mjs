@@ -9,6 +9,11 @@ function required(key, defaultValue) {
     return value
 }
 
+const jwtSecret = required("JWT_SECRET")
+if (jwtSecret.length < 32) {
+  throw new Error("JWT_SECRET은 최소 32자 이상의 랜덤 문자열이어야 합니다.")
+}
+
 export const config = {
     nodeEnv: process.env.NODE_ENV ?? "development",
     frontendUrl: required("FRONTEND_URL", "http://localhost:5173"),
@@ -16,7 +21,7 @@ export const config = {
         port: Number(required("HOST_PORT", "18765")),
     },
     jwt: {
-        secretKey: required("JWT_SECRET"),
+        secretKey: jwtSecret,
         expiresInSec: Number(required("JWT_EXPIRES_SEC", "900")),
         refreshExpiresInDays: Number(required("REFRESH_TOKEN_EXPIRES_DAYS", "14")),
     },
@@ -38,11 +43,7 @@ export const config = {
     cookie: {
         secure: process.env.NODE_ENV === "production",
     },
-    db: {
-        user: required("PG_USER"),
-        host: required("PG_HOST"),
-        database: required("PG_DATABASE"),
-        password: required("PG_PASSWORD"),
-        port: Number(required("PG_PORT", "5432")),
-    },
+    database: {
+        url: required("DATABASE_URL")
+    }
 }
