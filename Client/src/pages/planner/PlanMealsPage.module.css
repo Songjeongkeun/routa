@@ -1,0 +1,283 @@
+.page {
+  min-height: calc(100vh - 72px);
+  padding: 14px 24px 52px;
+  color: #121b35;
+  background: #f8f9fd;
+}
+
+.container {
+  width: min(960px, 100%);
+  margin: 0 auto;
+}
+
+.intro {
+  text-align: center;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 28px);
+  font-weight: 850;
+  letter-spacing: -0.045em;
+}
+
+.intro p {
+  margin: 5px 0 0;
+  color: #8994ad;
+  font-size: 12px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 58px;
+  margin: 16px 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.stepper li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8793ad;
+  font-size: 12px;
+}
+
+.stepper li:not(:last-child)::after {
+  position: absolute;
+  left: calc(100% + 20px);
+  width: 38px;
+  height: 1px;
+  background: #dfe4f1;
+  content: "";
+}
+
+.stepper li span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #8090ae;
+  background: #f0f2f8;
+  font-weight: 800;
+}
+
+.stepper .complete span {
+  color: #fff;
+  background: #12b8a6;
+}
+
+.stepper .complete::after {
+  background: #4ed1c2;
+}
+
+.stepper .active {
+  color: #141e39;
+  font-weight: 800;
+}
+
+.stepper .active span {
+  color: #fff;
+  background: #4e3df5;
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 284px;
+  gap: 24px;
+  align-items: start;
+}
+
+.finder {
+  min-width: 0;
+}
+
+.searchBar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 66px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid #dce2ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.searchBar label {
+  font-size: 14px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.searchBar input {
+  min-width: 0;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #dce2ef;
+  border-radius: 10px;
+  color: #1a2440;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+}
+
+.searchBar input::placeholder {
+  color: #929db5;
+}
+
+.searchBar button {
+  height: 36px;
+  border: 1px solid #dce2ef;
+  border-radius: 10px;
+  color: #17213a;
+  background: #f8f9fd;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.chips button {
+  min-width: 45px;
+  height: 31px;
+  padding: 0 14px;
+  border: 1px solid #dce2ef;
+  border-radius: 999px;
+  color: #71809e;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chips .chipActive {
+  border-color: #5a46ff;
+  color: #513dff;
+  background: #faf9ff;
+}
+
+.selectedSummary {
+  min-height: 225px;
+  padding: 19px 22px;
+  border: 1px solid #dce2ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.selectedSummary h2 {
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+
+.selectedSummary ul {
+  display: grid;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selectedSummary li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.selectedSummary li span {
+  color: #7485a6;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.summaryEmpty {
+  color: #8994ad;
+  font-size: 12px;
+}
+
+.message {
+  margin: 12px 0;
+  padding: 9px 13px;
+  border-radius: 8px;
+  color: #4330d9;
+  background: #efedff;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.actions button {
+  height: 48px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1px solid #513dff;
+  color: #513dff;
+  background: #fff;
+}
+
+.confirm {
+  border: 1px solid #513dff;
+  color: #fff;
+  background: #513dff;
+}
+
+@media (max-width: 980px) {
+  .topGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .selectedSummary {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 22px 14px 40px;
+  }
+
+  .stepper {
+    gap: 26px;
+  }
+
+  .stepper li {
+    gap: 6px;
+    font-size: 10px;
+  }
+
+  .stepper li:not(:last-child)::after {
+    display: none;
+  }
+
+  .searchBar {
+    grid-template-columns: 1fr 62px;
+  }
+
+  .searchBar label {
+    grid-column: 1 / -1;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,124 @@
+.panel {
+  padding: 20px;
+  border: 1px solid #dce2ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #151e38;
+  font-size: 15px;
+}
+
+.header span {
+  color: #513dff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid #dce2ef;
+  border-radius: 7px;
+  color: #17213a;
+  background: #fff;
+}
+
+.row:nth-child(even) {
+  background: #f5f6fc;
+}
+
+.dragHandle,
+.remove {
+  flex: none;
+  border: 0;
+  color: #8190ae;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dragHandle {
+  padding: 3px;
+  font-size: 13px;
+  letter-spacing: -4px;
+}
+
+.row strong {
+  font-size: 13px;
+}
+
+.meta {
+  color: #8490aa;
+  font-size: 11px;
+}
+
+.timeControl {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  color: #202941;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.timeControl input {
+  width: 72px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+.remove {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  transform: rotate(45deg);
+}
+
+.empty {
+  min-height: 64px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #dce2ef;
+  border-radius: 8px;
+  color: #7c88a3;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .header,
+  .row {
+    align-items: flex-start;
+  }
+
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .timeControl {
+    width: 100%;
+    margin-left: 28px;
+  }
+}
