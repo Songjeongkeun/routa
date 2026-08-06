@@ -49,9 +49,13 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function updateUser(patch) {
+    setUser((prev) => ({ ...prev, ...patch }))
+  }
+
   const value = useMemo(
-    () => ({ user, isLoading, login, logout }),
-    [user, isLoading],
+    () => ({ user, isLoading, login, logout, updateUser}),
+    [user, isLoading]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -9,7 +9,7 @@ export default function LoginPage() {
 
   function handleLoginSuccess(user) {
     const requestedPath = location.state?.from?.pathname
-    navigate(user.role === "ADMIN" ? "/admin" : requestedPath || "/", { replace: true })
+    navigate(user.isAdmin ? "/admin" : requestedPath || "/", {replace:true})
   }
 
   return (

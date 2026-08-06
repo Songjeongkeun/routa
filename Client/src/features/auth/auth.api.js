@@ -1,16 +1,16 @@
 import { API_URL, apiRequest } from "../../shared/api/httpClient.js"
 
-export function login({ loginId, password, rememberMe }) {
+export function login({ email, password, rememberMe }) {
   return apiRequest("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ loginId, password, rememberMe }),
+    body: JSON.stringify({ email, password, rememberMe }),
   })
 }
 
-export function signup({ nickname, loginId, email, password }) {
+export function signup({ nickname, email, password }) {
   return apiRequest("/auth/signup", {
     method: "POST",
-    body: JSON.stringify({ nickname, loginId, email, password }),
+    body: JSON.stringify({ nickname, email, password }),
   })
 }
 

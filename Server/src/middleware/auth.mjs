@@ -21,6 +21,7 @@ export async function isAuth(req, res, next) {
     }
     req.userId = user.user_id
     req.user = user
+
     return next()
   } catch {
     return res.status(401).json(AUTH_ERROR)
