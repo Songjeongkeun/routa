@@ -1,0 +1,347 @@
+.page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.pageHeader {
+  max-width: 1290px;
+  margin: 0 auto;
+}
+
+.pageHeader h1 {
+  margin: 0 0 6px;
+  font-size: 38px;
+  font-weight: 800;
+}
+
+.pageHeader p {
+  font-size: 14px;
+  margin: 0 0 28px;
+  color: #69748d;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 655px) minmax(0, 600px);
+  column-gap: 40px;
+  align-items: start;
+  justify-content: center;
+}
+
+.sideColumn {
+  margin-top: -85px;
+}
+
+.mainColumn,
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  max-width: 655px;
+  width: 100%;
+  gap: 25px;
+}
+
+.profileCard,
+.statCard,
+.recordCard,
+.preferenceCard,
+.securityCard {
+  padding: 24px;
+  border: 1px solid #eceef3;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.preferenceCard {
+    padding: 30px;
+    max-height: 550px;
+}
+
+.profileCard {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.profileCard {
+    position: relative;
+    height: 220px;
+}
+
+.avatar {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f1f2f6;
+}
+
+.profileInfo {
+  flex: 1;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.name {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.editButton {
+  position: absolute;
+  top: 40%;
+  right: 28px;
+  width: 160px;
+  height: 44px;
+  padding: 6px 22px;
+  border: 1px solid #6447ff;
+  border-radius: 15px;
+  color: #6447ff;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  cursor: pointer;
+}
+
+.role {
+  margin: 6px 0 2px;
+  color: #6447ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.email {
+  margin: 0;
+  color: #69748d;
+  font-size: 14px;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: 148px;
+  gap: 16px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statLabel {
+  color: #69748d;
+  font-size: 13px;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.securityCard {
+    height: 278px;
+}
+
+.recordCard h2,
+.preferenceCard h2,
+.securityCard h2 {
+  margin: 0 0 4px;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.recordPlaceholder {
+  margin: 16px 0 0;
+  padding: 24px 0;
+  color: #a3abbd;
+  font-size: 14px;
+  text-align: center;
+  border: 1px dashed #e3e5ec;
+  border-radius: 10px;
+}
+
+.cardSubtitle {
+  margin: 0 0 16px;
+  color: #69748d;
+  font-size: 13px;
+}
+
+.preferenceGroup {
+  margin-bottom: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #eceef3;
+}
+
+.groupLabel {
+  display: block;
+  margin-bottom: 8px;
+  color: #3d4457;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  padding: 6px 30px;
+  border: 1px solid #e3e5ec;
+  border-radius: 20px;
+  color: #3d4457;
+  font-size: 13px;
+  background: #fafafc;
+  cursor: pointer;
+}
+
+.saveButton {
+  width: 100%;
+  padding: 12px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  background: #6447ff;
+  cursor: pointer;
+}
+
+.securityList {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 5px;
+  padding: 0;
+  list-style: none;
+}
+
+.securityList li button {
+  width: 100%;
+  margin: 5px;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 6px;
+  border: 2px solid #f1f2f6;
+  border-radius: 10px;
+  color: #33394a;
+  font-size: 14px;
+  background: none;
+  cursor: pointer;
+}
+
+.accountActions {
+  display: flex;
+  width: 60%;
+  margin: 0 auto;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+}
+
+.accountActions button {
+  border: 0;
+  color: #69748d;
+  font-size: 13px;
+  background: none;
+  cursor: pointer;
+}
+
+.withdrawButton {
+  color: #e5484d !important;
+}
+
+.recordCard h2,
+.preferenceCard h2,
+.securityCard h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 17px;
+  color: var(--color-text);
+}
+
+.titleIcon {
+  width: 26px;
+  height: 26px;
+}
+
+/* 통계 카드: 아이콘 + 텍스트 가로 배치 */
+.statCard {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.statIcon {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.statText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 여행 기록 진행바 */
+.recordText {
+  margin: 25px 0 40px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.progressTrack {
+  height: 20px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #69748d;
+}
+
+/* 선택된 취향 태그 */
+.tagActive {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #efebff;
+  font-weight: 600;
+}
+
+/* 계정 및 보안 행: 아이콘 + 라벨 묶음 */
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rowLeft img {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+}
