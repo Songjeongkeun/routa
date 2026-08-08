@@ -1,7 +1,12 @@
-const GOOGLE_API_KEY = "AIzaSyDQLUUcWCMsScn1ZGMDXM2y5T-Wt5vlie8";
+import "dotenv/config";
+
+const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 const url = 'https://places.googleapis.com/v1/places:searchText';
 
 export async function GoogleAPI(placeName) {
+    if (!GOOGLE_API_KEY) {
+        throw new Error("GOOGLE_PLACES_API_KEY environment variable is required");
+    }
     const requestBody = { textQuery: placeName, languageCode: "ko" };
 
     try {

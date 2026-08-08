@@ -7,6 +7,7 @@ import LoginPage from "../../pages/auth/LoginPage.jsx"
 import SignupPage from "../../pages/auth/SignupPage.jsx"
 import SignupSuccessPage from "../../pages/auth/SignupSuccessPage.jsx"
 import HomePage from "../../pages/home/HomePage.jsx"
+import PlanConditionPage from "../../pages/planner/PlanConditionPage.jsx"
 import UserManagementPage from "../../pages/admin/UserManagementPage.jsx"
 import NotFoundPage from "../../pages/NotFoundPage.jsx"
 
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <HomePage /> },
+          { path: "planner/condition", element: <PlanConditionPage /> },
           {
             path: "admin",
             element: <AdminRoute />,

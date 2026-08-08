@@ -1,8 +1,13 @@
+import "dotenv/config";
+
 // tourAPI.mjs
-const TOUR_API_KEY = "53994011854b4e467ac56118ece7a78e1368126e8b2626c4d29f22d0f45c7036";
+const TOUR_API_KEY = process.env.TOUR_API_KEY;
 
 export async function TourAPI(placeName) {
     try {
+        if (!TOUR_API_KEY) {
+            throw new Error("TOUR_API_KEY environment variable is required");
+        }
         console.log(`\n🔍 [TourAPI] 검색 시작: '${placeName}'`);
 
         // 1. 최신 키워드 조회 엔드포인트 (/searchKeyword2) 활용

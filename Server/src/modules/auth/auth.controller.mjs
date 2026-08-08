@@ -28,7 +28,7 @@ export async function login(req, res) {
   try {
     const session = await authService.login(req.body)
     setAuthCookies(res, session)
-    return res.status(200).json({ token: session.accessToken, user: session.user })
+    return res.status(200).json({ user: session.user })
   } catch (error) {
     return respondWithError(res, error, "로그인 처리 중 오류가 발생했습니다.")
   }
@@ -42,7 +42,7 @@ export async function refresh(req, res) {
   try {
     const session = await authService.refreshSession(getCookie(req, "refresh_token"))
     setAuthCookies(res, session)
-    return res.status(200).json({ token: session.accessToken })
+    return res.sendStatus(204)
   } catch (error) {
     clearAuthCookies(res)
     return respondWithError(res, error, "로그인 갱신 중 오류가 발생했습니다.")

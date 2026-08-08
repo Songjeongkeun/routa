@@ -1,8 +1,9 @@
+import "dotenv/config";
 import { checkDBConnection, query, closeDB } from '../db/database.mjs'
 import { GoogleAPI } from './googleAPI.mjs';
 // import { TourAPI } from './tourApi.mjs'
 
-const KAKAO_API_KEY = "d074184c6db715a8b282866ecb23ba6b"
+const KAKAO_API_KEY = process.env.KAKAO_REST_API_KEY
 const radius = "2000"; 
 
 // 🚨 [주의] 테스트하실 때는 "AT4" 1개만 남기고 나머지는 지우는 것을 권장합니다.
@@ -63,6 +64,9 @@ const seoulGridPoints = [
 
 async function collectAndSaveData() {
     try {
+        if (!KAKAO_API_KEY) {
+            throw new Error("KAKAO_REST_API_KEY environment variable is required");
+        }
         await checkDBConnection(); 
         
         // 💡 [추가] API 호출 횟수를 기록할 변수 선언
