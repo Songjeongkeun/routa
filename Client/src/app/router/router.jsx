@@ -8,6 +8,7 @@ import SignupPage from "../../pages/auth/SignupPage.jsx"
 import SignupSuccessPage from "../../pages/auth/SignupSuccessPage.jsx"
 import HomePage from "../../pages/home/HomePage.jsx"
 import PlanConditionPage from "../../pages/planner/PlanConditionPage.jsx"
+import PlanPlacesPage from "../../pages/planner/PlanPlacesPage.jsx"
 import UserManagementPage from "../../pages/admin/UserManagementPage.jsx"
 import NotFoundPage from "../../pages/NotFoundPage.jsx"
 
@@ -31,8 +32,8 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <HomePage /> },
           { path: "planner/condition", element: <PlanConditionPage /> },
-          {
-            path: "admin",
+          { path: "planner/places", element: <PlanPlacesPage /> },
+          { path: "admin",
             element: <AdminRoute />,
             children: [{ index: true, element: <UserManagementPage /> }],
           },

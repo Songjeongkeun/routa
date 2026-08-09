@@ -1,0 +1,73 @@
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.field {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  color: #71809d;
+  font-size: 14px;
+}
+
+.dateInput,
+.transportInput {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #d9e0ee;
+  border-radius: 10px;
+  color: #53627f;
+  font: inherit;
+  background: #fff;
+}
+
+.dateInputWrapper {
+  position: relative;
+  min-width: 0;
+}
+
+.datePlaceholder {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 16px;
+  color: #8b98b0;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.emptyDateInput::-webkit-datetime-edit {
+  color: transparent;
+}
+
+.dateInput:focus,
+.transportInput:focus {
+  border-color: #6247f5;
+  outline: 3px solid rgb(98 71 245 / 14%);
+}
+
+@media (max-width: 680px) {
+  .fields {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .field {
+    align-items: stretch;
+    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dateInput,
+  .transportInput {
+    width: 100%;
+  }
+}

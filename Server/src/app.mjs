@@ -6,6 +6,7 @@ import { notFound } from "./middleware/notFound.mjs"
 import authRouter from "./modules/auth/auth.router.mjs"
 import path from "path"
 import userRouter from "./modules/users/user.router.mjs"
+import placeRouter from "./modules/places/place.router.mjs"
 
 const app = express()
 
@@ -21,6 +22,7 @@ app.use(express.json())
 app.get("/", (req, res) => res.json({ message: "ROUTA API가 정상 실행 중입니다." }))
 app.use("/auth", authRouter)
 app.use("/users", userRouter)
+app.use("/places", placeRouter)
 app.use(notFound)
 app.use(errorHandler)
 
