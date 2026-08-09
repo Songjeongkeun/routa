@@ -32,6 +32,15 @@ function createInitialPlan() {
             dinner: null,
         },
 
+        // 변경: 각 식사는 지정 음식점(DESIGNATED), 주변 추천(NEARBY), 식사 제외(SKIP) 중 하나를 가집니다.
+        // 기본값은 기존 화면의 동작과 같게 지정 음식점으로 두되, 음식점을 고르지 않으면 저장 단계에서 안내합니다.
+        mealModes: {
+            lunch: "DESIGNATED",
+            // 변경: 기존처럼 음식점 하나만 선택해도 바로 진행할 수 있도록 저녁은 기본적으로 제외합니다.
+            // 사용자는 식사 화면에서 주변 추천 또는 지정 음식점으로 언제든 변경할 수 있습니다.
+            dinner: "SKIP",
+        },
+
         mealTimes: {
             lunch: "12:00",
             dinner: "19:00",
@@ -59,6 +68,8 @@ function readStoredPlan() {
                 ? parsedPlan.selectedPlaces
                 : initialPlan.selectedPlaces,
             meals: { ...initialPlan.meals, ...parsedPlan.meals },
+            // 변경: 배포 전 저장된 계획에는 이 키가 없을 수 있어 초기 모드와 병합해 안전하게 복원합니다.
+            mealModes: { ...initialPlan.mealModes, ...parsedPlan.mealModes },
             mealTimes: { ...initialPlan.mealTimes, ...parsedPlan.mealTimes },
         }
     } catch {

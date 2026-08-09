@@ -6,11 +6,10 @@ const DEFAULT_CENTER = { latitude: 37.5665, longitude: 126.978 };
 /**
  * 일정 장소 목록을 Kakao Maps Web JavaScript SDK 지도에 표시합니다.
  *
- * `items`에는 latitude, longitude가 있어야 마커를 표시할 수 있습니다.
- * 실제 API 연동 시에도 같은 필드를 일정 항목 응답에 포함하면 이 컴포넌트를
- * 변경하지 않고 재사용할 수 있습니다.
+ * `items`에는 latitude, longitude가 있어야 마커를 표시하고, `legs`에는 서버가
+ * 반환한 대중교통 geometrySegments를 넣어 실제 버스·지하철 노선 모양을 표시합니다.
  */
-export default function KakaoCourseMap({ items }) {
+export default function KakaoCourseMap({ items, legs = [] }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const displayedElementsRef = useRef([]);
@@ -72,24 +71,54 @@ export default function KakaoCourseMap({ items }) {
     }
 
     const bounds = new maps.LatLngBounds();
-    const positions = placesWithCoordinates.map(
-      (item) => new maps.LatLng(item.latitude, item.longitude),
-    );
+    const positions = placesWithCoordinates.map((item) => new maps.LatLng(item.latitude, item.longitude));
+    const itemsById = new Map(placesWithCoordinates.map((item) => [String(item.itemId), item]));
 
-    // 현재는 장소 좌표를 순서대로 잇는 시각적 경로입니다.
-    // 실제 도로·대중교통 경로는 백엔드 길찾기 API가 반환한 좌표 배열로 교체합니다.
-    if (positions.length > 1) {
-      const routeLine = new maps.Polyline({
+    /**
+     * 변경: 각 일정 구간의 실제 ODsay 노선 그래픽을 그립니다.
+     * route.geometrySegments에는 지하철·버스가 섞여 있을 수 있으므로 구간별 색으로 Polyline을 만듭니다.
+     */
+    legs.forEach((leg) => {
+      const geometrySegments = Array.isArray(leg.geometrySegments) ? leg.geometrySegments : [];
+      const hasActualGeometry = geometrySegments.some((segment) => segment.points?.length >= 2);
+
+      if (hasActualGeometry) {
+        geometrySegments.forEach((segment) => {
+          if (!Array.isArray(segment.points) || segment.points.length < 2) return;
+
+          const path = segment.points.map(
+            (point) => new maps.LatLng(point.latitude, point.longitude),
+          );
+          const routeLine = new maps.Polyline({
+            map,
+            path,
+            ...getTransitLineStyle(segment.type),
+          });
+          displayedElementsRef.current.push(routeLine);
+          path.forEach((position) => bounds.extend(position));
+        });
+        return;
+      }
+
+      // 변경: 도보 대체·과거 캐시처럼 좌표 그래픽이 없는 구간은 실제 경로처럼 보이지 않도록 점선으로 구분합니다.
+      const fromItem = itemsById.get(String(leg.fromItemId));
+      const toItem = itemsById.get(String(leg.toItemId));
+      if (!fromItem || !toItem) return;
+
+      const estimatedLine = new maps.Polyline({
         map,
-        path: positions,
-        strokeWeight: 5,
-        strokeColor: "#00bfa5",
-        strokeOpacity: 0.85,
-        strokeStyle: "solid",
+        path: [
+          new maps.LatLng(fromItem.latitude, fromItem.longitude),
+          new maps.LatLng(toItem.latitude, toItem.longitude),
+        ],
+        strokeWeight: 4,
+        strokeColor: "#94a3b8",
+        strokeOpacity: 0.8,
+        strokeStyle: "shortdash",
         endArrow: true,
       });
-      displayedElementsRef.current.push(routeLine);
-    }
+      displayedElementsRef.current.push(estimatedLine);
+    });
 
     placesWithCoordinates.forEach((item, index) => {
       const position = positions[index];
@@ -122,7 +151,7 @@ export default function KakaoCourseMap({ items }) {
     }
 
     return () => clearDisplayedElements(displayedElementsRef);
-  }, [isMapReady, items]);
+  }, [isMapReady, items, legs]);
 
   return (
     <section className="kakao-course-map" aria-label="추천 일정 지도">
@@ -140,6 +169,40 @@ export default function KakaoCourseMap({ items }) {
       )}
     </section>
   );
+}
+
+/**
+ * 변경: 한 지도에서 이동수단을 빠르게 구분할 수 있게 ODsay 노선 종류마다 색을 고정합니다.
+ * 도보는 실제 도로 그래픽이 없으므로 위의 회색 점선만 사용합니다.
+ */
+function getTransitLineStyle(type) {
+  if (type === "SUBWAY") {
+    return {
+      strokeWeight: 5,
+      strokeColor: "#4f46e5",
+      strokeOpacity: 0.9,
+      strokeStyle: "solid",
+      zIndex: 2,
+    };
+  }
+
+  if (type === "BUS") {
+    return {
+      strokeWeight: 5,
+      strokeColor: "#16a34a",
+      strokeOpacity: 0.9,
+      strokeStyle: "solid",
+      zIndex: 2,
+    };
+  }
+
+  return {
+    strokeWeight: 5,
+    strokeColor: "#0ea5e9",
+    strokeOpacity: 0.9,
+    strokeStyle: "solid",
+    zIndex: 2,
+  };
 }
 
 function hasCoordinates(item) {

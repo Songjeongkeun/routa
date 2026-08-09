@@ -39,6 +39,19 @@ button {
   padding: 20px 28px 48px;
 }
 
+/* 변경: API 조회 중이거나 결과를 찾지 못했을 때 결과 카드 대신 읽기 쉬운 상태 메시지를 표시합니다. */
+.course-result-status {
+  min-height: 360px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  color: var(--routa-muted);
+  text-align: center;
+}
+
+.course-result-status p { margin: 0; }
+
 .course-title-row {
   display: flex;
   align-items: flex-start;
@@ -499,6 +512,19 @@ button {
   margin: 14px 0 0;
   text-align: right;
   font-size: 11px;
+}
+
+/* 변경: 서버가 반환한 일정 제약 실패 사유는 줄바꿈을 보존해 장소별로 읽기 쉽게 표시합니다. */
+.course-edit-error {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #f1bcc6;
+  border-radius: 10px;
+  color: #a82d43;
+  background: #fff4f6;
+  white-space: pre-line;
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 /* ---------- 로딩, Modal, Drawer ---------- */

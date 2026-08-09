@@ -4,6 +4,7 @@ import { usePlan } from "../../app/providers/planContext.js"
 import MealSelector from "../../features/planner/components/MealSelector.jsx"
 import RestaurantList from "../../features/restaurant/components/RestaurantList.jsx"
 import { searchRestaurants } from "../../features/restaurant/restaurant.api.js"
+import { saveTripPlan } from "../../features/planner/api/tripPlan.api.js"
 import styles from "./PlanMealsPage.module.css"
 
 const RESTAURANT_PAGE_SIZE = 6
@@ -11,8 +12,21 @@ const PAGE_GROUP_SIZE = 5
 
 // 객체의 내부 키는 API 요청에 사용하고, 화면에는 한글 라벨을 표시합니다.
 const SLOT_META = {
-  lunch: { label: "점심" },
-  dinner: { label: "저녁" },
+  // 변경: MealSelector와 같은 권장 시간 범위를 사용해 저장 전에도 일관되게 검사합니다.
+  lunch: { label: "점심", minTime: "11:00", maxTime: "14:00" },
+  dinner: { label: "저녁", minTime: "17:00", maxTime: "20:00" },
+}
+
+function isTimeInMealWindow(slot, time) {
+  const meta = SLOT_META[slot]
+  return Boolean(
+    meta
+      && typeof time === "string"
+      // 변경: sessionStorage의 수동 수정값처럼 HH:mm 형식이 아닌 값도 저장 전에 차단합니다.
+      && /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
+      && time >= meta.minTime
+      && time <= meta.maxTime,
+  )
 }
 
 // 변경: 장소 선택 화면과 같은 개수의 페이지 번호를 보여 주기 위해 현재 페이지 주변 번호만 계산합니다.
@@ -76,11 +90,15 @@ export default function PlanMealsPage() {
   const [pagination, setPagination] = useState({ page: 1, totalPages: 0, totalItems: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
+  // 변경: 여행 계획 저장 중에는 중복 클릭으로 같은 추천 요청이 여러 번 생기지 않게 합니다.
+  const [isSavingPlan, setIsSavingPlan] = useState(false)
 
   // 추가·삭제·선택 제한 등의 결과를 사용자에게 안내하는 메시지입니다.
   const [message, setMessage] = useState("")
   // 변경: 점심·저녁 선택과 식사 시간을 전역 여행 계획에 저장해 결과 화면까지 같은 값을 사용합니다.
   const selectedMeals = plan.meals
+  // 변경: 각 식사 슬롯의 지정·주변 추천·제외 방식을 전역 계획에 함께 저장합니다.
+  const mealModes = plan.mealModes
   const mealTimes = plan.mealTimes
 
   const updateMeals = (updater) => {
@@ -89,6 +107,10 @@ export default function PlanMealsPage() {
 
   const updateMealTimes = (updater) => {
     updatePlan((current) => ({ mealTimes: updater(current.mealTimes) }))
+  }
+
+  const updateMealModes = (updater) => {
+    updatePlan((current) => ({ mealModes: updater(current.mealModes) }))
   }
 
   /**
@@ -104,6 +126,14 @@ export default function PlanMealsPage() {
         keyword,
         page,
         pageSize: RESTAURANT_PAGE_SIZE,
+        // 변경: 음식점 목록 단계부터 반려동물·여행 날짜·출발지 기준 후보만 우선 노출합니다.
+        tripType: plan.tripType,
+        travelDate: plan.date,
+        startLocation: plan.startLocation,
+        startLatitude: plan.startLatitude,
+        startLongitude: plan.startLongitude,
+        startTime: plan.startTime,
+        endTime: plan.endTime,
       })
       const nextRestaurants = data.places.map(toRestaurant)
 
@@ -115,7 +145,7 @@ export default function PlanMealsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [plan.date, plan.endTime, plan.startLatitude, plan.startLocation, plan.startLongitude, plan.startTime, plan.tripType])
 
   useEffect(() => {
     // 변경: 초기 요청을 다음 이벤트 루프로 예약해 React Effect 안에서 동기 state 갱신이 발생하지 않게 합니다.
@@ -164,11 +194,11 @@ export default function PlanMealsPage() {
 
     // 점심과 저녁 중 아직 음식점이 없는 첫 번째 슬롯을 찾습니다.
     const emptySlot = Object.entries(selectedMeals).find(
-      ([, selectedRestaurant]) => !selectedRestaurant,
+      ([slot, selectedRestaurant]) => mealModes[slot] === "DESIGNATED" && !selectedRestaurant,
     )?.[0]
 
     if (!emptySlot) {
-      setMessage("점심과 저녁 매장으로 최대 2곳까지 선택할 수 있어요.")
+      setMessage("지정 음식점 방식으로 선택된 빈 식사 슬롯이 없습니다. 식사 계획에서 방식을 변경해 주세요.")
       return
     }
 
@@ -182,6 +212,16 @@ export default function PlanMealsPage() {
     // 변경: 선택 해제도 전역 계획에 저장해 화면 이동 후에도 유지합니다.
     updateMeals((current) => ({ ...current, [slot]: null }))
     setMessage(`${SLOT_META[slot].label} 매장 선택을 해제했어요.`)
+  }
+
+  /**
+   * 변경: 주변 추천·식사 제외로 전환하면 기존 지정 음식점은 함께 해제합니다.
+   * 다시 지정 음식점으로 바꾸면 목록에서 새 매장을 고르게 하므로 모드와 선택값이 충돌하지 않습니다.
+   */
+  function handleMealModeChange(slot, mode) {
+    updateMealModes((current) => ({ ...current, [slot]: mode }))
+    if (mode !== "DESIGNATED") updateMeals((current) => ({ ...current, [slot]: null }))
+    setMessage("")
   }
 
   // 두 슬롯에 음식점이 모두 있을 때 점심과 저녁 음식점만 서로 교환합니다.
@@ -200,22 +240,53 @@ export default function PlanMealsPage() {
 
   // 사용자가 선택 목록의 time input을 수정하면 해당 식사 슬롯의 시간만 갱신합니다.
   function handleTimeChange(slot, value) {
-    // 변경: 사용자가 변경한 식사 시간을 전역 계획에 저장합니다.
+    // 변경: type="time"의 min/max를 직접 입력 등으로 벗어나는 경우에도 전역 상태에는 잘못된 시간을 넣지 않습니다.
+    // 최종적으로는 서버의 normalizeMeals가 동일한 규칙을 다시 확인합니다.
+    if (!isTimeInMealWindow(slot, value)) {
+      const { label, minTime, maxTime } = SLOT_META[slot]
+      setMessage(`${label} 시간은 ${minTime}~${maxTime} 사이로 선택해 주세요.`)
+      return
+    }
+
     updateMealTimes((current) => ({ ...current, [slot]: value }))
+    setMessage("")
   }
 
   /**
    * 선택한 음식점은 PlanProvider에 저장되어 있으므로 결과 화면은 동일한 계획 상태를 읽을 수 있습니다.
    * 실제 API 연동 시에는 여기서 식사 조건 저장과 추천 계산 요청을 먼저 호출합니다.
    */
-  function handleConfirmRoute() {
-    if (selectedRestaurants.length === 0) {
-      setMessage("경로에 포함할 매장을 한 곳 이상 선택해 주세요.")
+  async function handleConfirmRoute() {
+    const missingDesignatedSlot = Object.keys(mealModes).find(
+      (slot) => mealModes[slot] === "DESIGNATED" && !selectedMeals[slot],
+    )
+    if (missingDesignatedSlot) {
+      setMessage(`${SLOT_META[missingDesignatedSlot].label} 음식점을 선택하거나 식사 방식을 변경해 주세요.`)
       return
     }
 
-    // 변경: 식사 정보가 PlanProvider에 이미 있으므로 실제 결과 경로로 바로 이동합니다.
-    navigate("/course/result")
+    // 변경: 지정·주변 추천 식사만 시간 창을 검사하고, 식사 제외는 시간 검사 대상에서 뺍니다.
+    const invalidMealSlot = Object.keys(selectedMeals).find(
+      (slot) => mealModes[slot] !== "SKIP" && !isTimeInMealWindow(slot, mealTimes[slot]),
+    )
+    if (invalidMealSlot) {
+      const { label, minTime, maxTime } = SLOT_META[invalidMealSlot]
+      setMessage(`${label} 시간은 ${minTime}~${maxTime} 사이로 선택해 주세요.`)
+      return
+    }
+
+    try {
+      setIsSavingPlan(true)
+      setMessage("")
+      // 변경: sessionStorage의 임시 선택값을 먼저 TRIP_PLAN에 저장한 뒤, 서버가 반환한 ID로 추천을 요청합니다.
+      const { tripPlan } = await saveTripPlan(plan)
+      updatePlan({ tripPlanId: tripPlan.tripPlanId })
+      navigate(`/course/loading?tripPlanId=${tripPlan.tripPlanId}`)
+    } catch (saveError) {
+      setMessage(saveError.message || "여행 계획을 저장하지 못했습니다.")
+    } finally {
+      setIsSavingPlan(false)
+    }
   }
 
   return (
@@ -299,13 +370,15 @@ export default function PlanMealsPage() {
           )}
 
           {/* 변경: 장소 선택 화면의 '선택한 필수 방문 장소' 영역처럼 선택 매장을 목록으로 확인·수정합니다. */}
-          <MealSelector
-            selectedMeals={selectedMeals}
-            mealTimes={mealTimes}
-            onRemove={handleRemove}
-            onSwap={handleSwap}
-            onTimeChange={handleTimeChange}
-          />
+      <MealSelector
+        selectedMeals={selectedMeals}
+        mealModes={mealModes}
+        mealTimes={mealTimes}
+        onRemove={handleRemove}
+        onSwap={handleSwap}
+        onTimeChange={handleTimeChange}
+        onModeChange={handleMealModeChange}
+      />
 
           {message && <p className={styles.message} role="status">{message}</p>}
 
@@ -317,8 +390,8 @@ export default function PlanMealsPage() {
             >
               이전
             </button>
-            <button className={styles.nextButton} type="button" onClick={handleConfirmRoute}>
-              경로 확인
+            <button className={styles.nextButton} type="button" onClick={handleConfirmRoute} disabled={isSavingPlan}>
+              {isSavingPlan ? "계획 저장 중..." : "경로 확인"}
             </button>
           </div>
         </section>
@@ -352,7 +425,7 @@ export default function PlanMealsPage() {
                   restaurant ? (
                     <li key={slot}>
                       <span>{restaurant.name}</span>
-                      <time>{mealTimes[slot]} ({SLOT_META[slot].label})</time>
+                      <time>{mealTimes[slot]} ({SLOT_META[slot].label} {SLOT_META[slot].minTime}~{SLOT_META[slot].maxTime})</time>
                     </li>
                   ) : null
                 ))}
