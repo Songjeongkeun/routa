@@ -36,3 +36,29 @@ export async function updateIntroduction(introduction) {
     if (!response.ok) throw new Error(data?.message ?? "자기소개 변경에 실패했습니다.")
     return data
 }
+
+/** 회원 탈퇴 api */
+export async function withdrawUser() {
+    const response = await fetch(`${API_URL}/users/me`, {
+        method: "DELETE",
+        credentials: "include",
+    })
+    if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.message ?? "회원 탈퇴에 실패했습니다.")
+    }
+}
+
+/** 비밀번호 변경 api */
+export async function changePassword({ currentPassword, newPassword }) {
+  const response = await fetch(`${API_URL}/users/me/password`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+  if (!response.ok) {
+    const data = await response.json().catch(() => null)
+    throw new Error(data?.message ?? "비밀번호 변경에 실패했습니다.")
+  }
+}

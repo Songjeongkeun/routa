@@ -2,6 +2,11 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../app/providers/authContext.js"
 import { API_URL } from "../../shared/api/httpClient.js"
+import { withdrawUser } from "../../features/profile/profile.api.js"
+import { changePassword } from "../../features/profile/profile.api.js"
+
+import styles from "./ProfilePage.module.css"
+
 import defaultAvatar from "../../shared/assets/icons/default-avatar.png"
 import savedScheduleIcon from "../../shared/assets/icons/Saved-schedule.png"
 import visitedPlaceIcon from "../../shared/assets/icons/Visited-place.png"
@@ -12,7 +17,6 @@ import alertRowIcon from "../../shared/assets/icons/Account row icon 1.png"
 import privacyRowIcon from "../../shared/assets/icons/Account row icon 2.png"
 import travelRecordIcon from "../../shared/assets/icons/Travel record icon.png"
 import hartIcon from "../../shared/assets/icons/Preferences icon.png"
-import styles from "./ProfilePage.module.css"
 
 const INTEREST_THEMES = ["역사·전통", "카페·감성", "전시·문화", "쇼핑", "자연·산책", "힐링·여유"]
 const MOVE_MODES = ["도보 위주", "대중교통 위주", "균형 있게"]
@@ -20,11 +24,14 @@ const MEAL_MODES = ["경로 주변 추천", "직접 선택"]
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
-
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [passwordError, setPasswordError] = useState("")
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false)
   const [selectedThemes, setSelectedThemes] = useState(["카페·감성"])
   const [moveMode, setMoveMode] = useState("도보 위주")
   const [mealMode, setMealMode] = useState("경로 주변 추천")
+
+  const navigate = useNavigate()
 
   function toggleTheme(theme) {
     setSelectedThemes((prev) =>
@@ -32,15 +39,45 @@ export default function ProfilePage() {
     )
   }
 
+  async function handlePasswordSubmit(event) {
+    event.preventDefault()
+    const currentPassword = event.target.currentPassword.value
+    const newPassword = event.target.newPassword.value
+    const newPasswordConfirm = event.target.newPasswordConfirm.value
+
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordError("새 비밀번호가 서로 일치하지 않아요.")
+      return
+    }
+
+    setPasswordError("")
+    setIsPasswordSubmitting(true)
+    try {
+      await changePassword({ currentPassword, newPassword })
+      setIsPasswordModalOpen(false)
+      window.alert("비밀번호가 변경됐어요.")
+    } catch (error) {
+      setPasswordError(error.message)
+    } finally {
+      setIsPasswordSubmitting(false)
+    }
+  }
+
   async function handleLogout() {
     await logout()
     navigate("/auth/login", { replace: true })
   }
 
-  function handleWithdraw() {
+  async function handleWithdraw() {
     const ok = window.confirm("정말 탈퇴하시겠어요? 이 작업은 되돌릴 수 없어요.")
     if (!ok) return
-    window.alert("회원 탈퇴 기능은 아직 구현되지 않았습니다.")
+    try {
+      await withdrawUser()
+      await logout()
+      navigate("/auth/login", { replace: true })
+    } catch (error) {
+      window.alert(error.message)
+    }
   }
 
   const avatarSrc = user?.profileImageUrl
@@ -169,15 +206,17 @@ export default function ProfilePage() {
           <section className={styles.securityCard}>
             <h2><img className={styles.titleIcon} src={securityIcon} alt="" /> 계정 및 보안</h2>
             <ul className={styles.securityList}>
-              <li>
-                <button type="button">
-                  <span className={styles.rowLeft}>
-                    <img src={passwordRowIcon} alt="" />
-                    비밀번호 변경
-                  </span>
-                  <span aria-hidden="true">›</span>
-                </button>
-              </li>
+              {user?.authProvider === "LOCAL" && (
+                <li>
+                  <button type="button" onClick={() => setIsPasswordModalOpen(true)}>
+                    <span className={styles.rowLeft}>
+                      <img src={passwordRowIcon} alt="" />
+                      비밀번호 변경
+                    </span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <button type="button">
                   <span className={styles.rowLeft}>
@@ -209,6 +248,37 @@ export default function ProfilePage() {
           </section>
         </div>
       </div>
+      {isPasswordModalOpen && (
+        <div className={styles.modalOverlay}>
+          <section className={styles.modal} role="dialog" aria-modal="true">
+            <header className={styles.modalHeader}>
+              <h2>비밀번호 변경</h2>
+              <button type="button" aria-label="닫기" onClick={() => setIsPasswordModalOpen(false)}>×</button>
+            </header>
+            <form onSubmit={handlePasswordSubmit} className={styles.modalForm}>
+              <label>
+                <span>현재 비밀번호</span>
+                <input type="password" name="currentPassword" required />
+              </label>
+              <label>
+                <span>새 비밀번호</span>
+                <input type="password" name="newPassword" minLength={8} required />
+              </label>
+              <label>
+                <span>새 비밀번호 확인</span>
+                <input type="password" name="newPasswordConfirm" minLength={8} required />
+              </label>
+              {passwordError && <p className={styles.errorText}>{passwordError}</p>}
+              <div className={styles.modalActions}>
+                <button type="button" onClick={() => setIsPasswordModalOpen(false)}>취소</button>
+                <button type="submit" disabled={isPasswordSubmitting}>
+                  {isPasswordSubmitting ? "변경 중..." : "변경하기"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </main>
   )
 }

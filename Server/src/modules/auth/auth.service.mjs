@@ -92,6 +92,12 @@ export async function login({ email: rawEmail, password }) {
   if (!user || !matches) {
     throw serviceError("이메일 또는 비밀번호가 올바르지 않습니다.", 401)
   }
+  
+  if (user.account_status === "DORMANT") {
+    await authRepository.reactivateUser(user.user_id)
+    user.account_status = "ACTIVE"
+  }
+
   if (user.account_status !== "ACTIVE") {
     throw serviceError("사용할 수 없는 계정입니다.", 403, "INACTIVE_ACCOUNT")
   }
@@ -123,7 +129,6 @@ export async function logout(refreshToken) {
 
 export async function loginWithOAuth({ provider, providerUserId, email, nickname }) {
   let user = await authRepository.findByOAuthAccount(provider, providerUserId)
-
   if (!user) {
     if (await authRepository.findByEmail(email)) {
       throw serviceError(
@@ -134,10 +139,10 @@ export async function loginWithOAuth({ provider, providerUserId, email, nickname
     }
     user = await authRepository.createOAuthUser({ email, nickname, provider, providerUserId })
   }
-
   if (user.account_status !== "ACTIVE") {
     throw serviceError("사용할 수 없는 계정입니다.", 403, "INACTIVE_ACCOUNT")
   }
-
   return { user: toPublicUser(user), ...(await createSession(user.user_id)) }
 }
+
+

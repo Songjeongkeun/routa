@@ -10,8 +10,7 @@
   padding: 16px;
   overflow-y: auto;
 
-  background: rgba(23, 29, 43, 0.42);
-  backdrop-filter: blur(1px);
+  background: rgba(23, 29, 43, 0.18);
 }
 
 .modal {
@@ -91,8 +90,9 @@
 
 .avatarWrapper {
   position: relative;
-  width: 92px;
-  height: 92px;
+  overflow: hidden;
+  width: 160px;
+  height: 160px;
 }
 
 .avatar {
