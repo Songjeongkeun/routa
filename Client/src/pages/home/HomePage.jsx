@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../../app/providers/authContext.js"
 import styles from "./HomePage.module.css"
+import TripTypeSelector from "../../features/planner/components/TripTypeSelector.jsx"
+import PlanConditionPage from "../planner/PlanConditionPage.jsx"
 
 // 메인 홈페이지
 // 여행 생성 URL로 가는 버튼
@@ -9,25 +11,18 @@ import styles from "./HomePage.module.css"
 export default function HomePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-
-  // 로그인 성공을 alert으로 띄우기
-  // useRef(false)는 처음에는 알림을 보여주지 않음
-  /*
-    false -> 아직 알림을 보여주지 않음
-    true -> 이미 알림을 보여줌
-  */
-  const hasShownLoginAlert = useRef(false)
+  const location = useLocation()
+  const hasHandledLoginAlert = useRef(false)
 
   useEffect(() => {
-    // hasShownLoginAlert.current가 true이면 이미 알림을 보여줬으므로 return
-    if (!user || hasShownLoginAlert.current) return
+    if (!user || !location.state?.loginSucceeded || hasHandledLoginAlert.current) return
 
-    // 알림을 띄우기 직전에 "이제 알림을 표시했다"라고 기록 > 중복 제거
-    hasShownLoginAlert.current = true
+    // 로그인 성공 표시를 먼저 지워 홈에 다시 와도 알림이 반복되지 않게 한다.
+    hasHandledLoginAlert.current = true
+    navigate(location.pathname, { replace: true, state: null })
     const userName = user?.nickname ?? user?.loginId
     window.alert(userName ? `${userName}님, 로그인에 성공했습니다.` : "로그인에 성공했습니다.")
-  }, [user])
-  // 의존성이 user라 user값이 변경될 때 실행
+  }, [location.pathname, location.state, navigate, user])
 
   // Plan 생성 페이지
   const handlePlanClick = () => {
