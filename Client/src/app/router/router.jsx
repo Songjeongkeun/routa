@@ -11,6 +11,9 @@ import PlanConditionPage from "../../pages/planner/PlanConditionPage.jsx"
 import PlanPlacesPage from "../../pages/planner/PlanPlacesPage.jsx"
 import UserManagementPage from "../../pages/admin/UserManagementPage.jsx"
 import NotFoundPage from "../../pages/NotFoundPage.jsx"
+import ProfilePage from "../../pages/profile/ProfilePage.jsx"
+import ProfileEditPage from "../../pages/profile/ProfileEditPage.jsx"
+import InquiryManagementPage from "../../pages/admin/InquiryManagementPage.jsx"
 
 export const router = createBrowserRouter([
   {
@@ -35,7 +38,10 @@ export const router = createBrowserRouter([
           { path: "planner/places", element: <PlanPlacesPage /> },
           { path: "admin",
             element: <AdminRoute />,
-            children: [{ index: true, element: <UserManagementPage /> }],
+            children: [
+              { index: true, element: <UserManagementPage /> },
+              { path: "inquiries", element: <InquiryManagementPage /> },
+            ],
           },
         ],
       },

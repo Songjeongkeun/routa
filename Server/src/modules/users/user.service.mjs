@@ -11,3 +11,23 @@ export async function updateProfileImage(userId, imageUrl) {
     }
     return userRepository.updateProfileImageUrl(userId, imageUrl)
 }
+
+export async function updateNickname(userId, nickname) {
+    const trimmed = nickname?.trim()
+    if (!trimmed) {
+        const error = new Error("닉네임을 입력해주세요.")
+        error.status = 400
+        throw error
+    }
+    return userRepository.updateNickname(userId, trimmed)
+}
+
+export async function updateIntroduction(userId, introduction) {
+    const trimmed = introduction?.trim() ?? ""
+    if (trimmed.length > 150) {
+        const error = new Error("자기소개는 150자 이하로 입력해주세요.")
+        error.status = 400
+        throw error
+    }
+    return userRepository.updateIntroduction(userId, trimmed)
+}

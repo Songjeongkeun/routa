@@ -36,7 +36,7 @@ export default function HomePage() {
 
   // 프로필 페이지
   const handleProfileClick = () => {
-    navigate("/api/users/me")
+    navigate("/profile")
   }
 
   // 내문의 페이지

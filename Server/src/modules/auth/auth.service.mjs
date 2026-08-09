@@ -18,6 +18,7 @@ export function toPublicUser(user) {
     nickname: user.nickname,
     authProvider:user.auth_provider,
     profileImageUrl: user.profile_image_url,
+    introduction: user.introduction,
     isAdmin: user.is_admin,
     accountStatus: user.account_status,
     createdAt: user.created_at,

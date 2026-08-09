@@ -16,7 +16,7 @@ export default function Header() {
   }
 
   async function handleProfileClick() {
-    await navigate("/api/users/me")
+    await navigate("/profile")
   }
 
   async function handleInquiryClick() {
@@ -42,7 +42,7 @@ export default function Header() {
 
       <nav className={styles.userNav} aria-label="사용자 메뉴">
         <button type="button" onClick={handleInquiryClick}>내 문의</button>
-        {user?.role === "ADMIN" && <Link to="/admin">관리자</Link>}
+        {user?.isAdmin && <Link to="/admin">관리자</Link>}
         <button
           className={styles.profileButton}
           type="button"

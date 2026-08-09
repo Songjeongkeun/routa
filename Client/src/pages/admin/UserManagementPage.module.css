@@ -1,0 +1,242 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.headerRow h1 {
+  margin: 0 0 6px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.headerRow p {
+  margin: 0;
+  color: #69748d;
+  font-size: 14px;
+}
+
+.inquiryButton {
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #4b3fd6, #6447ff);
+  cursor: pointer;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.statCard,
+.chartCard,
+.listCard {
+  padding: 24px;
+  border: 1px solid #eceef3;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.statIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.iconPurple { color: #6447ff; background: #efebff; }
+.iconGreen  { color: #17b26a; background: #e3faf0; }
+.iconBlue   { color: #4d7cff; background: #eaf0ff; }
+
+.statText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  color: #69748d;
+  font-size: 13px;
+}
+
+.statValue {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.chartCard h2,
+.listCard h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.chartArea {
+  display: flex;
+  gap: 12px;
+  height: 220px;
+}
+
+.axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  color: #a3abbd;
+  font-size: 12px;
+  text-align: right;
+}
+
+.bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+}
+
+.barColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.barValue {
+  margin-bottom: 6px;
+  color: #6447ff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.barTrack {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  overflow: visible;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #7c6cff, #6447ff);
+}
+
+.barLabel {
+  margin-top: 8px;
+  color: #69748d;
+  font-size: 12px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.userTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.userTable th {
+  padding: 0 8px 10px;
+  color: #a3abbd;
+  font-weight: 600;
+  text-align: left;
+}
+
+.userTable td {
+  padding: 12px 8px;
+  border-top: 1px solid #f1f2f6;
+}
+
+.nameCell {
+  font-weight: 700;
+}
+
+.emailCell {
+  color: #69748d;
+}
+
+.dateCell {
+  color: #69748d;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid #e3e5ec;
+  border-radius: 20px;
+  color: #69748d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusActive {
+  border-color: #6447ff;
+  color: #6447ff;
+  background: #efebff;
+}
+
+.statusDormant {
+  border-color: #e3e5ec;
+  color: #8a93a6;
+  background: #fff;
+}
+
+.statusWithdrawn {
+  border-color: #f3d4d4;
+  color: #d9534f;
+  background: #fdf2f2;
+}
+
+.emptyState {
+  padding: 24px 0;
+  color: #a3abbd;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+}

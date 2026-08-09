@@ -1,7 +1,7 @@
 import { query } from "../../db/database.mjs"
 
 /** 데이터 변경 후 바로 데이터 반환 받을 데이터 묶음 */
-const USER_COLUMNS = `user_id, email, password, nickname, auth_provider, provider_id, profile_image_url, is_admin, account_status, created_at, last_login_at`
+const USER_COLUMNS = `user_id, email, password, nickname, auth_provider, provider_id, profile_image_url, introduction, is_admin, account_status, created_at, last_login_at`
 
 /** 회원가입 시 새 로컬(Local) 계정을 생성한다. */
 export async function createUser({ email, passwordHash, nickname }) {
