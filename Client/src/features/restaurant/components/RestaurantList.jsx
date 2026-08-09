@@ -8,7 +8,8 @@ export default function RestaurantList({ restaurants, selectedPlaceIds, onToggle
     return (
       <section className={styles.empty} aria-live="polite">
         <strong>조건에 맞는 음식점이 없어요.</strong>
-        <p>검색어를 바꾸거나 전체 카테고리를 선택해 주세요.</p>
+        {/* 변경: 실제 DB에는 음식 종류 분류가 없으므로 존재하지 않는 카테고리 선택을 안내하지 않습니다. */}
+        <p>검색어를 바꾸어 다시 검색해 주세요.</p>
       </section>
     )
   }

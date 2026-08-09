@@ -189,14 +189,11 @@ Client 요청
 - `db/`: PostgreSQL 연결 Pool과 연결 설정
 - `utils/`: JWT, 쿠키, 날짜, 로그처럼 특정 도메인에 속하지 않는 보조 기능
 
-## `database/` — 데이터베이스 정의
+## 데이터베이스 스키마
 
-애플리케이션이 사용하는 PostgreSQL 구조와 초기 데이터를 관리합니다.
+현재 애플리케이션은 Supabase의 실제 PostgreSQL 스키마를 사용합니다. 로컬 `database/schema.sql` 파일은 사용하지 않습니다.
 
-- `schema.sql`: 테이블, 관계, 제약조건, 인덱스 등 전체 스키마
-- `seed.sql`: 관리자 계정이나 개발·테스트용 초기 데이터
-
-DB 구조를 변경할 때는 서버의 Repository 코드와 API 응답에 미치는 영향도 함께 확인해야 합니다. 실제 비밀번호나 운영 데이터를 `seed.sql`에 넣지 않습니다.
+DB 구조를 변경할 때는 서버의 Repository 코드와 API 응답에 미치는 영향도 함께 확인해야 합니다. 향후 스키마 변경은 Supabase migration으로 버전 관리하고, 실제 비밀번호나 운영 데이터를 seed 파일에 넣지 않습니다.
 
 ## `docs/` — 프로젝트 문서
 

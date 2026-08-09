@@ -14,7 +14,7 @@
 ## 최초 설정
 
 1. `.env.example`을 복사해 `.env`를 만들고 실제 값을 입력합니다.
-2. PostgreSQL에서 `database/schema.sql`을 실행합니다.
+2. Supabase 프로젝트의 실제 스키마를 사용하도록 `DATABASE_URL`을 설정합니다. 로컬 스키마 파일은 실행하지 않습니다.
 3. `Client`와 `Server`에서 각각 `npm install`을 실행합니다.
 
 ## 실행

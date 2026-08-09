@@ -4,6 +4,7 @@ const pendingLocationSearches = new Map()
 
 export async function searchPlaces({
   keyword = "",
+  placeCategory = "",
   page = 1,
   pageSize = 6,
   tripType = "",
@@ -18,6 +19,8 @@ export async function searchPlaces({
   const normalizedKeyword = keyword.trim()
 
   if (normalizedKeyword) params.set("keyword", normalizedKeyword)
+  // 변경: 장소명 검색과 대분류 필터를 분리해 음식점 목록을 정확하게 요청합니다.
+  if (placeCategory) params.set("placeCategory", placeCategory)
   if (tripType) params.set("tripType", tripType)
   if (travelDate) params.set("travelDate", travelDate)
   if (startLocation.trim()) params.set("startLocation", startLocation.trim())

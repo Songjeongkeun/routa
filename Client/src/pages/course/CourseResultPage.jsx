@@ -3,6 +3,7 @@ import {
   mockCourses,
   mockPlaceCandidates,
 } from "../../features/course/course.mock";
+import { usePlan } from "../../app/providers/planContext.js";
 import KakaoCourseMap from "../../features/course/KakaoCourseMap";
 import "./CourseResultPage.css";
 
@@ -33,6 +34,7 @@ const getPlaceEmoji = (item) =>
  * 이벤트만 처리하도록 유지합니다.
  */
 export default function CourseResultPage() {
+  const { plan } = usePlan();
   // courses는 코스 카드 세 개와 각 코스의 상세 일정 전체를 보관합니다.
   const [courses, setCourses] = useState(mockCourses);
 
@@ -64,6 +66,11 @@ export default function CourseResultPage() {
   const activeCourse = courses.find(
     (course) => course.itineraryId === selectedCourseId,
   );
+  // 변경: 추천 API가 연결되기 전에도 직전 단계에서 입력한 여행 날짜·시간·장소 수를 결과 화면에 표시합니다.
+  const travelDate = plan.date || activeCourse.travelDate;
+  const startTime = plan.startTime || activeCourse.startTime;
+  const endTime = plan.endTime || activeCourse.endTime;
+  const selectedPlaceCount = plan.selectedPlaces.length;
 
   /**
    * 선택된 코스만 안전하게 갱신하는 공통 함수입니다.
@@ -222,8 +229,8 @@ export default function CourseResultPage() {
             <p className="breadcrumb">🧭 여행 조건 입력 › 추천 경로</p>
             <h1>서울에서 보내는 하루, 이렇게 이동해 보세요</h1>
             <p className="course-subtitle">
-              {activeCourse.travelDate} · {activeCourse.startTime}–
-              {activeCourse.endTime} · 필수 장소 4곳
+              {travelDate} · {startTime}–
+              {endTime} · 필수 장소 {selectedPlaceCount}곳
             </p>
           </div>
 

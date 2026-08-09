@@ -9,6 +9,8 @@ import SignupSuccessPage from "../../pages/auth/SignupSuccessPage.jsx"
 import HomePage from "../../pages/home/HomePage.jsx"
 import PlanConditionPage from "../../pages/planner/PlanConditionPage.jsx"
 import PlanPlacesPage from "../../pages/planner/PlanPlacesPage.jsx"
+import PlanMealsPage from "../../pages/planner/PlanMealsPage.jsx"
+import CourseResultPage from "../../pages/course/CourseResultPage.jsx"
 import UserManagementPage from "../../pages/admin/UserManagementPage.jsx"
 import NotFoundPage from "../../pages/NotFoundPage.jsx"
 import ProfilePage from "../../pages/profile/ProfilePage.jsx"
@@ -36,6 +38,10 @@ export const router = createBrowserRouter([
           { index: true, element: <HomePage /> },
           { path: "planner/condition", element: <PlanConditionPage /> },
           { path: "planner/places", element: <PlanPlacesPage /> },
+          // 변경: 장소 선택 후 음식점 선택 단계로 이동할 수 있도록 경로를 등록합니다.
+          { path: "planner/meals", element: <PlanMealsPage /> },
+          // 변경: 음식점 선택 완료 후 확인할 경로 결과 화면을 라우터에 연결합니다.
+          { path: "course/result", element: <CourseResultPage /> },
           { path: "admin",
             element: <AdminRoute />,
             children: [
