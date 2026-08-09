@@ -1,15 +1,7 @@
-import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { usePlan } from "../../app/providers/planContext.js"
 import PlaceSelector from "../../features/planner/components/PlaceSelector.jsx"
 import styles from "./PlanPlacesPage.module.css"
-
-function getPlannerData() {
-    try {
-        return JSON.parse(sessionStorage.getItem("plannerData") || "{}")
-    } catch {
-        return {}
-    }
-}
 
 function formatTimeWithPeriod(time) {
     if (!time) return "시간을 선택해 주세요"
@@ -28,20 +20,13 @@ function formatLocation(address, placeName) {
 
 export default function PlanPlacesPage() {
     const navigate = useNavigate()
-    const [plannerData, setPlannerData] = useState(getPlannerData)
-    const selectedPlaces = Array.isArray(plannerData.selectedPlaces)
-        ? plannerData.selectedPlaces
-        : []
-
-    useEffect(() => {
-        sessionStorage.setItem("plannerData", JSON.stringify(plannerData))
-    }, [plannerData])
+    // 변경: 조건 단계의 값과 선택 장소를 한 상태로 공유하기 위해 PlanProvider를 사용합니다.
+    const { plan: plannerData, updatePlan } = usePlan()
+    const selectedPlaces = plannerData.selectedPlaces
 
     const handleSelectedPlacesChange = (places) => {
-        setPlannerData((current) => ({
-            ...current,
-            selectedPlaces: places,
-        }))
+        // 변경: 선택 장소를 다음 식사·결과 단계에서도 사용할 수 있도록 전역 계획에 반영합니다.
+        updatePlan({ selectedPlaces: places })
     }
 
     const handleCancelClick = () => {
@@ -71,7 +56,14 @@ export default function PlanPlacesPage() {
 
                     <div className={styles.actions}>
                         <button className={styles.cancelButton} type="button" onClick={handleCancelClick}>취소</button>
-                        <button className={styles.nextButton} type="button">다음</button>
+                        <button
+                            className={styles.nextButton}
+                            type="button"
+                            // 변경: 장소 선택 다음 단계인 음식점 선택 화면으로 이동하도록 연결합니다.
+                            onClick={() => navigate("/planner/meals")}
+                        >
+                            다음
+                        </button>
                     </div>
                 </section>
 

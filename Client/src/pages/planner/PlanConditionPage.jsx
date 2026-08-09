@@ -1,5 +1,6 @@
 import { useState } from "react"
 import {useNavigate} from "react-router-dom"
+import { usePlan } from "../../app/providers/planContext.js"
 import TripTypeSelector from "../../features/planner/components/TripTypeSelector.jsx"
 import DateSelector from "../../features/planner/components/DateSelector.jsx"
 import TransitCriterion from "../../features/planner/components/TransitCriterion.jsx"
@@ -26,10 +27,27 @@ function formatLocation(address, placeName) {
     return address || placeName || "입력해 주세요"
 }
 
+function createTransitCondition(plan) {
+    return {
+        startLocation: plan.startLocation,
+        startAddress: plan.startAddress,
+        startLatitude: plan.startLatitude,
+        startLongitude: plan.startLongitude,
+        endLocation: plan.endLocation,
+        endAddress: plan.endAddress,
+        endLatitude: plan.endLatitude,
+        endLongitude: plan.endLongitude,
+        startTime: plan.startTime,
+        endTime: plan.endTime,
+    }
+}
+
 export default function PlanConditionPage() {
-    const [selectOption, setSelectOption] = useState("")
-    const [selectDate, setSelectDate] = useState("")
-    const [selectTransport, setSelectTransport] = useState("")
+    const { plan, updatePlan } = usePlan()
+    // 변경: 이전 단계로 돌아왔을 때 입력값을 유지하기 위해 전역 여행 계획값으로 초기화합니다.
+    const [selectOption, setSelectOption] = useState(plan.tripType)
+    const [selectDate, setSelectDate] = useState(plan.date)
+    const [selectTransport, setSelectTransport] = useState(plan.transport)
     const [isResolvingLocations, setIsResolvingLocations] = useState(false)
 
     const navigate = useNavigate()
@@ -40,18 +58,8 @@ export default function PlanConditionPage() {
     }
 
     // 이동 조건 값 저장할 배열 생성
-    const [transitCondition, setTransitCondition] = useState({
-        startLocation: "",
-        startAddress: "",
-        startLatitude: null,
-        startLongitude: null,
-        endLocation: "",
-        endAddress: "",
-        endLatitude: null,
-        endLongitude: null,
-        startTime: "09:00",
-        endTime: "21:00",
-    })
+    // 변경: 출발·도착지와 여행 시간도 PlanProvider에서 이어서 관리합니다.
+    const [transitCondition, setTransitCondition] = useState(() => createTransitCondition(plan))
 
     // 다음 버튼 이동 경로 & 입력 받은 값 저장
     const resolveLocation = async (condition, prefix) => {
@@ -107,15 +115,8 @@ export default function PlanConditionPage() {
                 endTime: resolvedTransitCondition.endTime
             }
 
-            /*
-                sessionStorage
-                    - sessionStorage의 데이터는 페이지 세션이 끝날 때 제거됨
-                    - 브라우저가 열러있는 한 새로고침과 페이지 복구를 거쳐도 남아있음
-            */
-            sessionStorage.setItem(
-                "plannerData",
-                JSON.stringify(condition)
-            )
+            // 변경: 페이지별 sessionStorage 대신 PlanProvider의 단일 여행 계획 상태에 저장합니다.
+            updatePlan(condition)
 
             navigate("/planner/places")
         } catch (error) {

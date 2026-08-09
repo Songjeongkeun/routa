@@ -23,6 +23,7 @@ export async function findCoordinatesByLocation(location) {
 
 export async function findPlaces({
   keyword,
+  placeCategory,
   petOnly,
   closedWeekday,
   startTime,
@@ -69,6 +70,9 @@ export async function findPlaces({
          AND (place_category ILIKE '%공원%' OR place_category ILIKE '%산책%')
        )
      )
+     -- 변경: 검색어와 별개로 장소 대분류를 정확히 제한합니다.
+     -- placeCategory가 '음식점'이면 PLACE의 음식점 행만 반환합니다.
+     AND ($8::TEXT IS NULL OR place_category = $8)
      AND (NOT $2::BOOLEAN OR pet_is_allowed = TRUE)
      AND (
        $3::TEXT IS NULL
@@ -105,8 +109,9 @@ export async function findPlaces({
        average_rating DESC NULLS LAST,
        place_name ASC,
        place_id ASC
-     LIMIT $8
-     OFFSET $9`,
+     -- 변경: placeCategory가 $8을 사용하므로 페이지네이션 파라미터는 뒤 번호로 이동합니다.
+     LIMIT $9
+     OFFSET $10`,
     [
       keyword,
       petOnly,
@@ -115,6 +120,7 @@ export async function findPlaces({
       endTime,
       originLatitude,
       originLongitude,
+      placeCategory,
       limit,
       offset,
     ],

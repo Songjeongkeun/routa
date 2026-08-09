@@ -158,10 +158,43 @@
   cursor: pointer;
 }
 
+/* 변경: DB에 음식 종류 컬럼이 없어 현재 적용 중인 '전체 음식점' 상태만 칩으로 표시합니다. */
 .chips .chipActive {
+  min-width: 72px;
+  height: 31px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid #5a46ff;
+  border-radius: 999px;
   border-color: #5a46ff;
   color: #513dff;
   background: #faf9ff;
+  font-size: 11px;
+}
+
+/* 변경: 한식·일식 필터가 없는 이유를 화면에 명확히 알려 잘못된 검색 동작을 막습니다. */
+.categoryNotice {
+  display: inline-flex;
+  align-items: center;
+  color: #8994ad;
+  font-size: 11px;
+}
+
+/* 변경: 서버의 다음 페이지를 요청해 많은 음식점 결과를 이어서 볼 수 있게 하는 버튼입니다. */
+.loadMore {
+  display: block;
+  min-width: 112px;
+  height: 34px;
+  margin: 16px auto 0;
+  border: 1px solid #dce2ef;
+  border-radius: 9px;
+  color: #513dff;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
 }
 
 .selectedSummary {
@@ -280,4 +313,140 @@
   .actions {
     grid-template-columns: 1fr;
   }
+}
+
+/* 변경: 아래 스타일은 PlanPlacesPage의 화면 규격을 음식점 선택 단계에도 동일하게 적용합니다. */
+.page {
+  min-height: calc(100vh - 68px);
+  padding: 28px 40px 48px;
+  color: #14203a;
+  background: #f8f9fd;
+}
+
+.intro { text-align: center; }
+.intro h1 { margin: 0; font-size: clamp(28px, 3vw, 37px); line-height: 1.3; letter-spacing: -1.3px; }
+.intro p { margin: 7px 0 0; color: #8190ad; font-size: 13px; }
+
+.stepper {
+  max-width: 610px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 12px auto 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.stepper li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #71809d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.stepper li:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  right: -18px;
+  width: 54px;
+  height: 1px;
+  background: #dce3f0;
+  content: "";
+}
+
+.stepper .completedStep::after { background: #28c4b1; }
+.stepper li > span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #f0f3f9; }
+.stepper .completedStep > span { color: #fff; background: #10b9a5; }
+.stepper .currentStep { color: #14203a; }
+.stepper .currentStep > span { color: #fff; background: #5138ef; }
+
+.layout {
+  width: min(100%, 1240px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 365px;
+  gap: 30px;
+  margin: 0 auto;
+}
+
+.content { min-width: 0; }
+
+.searchBox {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 10px 14px 20px;
+  border: 1px solid #d8e0ee;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.searchBox label { font-size: 17px; font-weight: 800; white-space: nowrap; }
+.searchBox input { min-width: 0; height: 46px; padding: 0 14px; border: 1px solid #d8e0ee; border-radius: 11px; outline: none; color: #18233d; background: #fff; font: inherit; }
+.searchBox input:focus { border-color: #5b44f5; box-shadow: 0 0 0 3px rgb(91 68 245 / 10%); }
+.searchBox input::placeholder { color: #8b98b2; }
+.searchBox button { height: 46px; border: 1px solid #d8e0ee; border-radius: 11px; color: #18233d; background: #fbfcff; font: inherit; font-weight: 700; cursor: pointer; }
+.searchBox button:disabled { cursor: wait; opacity: .65; }
+
+.filters { display: flex; align-items: center; gap: 9px; padding: 0 10px; margin: 10px 0; overflow-x: auto; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.activeFilter { flex: 0 0 auto; min-height: 35px; display: inline-flex; align-items: center; padding: 0 20px; border: 1px solid #694dff; border-radius: 999px; color: #563cf1; background: #fff; font-size: 12px; }
+.categoryNotice { flex: 0 0 auto; color: #8994ad; font-size: 11px; }
+.statusMessage { margin: 18px 0; color: #71809d; text-align: center; }
+
+/* 변경: 음식점 목록도 PlaceSelector와 동일한 페이지 번호 탐색 형태를 사용합니다. */
+.pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 10px 0; color: #71809d; font-size: 13px; }
+.pagination button { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid #d8e0ee; border-radius: 9px; color: #553af1; background: #fff; cursor: pointer; }
+.pagination button:disabled { color: #aab4c7; cursor: default; opacity: .65; }
+.pagination .currentPage { border-color: #6448ff; color: #fff; background: #6448ff; }
+
+.summary {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #d8e0ee;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.summary h2 { margin: 0 0 18px; font-size: 17px; }
+.summary dl { margin: 0; }
+.summary dl > div,
+.summaryRow { min-height: 48px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid #e0e5ef; }
+.summary dt,
+.summaryRow span { color: #74829d; font-size: 12px; }
+.summary dd,
+.summaryRow strong { margin: 0; color: #18233d; font-size: 12px; font-weight: 700; text-align: right; }
+.summarySection { padding: 20px 0 17px; border-bottom: 1px solid #e0e5ef; }
+.summaryTitle { display: flex; justify-content: space-between; font-size: 12px; }
+.summaryTitle span { color: #74829d; }
+.summaryTitle strong { color: #18233d; }
+.summarySection ul { display: grid; gap: 14px; margin: 18px 0 0 27px; padding: 0; list-style: none; font-size: 12px; }
+.summarySection li { display: flex; justify-content: space-between; gap: 10px; }
+.summarySection time { color: #8491ac; white-space: nowrap; }
+.summaryEmpty { margin: 15px 0 0 27px; color: #8b98b2; font-size: 12px; }
+
+.message { margin: 12px 0; padding: 9px 13px; border-radius: 8px; color: #4330d9; background: #efedff; font-size: 12px; font-weight: 650; }
+.actions { display: grid; grid-template-columns: 0.56fr 1fr; gap: 18px; margin-top: 20px; }
+.actions button { min-height: 52px; height: auto; border-radius: 11px; font: inherit; font-weight: 700; cursor: pointer; }
+.cancelButton { border: 1px solid #6047ff; color: #543af0; background: #fff; }
+.nextButton { border: 1px solid #4d36ee; color: #fff; background: #4d36ee; }
+
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .summary { grid-row: 1; }
+}
+
+@media (max-width: 760px) {
+  .searchBox { grid-template-columns: 1fr auto; }
+  .searchBox label { grid-column: 1 / -1; }
+}
+
+@media (max-width: 680px) {
+  .page { padding: 24px 14px 40px; }
+  .stepper li { flex-direction: column; gap: 5px; font-size: 11px; }
+  .stepper li:not(:last-child)::after { display: none; }
+  .actions { grid-template-columns: 1fr; }
 }

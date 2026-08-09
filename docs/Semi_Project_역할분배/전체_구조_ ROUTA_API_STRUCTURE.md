@@ -868,19 +868,9 @@ PostgreSQL 또는 외부 API
 
 ## 17. DB 확인 사항
 
-현재 `routa/finding_path/server/db/schema.sql`에는 사용자 권한을 구분하는 `role` 컬럼이 있다.
+로컬 스키마 파일은 제거됐으며, 현재 Supabase `public` 스키마가 기준이다. 스키마 변경은 향후 Supabase migration으로 관리한다.
 
-```text
-USER
-ADMIN
-```
-
-다만 DB 설계 파일 사이에 다음 차이가 있으므로 개발 전에 하나의 스키마로 통일해야 한다.
-
-- `server/db/schema.sql`은 사용자 테이블명이 `users`
-- `database/routa_schema.sql`은 사용자 테이블명이 `app_users`
-- `database/routa_schema.sql`에는 관리자 `role`이 없음
-- 두 스키마 모두 사용자 문의 테이블이 없음
+현재 사용자 권한은 `public."USER".is_admin` boolean 컬럼으로 구분한다.
 
 문의 기능을 위해 최소한 다음 데이터가 필요하다.
 
@@ -1067,10 +1057,6 @@ routa/finding_path/                         # ROUTA 애플리케이션 루트
 │   │       └── logger.mjs
 │   │
 │   └── package.json                        # 백엔드 의존성·명령어
-│
-├── database/                               # 최종 DB 스키마와 초기 데이터
-│   ├── schema.sql
-│   └── seed.sql
 │
 ├── docs/                                   # API·협업·팀원 작업 문서
 │   └── team-Project/

@@ -1,30 +1,62 @@
-import { useMemo, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useCallback, useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { usePlan } from "../../app/providers/planContext.js"
 import MealSelector from "../../features/planner/components/MealSelector.jsx"
 import RestaurantList from "../../features/restaurant/components/RestaurantList.jsx"
-import {
-  FOOD_CATEGORIES,
-  mockRestaurants,
-} from "../../features/restaurant/restaurant.mock.js"
+import { searchRestaurants } from "../../features/restaurant/restaurant.api.js"
 import styles from "./PlanMealsPage.module.css"
 
-// API 연동 전 시안과 선택 흐름을 확인하기 위한 초기 Mock 선택값입니다.
-// 실제 연동 시에는 PlanProvider의 lunch, dinner 값으로 교체합니다.
-const INITIAL_MEALS = {
-  lunch: mockRestaurants[0],
-  dinner: mockRestaurants[1],
-}
-
-// 점심과 저녁의 기본 방문 시간입니다. 식사 체류시간은 경로 요청에서 90분으로 전달합니다.
-const INITIAL_TIMES = {
-  lunch: "12:00",
-  dinner: "19:00",
-}
+const RESTAURANT_PAGE_SIZE = 6
+const PAGE_GROUP_SIZE = 5
 
 // 객체의 내부 키는 API 요청에 사용하고, 화면에는 한글 라벨을 표시합니다.
 const SLOT_META = {
   lunch: { label: "점심" },
   dinner: { label: "저녁" },
+}
+
+// 변경: 장소 선택 화면과 같은 개수의 페이지 번호를 보여 주기 위해 현재 페이지 주변 번호만 계산합니다.
+function getVisiblePages(currentPage, totalPages) {
+  const maxStartPage = Math.max(1, totalPages - PAGE_GROUP_SIZE + 1)
+  const startPage = Math.min(Math.max(1, currentPage - 2), maxStartPage)
+  const length = Math.min(PAGE_GROUP_SIZE, totalPages)
+
+  return Array.from({ length }, (_, index) => startPage + index)
+}
+
+function formatTimeWithPeriod(time) {
+  if (!time) return "시간을 선택해 주세요"
+
+  const [hour, minute] = time.split(":").map(Number)
+  const period = hour < 12 ? "오전" : "오후"
+  const displayHour = hour % 12 || 12
+
+  return `${period} ${String(displayHour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+}
+
+function formatLocation(address, placeName) {
+  if (address && placeName) return `${address} (${placeName})`
+  return address || placeName || "입력해 주세요"
+}
+
+/**
+ * 변경: DB PLACE 행의 camelCase 응답을 기존 RestaurantCard가 사용하는 화면 모델로 변환합니다.
+ * DB에는 음식 종류·소개글·구 단위 주소가 없으므로, 대분류·전체 주소·주소 앞부분을 대신 표시합니다.
+ */
+function toRestaurant(place) {
+  const address = place.address || "주소 정보 없음"
+
+  return {
+    placeId: place.placeId,
+    name: place.placeName,
+    categoryLabel: place.placeCategory,
+    district: address.split(" ").slice(0, 2).join(" "),
+    description: address,
+    rating: Number.isFinite(place.averageRating) ? place.averageRating : null,
+    // 요구사항대로 true는 가능, false 또는 누락값은 불가능으로만 표시합니다.
+    petAllowed: place.petIsAllowed === true,
+    imageUrl: place.thumbnailUrl || "",
+  }
 }
 
 /**
@@ -33,45 +65,86 @@ const SLOT_META = {
  */
 export default function PlanMealsPage() {
   const navigate = useNavigate()
-  const location = useLocation()
+  const { plan, updatePlan } = usePlan()
 
   // searchInput은 사용자가 입력 중인 값이고, keyword는 검색 버튼을 누른 뒤 적용된 값입니다.
   // 두 값을 분리해 입력할 때마다 결과 목록이 즉시 바뀌지 않도록 합니다.
   const [searchInput, setSearchInput] = useState("")
-  const [keyword, setKeyword] = useState("")
-  const [category, setCategory] = useState("ALL")
-
-  // 점심과 저녁 슬롯에 선택한 음식점 객체와 방문 시간을 각각 보관합니다.
-  const [selectedMeals, setSelectedMeals] = useState(INITIAL_MEALS)
-  const [mealTimes, setMealTimes] = useState(INITIAL_TIMES)
+  const [appliedKeyword, setAppliedKeyword] = useState("")
+  // 변경: Mock 배열 대신 GET /places?placeCategory=음식점 응답을 보관합니다.
+  const [restaurants, setRestaurants] = useState([])
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 0, totalItems: 0 })
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
 
   // 추가·삭제·선택 제한 등의 결과를 사용자에게 안내하는 메시지입니다.
   const [message, setMessage] = useState("")
+  // 변경: 점심·저녁 선택과 식사 시간을 전역 여행 계획에 저장해 결과 화면까지 같은 값을 사용합니다.
+  const selectedMeals = plan.meals
+  const mealTimes = plan.mealTimes
+
+  const updateMeals = (updater) => {
+    updatePlan((current) => ({ meals: updater(current.meals) }))
+  }
+
+  const updateMealTimes = (updater) => {
+    updatePlan((current) => ({ mealTimes: updater(current.mealTimes) }))
+  }
+
+  /**
+   * 변경: API 요청은 음식점 전용 모듈에만 맡기고, 페이지는 로딩·오류·페이지 누적 상태만 관리합니다.
+   * 장소 선택 화면과 동일하게 한 번에 한 페이지를 표시하므로, 페이지 번호를 누르면 해당 결과로 교체합니다.
+   */
+  const loadRestaurants = useCallback(async ({ keyword = "", page = 1 } = {}) => {
+    try {
+      setIsLoading(true)
+      setLoadError("")
+
+      const data = await searchRestaurants({
+        keyword,
+        page,
+        pageSize: RESTAURANT_PAGE_SIZE,
+      })
+      const nextRestaurants = data.places.map(toRestaurant)
+
+      setRestaurants(nextRestaurants)
+      setPagination(data.pagination)
+    } catch (error) {
+      setRestaurants([])
+      setLoadError(error.message || "음식점 목록을 불러오지 못했습니다.")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    // 변경: 초기 요청을 다음 이벤트 루프로 예약해 React Effect 안에서 동기 state 갱신이 발생하지 않게 합니다.
+    // 화면 진입 시 실제 DB의 첫 번째 음식점 페이지를 자동으로 표시하는 동작은 그대로 유지합니다.
+    const initialLoadTimer = window.setTimeout(() => {
+      loadRestaurants()
+    }, 0)
+
+    return () => window.clearTimeout(initialLoadTimer)
+  }, [loadRestaurants])
 
   // 선택된 음식점 목록과 ID 목록은 원본 상태에서 파생하므로 별도 state로 중복 저장하지 않습니다.
   const selectedRestaurants = Object.values(selectedMeals).filter(Boolean)
   const selectedPlaceIds = selectedRestaurants.map((restaurant) => restaurant.placeId)
 
-  // 검색어 또는 카테고리가 바뀔 때만 Mock 목록을 다시 필터링합니다.
-  const visibleRestaurants = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase()
-
-    return mockRestaurants.filter((restaurant) => {
-      const matchesCategory = category === "ALL" || restaurant.category === category
-      const matchesKeyword =
-        normalizedKeyword.length === 0 ||
-        restaurant.name.toLowerCase().includes(normalizedKeyword) ||
-        restaurant.district.toLowerCase().includes(normalizedKeyword) ||
-        restaurant.description.toLowerCase().includes(normalizedKeyword)
-
-      return matchesCategory && matchesKeyword
-    })
-  }, [category, keyword])
-
   function handleSearch(event) {
     event.preventDefault()
-    // 입력값을 확정된 검색어로 복사해 필터링을 실행합니다.
-    setKeyword(searchInput)
+    // 변경: 브라우저에서 Mock 배열을 필터링하지 않고, 입력한 검색어를 실제 DB API로 전송합니다.
+    const nextKeyword = searchInput.trim()
+    setAppliedKeyword(nextKeyword)
+    loadRestaurants({ keyword: nextKeyword })
+  }
+
+  function handlePageChange(page) {
+    // 변경: '더 보기' 누적 방식 대신 장소 선택 화면과 같은 페이지 번호 방식으로 이동합니다.
+    loadRestaurants({
+      keyword: appliedKeyword,
+      page,
+    })
   }
 
   /**
@@ -99,13 +172,15 @@ export default function PlanMealsPage() {
       return
     }
 
-    setSelectedMeals((current) => ({ ...current, [emptySlot]: restaurant }))
+    // 변경: 음식점 선택값을 페이지 local state가 아닌 전역 여행 계획에 반영합니다.
+    updateMeals((current) => ({ ...current, [emptySlot]: restaurant }))
     setMessage(`${restaurant.name}을(를) ${SLOT_META[emptySlot].label} 매장으로 추가했어요.`)
   }
 
   // 선택 해제 시 슬롯 키는 유지하고 음식점 값만 null로 바꿉니다.
   function handleRemove(slot) {
-    setSelectedMeals((current) => ({ ...current, [slot]: null }))
+    // 변경: 선택 해제도 전역 계획에 저장해 화면 이동 후에도 유지합니다.
+    updateMeals((current) => ({ ...current, [slot]: null }))
     setMessage(`${SLOT_META[slot].label} 매장 선택을 해제했어요.`)
   }
 
@@ -114,7 +189,8 @@ export default function PlanMealsPage() {
   function handleSwap(firstSlot, secondSlot) {
     if (!selectedMeals[firstSlot] || !selectedMeals[secondSlot]) return
 
-    setSelectedMeals((current) => ({
+    // 변경: 점심·저녁 순서 변경 결과를 전역 계획에 저장합니다.
+    updateMeals((current) => ({
       ...current,
       [firstSlot]: current[secondSlot],
       [secondSlot]: current[firstSlot],
@@ -124,11 +200,12 @@ export default function PlanMealsPage() {
 
   // 사용자가 선택 목록의 time input을 수정하면 해당 식사 슬롯의 시간만 갱신합니다.
   function handleTimeChange(slot, value) {
-    setMealTimes((current) => ({ ...current, [slot]: value }))
+    // 변경: 사용자가 변경한 식사 시간을 전역 계획에 저장합니다.
+    updateMealTimes((current) => ({ ...current, [slot]: value }))
   }
 
   /**
-   * 선택한 음식점을 React Router state에 API 요청과 비슷한 구조로 담아 결과 화면으로 이동합니다.
+   * 선택한 음식점은 PlanProvider에 저장되어 있으므로 결과 화면은 동일한 계획 상태를 읽을 수 있습니다.
    * 실제 API 연동 시에는 여기서 식사 조건 저장과 추천 계산 요청을 먼저 호출합니다.
    */
   function handleConfirmRoute() {
@@ -137,133 +214,158 @@ export default function PlanMealsPage() {
       return
     }
 
-    // 로그인 없이 시연하는 /dev 화면에서는 보호 Route를 거치지 않는 결과 화면으로 연결합니다.
-    const resultPath = location.pathname.startsWith("/dev/")
-      ? "/dev/course-result"
-      : "/course/result"
-
-    navigate(resultPath, {
-      state: {
-        meals: Object.entries(selectedMeals)
-          .filter(([, restaurant]) => restaurant)
-          .map(([slot, restaurant]) => ({
-            mealSlot: slot.toUpperCase(),
-            placeId: restaurant.placeId,
-            stayMinutes: 90,
-            scheduledTime: mealTimes[slot],
-          })),
-      },
-    })
+    // 변경: 식사 정보가 PlanProvider에 이미 있으므로 실제 결과 경로로 바로 이동합니다.
+    navigate("/course/result")
   }
 
   return (
     <main className={styles.page}>
-      <section className={styles.container}>
-        {/* 화면 제목과 여행 계획 진행 단계를 표시합니다. */}
-        <header className={styles.intro}>
-          <h1>어디서 식사하고 싶나요?</h1>
-          <p>원하시는 스타일의 맛집을 선택하시고 예약을 진행해 주세요.</p>
-        </header>
+      {/* 변경: 장소 선택 화면과 동일하게 제목·단계 표시를 페이지 최상단에 배치합니다. */}
+      <header className={styles.intro}>
+        <h1>어디서 식사하고 싶나요?</h1>
+        <p>원하시는 음식점을 선택하고 점심·저녁 시간을 정해 주세요.</p>
+      </header>
 
-        <ol className={styles.stepper} aria-label="여행 계획 진행 단계">
-          <li className={styles.complete}>
-            <span>✓</span>
-            여행 설정
-          </li>
-          <li className={styles.active} aria-current="step">
-            <span>2</span>
-            장소 · 테마
-          </li>
-          <li>
-            <span>3</span>
-            취향 · 식사
-          </li>
-        </ol>
+      <ol className={styles.stepper} aria-label="여행 계획 단계">
+        <li className={styles.completedStep}><span>✓</span>여행 설정</li>
+        <li className={styles.completedStep}><span>✓</span>장소 · 테마</li>
+        <li className={styles.currentStep} aria-current="step"><span>3</span>취향 · 식사</li>
+      </ol>
 
-        <div className={styles.topGrid}>
-          {/* 왼쪽 영역: 검색, 음식 종류 필터, 음식점 카드 목록 */}
-          <section className={styles.finder} aria-label="음식점 검색과 결과">
-            <form className={styles.searchBar} onSubmit={handleSearch}>
-              <label htmlFor="restaurant-keyword">음식점 검색</label>
-              <input
-                id="restaurant-keyword"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="한식, 일식, 지역명으로 검색해 주세요"
-              />
-              <button type="submit">검색</button>
-            </form>
-
-            <div className={styles.chips} aria-label="음식 종류 필터">
-              {FOOD_CATEGORIES.map((item) => (
-                <button
-                  className={category === item.value ? styles.chipActive : ""}
-                  key={item.value}
-                  type="button"
-                  aria-pressed={category === item.value}
-                  onClick={() => setCategory(item.value)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <RestaurantList
-              restaurants={visibleRestaurants}
-              selectedPlaceIds={selectedPlaceIds}
-              onToggle={handleToggleRestaurant}
+      <div className={styles.layout}>
+        {/* 변경: 장소 선택 화면의 왼쪽 콘텐츠 영역과 같은 폭·흐름으로 검색, 목록, 선택 목록을 배치합니다. */}
+        <section className={styles.content} aria-label="음식점 검색과 선택">
+          <form className={styles.searchBox} role="search" onSubmit={handleSearch}>
+            <label htmlFor="restaurant-keyword">음식점 검색</label>
+            <input
+              id="restaurant-keyword"
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="음식점명 또는 지역명으로 검색해 주세요"
             />
-          </section>
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? "검색 중" : "검색"}
+            </button>
+          </form>
 
-          {/* 오른쪽 영역: 현재 점심·저녁으로 선택된 매장을 간단히 요약합니다. */}
-          <aside className={styles.selectedSummary}>
-            <h2>선택된 매장 ({selectedRestaurants.length}개)</h2>
-            {selectedRestaurants.length === 0 ? (
-              <p className={styles.summaryEmpty}>선택한 매장이 없습니다.</p>
-            ) : (
+          <div className={styles.filters} aria-label="음식점 데이터 필터 상태">
+            <span className={styles.activeFilter}>전체 음식점</span>
+            {/* 변경: PLACE 테이블에는 한식·일식 등의 음식 종류 컬럼이 없어 실제로 동작하지 않는 필터는 표시하지 않습니다. */}
+            <span className={styles.categoryNotice}>음식 종류 정보는 아직 제공되지 않습니다.</span>
+          </div>
+
+          {isLoading && <p className={styles.statusMessage}>음식점 목록을 불러오는 중입니다.</p>}
+          {loadError && <p className={styles.statusMessage} role="alert">{loadError}</p>}
+          {!isLoading && !loadError && (
+            <>
+              <RestaurantList
+                restaurants={restaurants}
+                selectedPlaceIds={selectedPlaceIds}
+                onToggle={handleToggleRestaurant}
+              />
+
+              {/* 변경: 누적형 '더 보기' 대신 장소 선택 화면과 같은 이전·페이지 번호·다음 이동을 제공합니다. */}
+              {pagination.totalPages > 1 && (
+                <nav className={styles.pagination} aria-label="음식점 목록 페이지">
+                  <button
+                    type="button"
+                    disabled={pagination.page === 1}
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                  >
+                    이전
+                  </button>
+                  {getVisiblePages(pagination.page, pagination.totalPages).map((page) => (
+                    <button
+                      className={page === pagination.page ? styles.currentPage : ""}
+                      key={page}
+                      type="button"
+                      aria-current={page === pagination.page ? "page" : undefined}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={pagination.page === pagination.totalPages}
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                  >
+                    다음
+                  </button>
+                </nav>
+              )}
+            </>
+          )}
+
+          {/* 변경: 장소 선택 화면의 '선택한 필수 방문 장소' 영역처럼 선택 매장을 목록으로 확인·수정합니다. */}
+          <MealSelector
+            selectedMeals={selectedMeals}
+            mealTimes={mealTimes}
+            onRemove={handleRemove}
+            onSwap={handleSwap}
+            onTimeChange={handleTimeChange}
+          />
+
+          {message && <p className={styles.message} role="status">{message}</p>}
+
+          <div className={styles.actions}>
+            <button
+              className={styles.cancelButton}
+              type="button"
+              onClick={() => navigate("/planner/places")}
+            >
+              이전
+            </button>
+            <button className={styles.nextButton} type="button" onClick={handleConfirmRoute}>
+              경로 확인
+            </button>
+          </div>
+        </section>
+
+        {/* 변경: 장소 선택 화면과 같은 우측 여행 조건 요약을 제공해 단계 간 화면 밀도를 맞춥니다. */}
+        <aside className={styles.summary} aria-label="입력한 여행 조건">
+          <h2>입력한 여행 조건</h2>
+          <dl>
+            <div>
+              <dt>▥ 여행 성격</dt>
+              <dd>{plan.tripType === "PET" ? "반려동물 여행" : plan.tripType === "GENERAL" ? "일반 여행" : "선택해 주세요"}</dd>
+            </div>
+            <div><dt>▦ 날짜</dt><dd>{plan.date || "날짜를 선택해 주세요"}</dd></div>
+            <div><dt>▣ 교통 기준</dt><dd>{plan.transport || "교통 기준을 선택해주세요"}</dd></div>
+            <div><dt>⌖ 출발 위치</dt><dd>{formatLocation(plan.startAddress, plan.startLocation)}</dd></div>
+            <div><dt>⌖ 종료 위치</dt><dd>{formatLocation(plan.endAddress, plan.endLocation)}</dd></div>
+            <div>
+              <dt>◷ 여행 시간</dt>
+              <dd>{formatTimeWithPeriod(plan.startTime)} {" ~ "} {formatTimeWithPeriod(plan.endTime)}</dd>
+            </div>
+          </dl>
+
+          <section className={styles.summarySection} aria-label="선택한 식사 요약">
+            <div className={styles.summaryTitle}>
+              <span>♜ 선택한 식사</span>
+              <strong>{selectedRestaurants.length}개</strong>
+            </div>
+            {selectedRestaurants.length > 0 ? (
               <ul>
-                {Object.entries(selectedMeals).map(([slot, restaurant]) =>
+                {Object.entries(selectedMeals).map(([slot, restaurant]) => (
                   restaurant ? (
                     <li key={slot}>
-                      <strong>{restaurant.name}</strong>
-                      <span>{mealTimes[slot]} ({SLOT_META[slot].label})</span>
+                      <span>{restaurant.name}</span>
+                      <time>{mealTimes[slot]} ({SLOT_META[slot].label})</time>
                     </li>
-                  ) : null,
-                )}
+                  ) : null
+                ))}
               </ul>
+            ) : (
+              <p className={styles.summaryEmpty}>음식점을 선택해 주세요.</p>
             )}
-          </aside>
-        </div>
+          </section>
 
-        {message && <p className={styles.message} role="status">{message}</p>}
-
-        {/* 선택 매장의 순서, 방문 시간, 삭제 기능을 담당하는 하위 컴포넌트입니다. */}
-        <MealSelector
-          selectedMeals={selectedMeals}
-          mealTimes={mealTimes}
-          onRemove={handleRemove}
-          onSwap={handleSwap}
-          onTimeChange={handleTimeChange}
-        />
-
-        {/* 취소는 여행 조건 화면으로, 경로 확인은 선택 내용을 가진 결과 화면으로 이동합니다. */}
-        <div className={styles.actions}>
-          <button
-            className={styles.cancel}
-            type="button"
-            onClick={() => navigate("/planner/condition")}
-          >
-            취소
-          </button>
-          <button
-            className={styles.confirm}
-            type="button"
-            onClick={handleConfirmRoute}
-          >
-            경로 확인
-          </button>
-        </div>
-      </section>
+          <div className={styles.summaryRow}><span>⌖ 필수 방문 장소</span><strong>{plan.selectedPlaces.length}개 선택</strong></div>
+          <div className={styles.summaryRow}><span>♥ 관심 테마</span><strong>다음 단계에서 선택</strong></div>
+        </aside>
+      </div>
     </main>
   )
 }

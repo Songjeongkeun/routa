@@ -64,6 +64,7 @@ export async function searchLocation(keyword) {
 
 export async function searchPlaces({
   keyword,
+  placeCategory,
   page,
   pageSize,
   tripType,
@@ -75,6 +76,9 @@ export async function searchPlaces({
   endTime,
 }) {
   const normalizedKeyword = keyword?.trim() || null
+  // 변경: 빈 문자열은 필터 없음으로 처리하고, 값이 있을 때만 PLACE.place_category와 정확히 비교합니다.
+  // 음식점 화면은 이 값으로 "음식점"을 보내므로 카페·관광명소 등이 섞이지 않습니다.
+  const normalizedPlaceCategory = placeCategory?.trim() || null
   const petOnly = tripType === "PET"
   const closedWeekday = getKoreanWeekday(travelDate)
   const normalizedStartTime = normalizeTime(startTime, "시작 시간")
@@ -101,6 +105,7 @@ export async function searchPlaces({
 
   const { places, totalItems } = await placeRepository.findPlaces({
     keyword: normalizedKeyword,
+    placeCategory: normalizedPlaceCategory,
     petOnly,
     closedWeekday,
     startTime: normalizedStartTime,
