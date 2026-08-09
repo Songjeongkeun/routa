@@ -8,6 +8,9 @@ import path from "path"
 import userRouter from "./modules/users/user.router.mjs"
 import adminRouter from "./modules/admin/admin.router.mjs"
 import placeRouter from "./modules/places/place.router.mjs"
+import tripRouter from "./modules/trips/trip.router.mjs"
+import recommendationRouter from "./modules/recommendations/recommendation.router.mjs"
+import itineraryRouter from "./modules/itineraries/itinerary.router.mjs"
 
 const app = express()
 
@@ -25,6 +28,10 @@ app.use("/auth", authRouter)
 app.use("/users", userRouter)
 app.use("/admin", adminRouter)
 app.use("/places", placeRouter)
+// 변경: 계획 저장 → 추천 생성 → 일정 조회가 실제 HTTP 경로로 연결되도록 각 도메인 router를 등록합니다.
+app.use("/trip-plans", tripRouter)
+app.use("/recommendations", recommendationRouter)
+app.use("/itineraries", itineraryRouter)
 app.use(notFound)
 app.use(errorHandler)
 

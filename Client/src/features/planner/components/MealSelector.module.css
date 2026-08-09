@@ -30,6 +30,30 @@
   gap: 10px;
 }
 
+/* 변경: 식사 슬롯별 방식 선택과 결과 내용을 하나의 그룹으로 묶습니다. */
+.modeGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.modeControl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #24324f;
+  font-size: 13px;
+}
+
+.modeControl select {
+  min-width: 150px;
+  padding: 7px 9px;
+  border: 1px solid #d8def0;
+  border-radius: 8px;
+  color: #24324f;
+  background: #fff;
+}
+
 .row {
   min-height: 48px;
   display: flex;

@@ -19,7 +19,10 @@ export async function apiRequest(path, options = {}) {
       : await response.text()
 
   if (!response.ok) {
-    throw new Error(data?.message ?? "요청을 처리하지 못했습니다.")
+    const error = new Error(data?.message ?? "요청을 처리하지 못했습니다.")
+    // 변경: 일정 재계산의 422 응답에는 장소별 제약 사유가 있으므로 호출 화면까지 함께 전달합니다.
+    error.conflicts = Array.isArray(data?.conflicts) ? data.conflicts : []
+    throw error
   }
 
   return data

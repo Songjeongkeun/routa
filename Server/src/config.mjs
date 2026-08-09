@@ -40,6 +40,12 @@ export const config = {
             callbackUrl: required("KAKAO_CALLBACK_URL"),
         },
     },
+    odsay: {
+        // 변경: ODsay 키는 브라우저가 아닌 Express 서버만 사용합니다.
+        // 아직 키를 발급·등록하지 않은 개발 환경도 서버 자체는 실행할 수 있게 두고,
+        // 실제 추천 요청 시 provider에서 설정 방법을 안내하는 503 오류를 반환합니다.
+        serverApiKey: process.env.ODSAY_SERVER_API_KEY ?? "",
+    },
     cookie: {
         secure: process.env.NODE_ENV === "production",
     },
