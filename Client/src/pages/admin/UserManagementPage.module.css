@@ -231,6 +231,29 @@
   text-align: center;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #69748d;
+}
+
+.pagination button {
+  padding: 6px 14px;
+  border: 1px solid #e3e5ec;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  color: #c4c9d4;
+  cursor: not-allowed;
+}
+
 @media (max-width: 900px) {
   .contentGrid {
     grid-template-columns: 1fr;

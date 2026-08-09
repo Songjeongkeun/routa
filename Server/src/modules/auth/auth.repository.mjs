@@ -118,6 +118,14 @@ USING public."USER" u
   return result.rows[0]
 }
 
+/** 휴면 계정이 재로그인하면 자동으로 활성 상태로 복귀 */
+export async function reactivateUser(userId) {
+  await query(
+    `UPDATE public."USER" SET account_status = 'ACTIVE' WHERE user_id = $1`,
+    [userId],
+  )
+}
+
 /**
  * 로그아웃 시 해당 리프레시 토큰을 DB에서 삭제해 더 이상 갱신에 쓸 수 없게 만든다.
  * logout()에서 호출됨

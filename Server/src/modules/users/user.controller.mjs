@@ -33,3 +33,24 @@ export async function updateIntroduction(req, res) {
         return res.status(status).json({ message: error.status ? error.message : "자기소개 변경에 실패했습니다." })
     }
 }
+
+export async function withdraw(req, res) {
+  try {
+    await userService.withdraw(req.userId)
+    return res.sendStatus(204)
+  } catch (error) {
+    console.error("회원 탈퇴 오류: ", error)
+    return res.status(500).json({ message: "회원 탈퇴에 실패했습니다." })
+  }
+}
+
+export async function changePassword(req, res) {
+    try {
+        await userService.changePassword(req.userId, req.body)
+        return res.sendStatus(204)
+    } catch (error) {
+        const status = error.status ?? 500
+        if (status >= 500) console.error("비밀번호 변경 오류: ", error)
+        return res.status(status).json({ message: error.status ? error.message : "비밀번호 변경에 실패했습니다." })
+    }
+}
