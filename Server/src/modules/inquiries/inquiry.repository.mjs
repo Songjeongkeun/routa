@@ -14,13 +14,25 @@ export async function findInquiriesByUser({ userId, keyword, status }) {
   }
 
   const result = await query(
-    `SELECT inquiry_id, title, status, created_at, answered_at
+    `SELECT inquiry_id, title, content, status, created_at, answered_at, answer_content
      FROM public."INQUIRY"
      WHERE ${conditions.join(" AND ")}
      ORDER BY created_at DESC`,
     params,
   )
   return result.rows
+}
+
+export async function findInquiryByIdWithRequester(inquiryId) {
+  const result = await query(
+    `SELECT i.*, u.nickname AS requester_name, u.email AS requester_email,
+            u.profile_image_url AS requester_profile_image_url
+     FROM public."INQUIRY" i
+     JOIN public."USER" u ON u.user_id = i.user_id
+     WHERE i.inquiry_id = $1`,
+    [inquiryId],
+  )
+  return result.rows[0] ?? null
 }
 
 export async function createInquiry({ userId, title, content }) {
@@ -39,15 +51,18 @@ export async function findAllInquiries({ status }) {
 
   if (status) {
     params.push(status)
-    conditions.push(`status = $${params.length}`)
+    conditions.push(`i.status = $${params.length}`)
   }
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : ""
 
   const result = await query(
-    `SELECT inquiry_id, user_id, title, status, content, created_at, answered_at
-     FROM public."INQUIRY"
+    `SELECT i.inquiry_id, i.user_id, i.title, i.status, i.content, i.created_at, i.answered_at,
+            u.nickname AS requester_name, u.email AS requester_email,
+            u.profile_image_url AS requester_profile_image_url
+     FROM public."INQUIRY" i
+     JOIN public."USER" u ON u.user_id = i.user_id
      ${whereClause}
-     ORDER BY created_at DESC`,
+     ORDER BY i.created_at DESC`,
     params,
   )
   return result.rows

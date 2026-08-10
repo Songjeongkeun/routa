@@ -50,7 +50,7 @@ export async function getAllInquiries({ status }) {
 }
 
 export async function getInquiryDetailForAdmin(inquiryId) {
-  const inquiry = await inquiryRepository.findInquiryById(inquiryId);
+  const inquiry = await inquiryRepository.findInquiryByIdWithRequester(inquiryId);
   if (!inquiry) {
     throw new ServiceError("NOT_FOUND", "문의를 찾을 수 없습니다.");
   }
