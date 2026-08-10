@@ -33,17 +33,6 @@ function normalizeTime(value, fieldName) {
   return value
 }
 
-function normalizeCoordinate(value, fieldName) {
-  if (value == null || value === "") return null
-  const coordinate = Number(value)
-  if (!Number.isFinite(coordinate)) {
-    const error = new Error(`${fieldName} 형식이 올바르지 않습니다.`)
-    error.status = 400
-    throw error
-  }
-  return coordinate
-}
-
 export async function searchLocation(keyword) {
   const normalizedKeyword = keyword?.trim()
   if (!normalizedKeyword) {
@@ -69,9 +58,6 @@ export async function searchPlaces({
   pageSize,
   tripType,
   travelDate,
-  startLocation,
-  startLatitude,
-  startLongitude,
   startTime,
   endTime,
 }) {
@@ -83,25 +69,11 @@ export async function searchPlaces({
   const closedWeekday = getKoreanWeekday(travelDate)
   const normalizedStartTime = normalizeTime(startTime, "시작 시간")
   const normalizedEndTime = normalizeTime(endTime, "종료 시간")
-  const normalizedStartLocation = startLocation?.trim() || null
-  const normalizedStartLatitude = normalizeCoordinate(startLatitude, "출발지 위도")
-  const normalizedStartLongitude = normalizeCoordinate(startLongitude, "출발지 경도")
   const normalizedPage = toPositiveInteger(page, 1)
   const normalizedPageSize = Math.min(
     toPositiveInteger(pageSize, DEFAULT_PAGE_SIZE),
     MAX_PAGE_SIZE,
   )
-
-  const hasResolvedCoordinates = normalizedStartLatitude != null && normalizedStartLongitude != null
-  const origin = normalizedStartLocation && !hasResolvedCoordinates
-    ? await placeRepository.findCoordinatesByLocation(normalizedStartLocation)
-    : null
-
-  if (normalizedStartLocation && !hasResolvedCoordinates && !origin) {
-    const error = new Error("출발 위치의 좌표를 찾을 수 없습니다.")
-    error.status = 400
-    throw error
-  }
 
   const { places, totalItems } = await placeRepository.findPlaces({
     keyword: normalizedKeyword,
@@ -110,8 +82,6 @@ export async function searchPlaces({
     closedWeekday,
     startTime: normalizedStartTime,
     endTime: normalizedEndTime,
-    originLatitude: normalizedStartLatitude ?? origin?.latitude ?? null,
-    originLongitude: normalizedStartLongitude ?? origin?.longitude ?? null,
     limit: normalizedPageSize,
     offset: (normalizedPage - 1) * normalizedPageSize,
   })
