@@ -30,7 +30,8 @@
 }
 
 .sideColumn {
-  margin-top: -85px;
+  /* 변경: 가짜 통계 카드를 제거한 뒤에도 우측 보안 카드가 자연스럽게 시작하도록 음수 여백을 없앱니다. */
+  margin-top: 0;
 }
 
 .mainColumn,
@@ -251,6 +252,30 @@
   cursor: pointer;
 }
 
+/* 변경: 실제 API와 연결된 저장 일정 수만 표시하는 프로필 요약 카드입니다. */
+.scheduleSummaryCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid #eceef3;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.scheduleSummaryCard p,
+.scheduleSummaryCard span { display: block; margin: 0; color: #69748d; font-size: 13px; }
+.scheduleSummaryCard strong { display: block; margin: 4px 0; color: #17213a; font-size: 24px; }
+.scheduleSummaryCard button,
+.nextPlanCard button { border: 1px solid #6447ff; border-radius: 10px; padding: 10px 13px; color: #6447ff; background: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+/* 변경: 서버에 없는 여행 기록·취향 대신 실제 일정 생성 흐름으로 이어지는 안내를 제공합니다. */
+.nextPlanCard { padding: 26px; border: 1px solid #eceef3; border-radius: 16px; background: #fff; }
+.nextPlanCard h2 { margin: 0; font-size: 19px; }
+.nextPlanCard p { margin: 10px 0 18px; color: #69748d; font-size: 14px; line-height: 1.6; }
+.nextPlanCard button { border-color: #6447ff; color: #fff; background: #6447ff; }
+
 .withdrawButton {
   color: #e5484d !important;
 }
@@ -341,6 +366,9 @@
   .statsRow {
     grid-template-columns: 1fr;
   }
+
+  .scheduleSummaryCard { grid-template-columns: auto minmax(0, 1fr); }
+  .scheduleSummaryCard button { grid-column: 1 / -1; width: 100%; }
 }
 
 .modalOverlay {

@@ -112,6 +112,38 @@
   font: inherit;
 }
 
+/* 변경: 지정·주변 추천 식사 모두에 공통으로 보이는 도착 희망 시각 영역입니다. */
+.mealTimeControl {
+  display: grid;
+  grid-template-columns: auto 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 11px;
+  border: 1px solid #e0e5f0;
+  border-radius: 8px;
+  color: #344263;
+  background: #fafbff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mealTimeControl input {
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid #d8def0;
+  border-radius: 6px;
+  color: inherit;
+  background: #fff;
+  font: inherit;
+}
+
+.mealTimeControl small {
+  color: #72809b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .remove {
   width: 28px;
   height: 28px;
@@ -144,5 +176,13 @@
   .timeControl {
     width: 100%;
     margin-left: 28px;
+  }
+
+  .mealTimeControl {
+    grid-template-columns: 1fr 82px;
+  }
+
+  .mealTimeControl small {
+    grid-column: 1 / -1;
   }
 }

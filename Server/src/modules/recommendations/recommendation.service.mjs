@@ -13,6 +13,8 @@ import {
 import { evaluatePlaceVisit } from "../../utils/placeSchedule.mjs"
 
 const COURSE_TYPES = ["SHORTEST_WALK", "FASTEST_TRANSIT", "BALANCED"]
+// 변경: Branch-and-Bound 완전 탐색의 입력 크기를 안전하게 제한하기 위해 방문 장소를 최대 5곳으로 유지합니다.
+const MAX_VISIT_STOPS = 5
 
 function createHttpError(message, status = 400) {
   const error = new Error(message)
@@ -56,6 +58,24 @@ function parseStoredJson(value, fallback) {
 function minDate(...values) {
   const dates = values.filter(Boolean).map((value) => new Date(value))
   return dates.length > 0 ? new Date(Math.min(...dates.map((date) => date.getTime()))) : null
+}
+
+// 변경: 위치를 선택하지 않은 경우에는 START·END 경계 노드를 만들지 않습니다.
+// 좌표가 문자열로 조회되는 환경도 있어 Number 변환 후 유효성을 확인합니다.
+function hasCoordinates(place) {
+  if (place?.latitude == null || place?.longitude == null) return false
+  return Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude))
+}
+
+// 변경: 출발 위치 없이 첫 실제 장소에서 일정을 시작할 때는 이동 시간·거리·요금이 없습니다.
+function createInitialLeg() {
+  return {
+    durationMinutes: 0,
+    walkingDistanceMeters: 0,
+    transferCount: 0,
+    estimatedFare: 0,
+    source: "NO_START_LOCATION",
+  }
 }
 
 function formatTime(value) {
@@ -127,19 +147,6 @@ function evaluateMealArrival({ travelArrivalTime, constraint, meal }) {
   }
 }
 
-function getCandidateScore({ toVisit, toMeal }, courseType) {
-  const totalDuration = toVisit.durationMinutes + toMeal.durationMinutes
-  const totalWalking = toVisit.walkingDistanceMeters + toMeal.walkingDistanceMeters
-  const totalTransfer = toVisit.transferCount + toMeal.transferCount
-  const totalFare = toVisit.estimatedFare + toMeal.estimatedFare
-
-  if (courseType === "SHORTEST_WALK") return totalWalking * 1_000 + totalDuration
-  if (courseType === "FASTEST_TRANSIT") return totalDuration * 1_000 + totalTransfer * 10 + totalWalking / 1_000
-
-  // 변경: 추천 코스는 기획서의 시간 0.7·거리 0.3 비율을 기본으로 환승과 요금을 작은 보정값으로 사용합니다.
-  return totalDuration * 0.7 + (totalWalking / 1_000) * 0.3 + totalTransfer * 8 + totalFare / 500
-}
-
 async function getRouteLeg({ from, to, courseType, routeAlternativesByPlacePair }) {
   const pairKey = `${from.placeId}:${to.placeId}`
   let alternatives = routeAlternativesByPlacePair.get(pairKey)
@@ -172,62 +179,6 @@ async function getRouteLeg({ from, to, courseType, routeAlternativesByPlacePair 
   return route
 }
 
-async function chooseVisitBeforeMeal({
-  currentPlace,
-  currentTime,
-  remainingVisits,
-  meal,
-  mealConstraint,
-  courseType,
-  plan,
-  routeAlternativesByPlacePair,
-}) {
-  const candidates = []
-
-  for (const visit of remainingVisits) {
-    const toVisit = await getRouteLeg({
-      from: currentPlace,
-      to: visit,
-      courseType,
-      routeAlternativesByPlacePair,
-    })
-    const visitArrivalTime = addMinutes(
-      currentTime,
-      toVisit.durationMinutes + getTravelBufferMinutes({ route: toVisit, withPet: plan.withPet }),
-    )
-    // 변경: 식사 전 관광지 후보도 실제 도착 시각으로 운영 조건을 확인합니다.
-    const visitTiming = evaluatePlaceVisit({
-      plan,
-      place: visit,
-      travelArrivalTime: visitArrivalTime,
-      stayMinutes: visit.stayMinutes,
-    })
-    if (!visitTiming.isFeasible) continue
-
-    const toMeal = await getRouteLeg({
-      from: visit,
-      to: meal,
-      courseType,
-      routeAlternativesByPlacePair,
-    })
-    const mealTravelArrivalTime = addMinutes(
-      visitTiming.departureTime,
-      toMeal.durationMinutes + getTravelBufferMinutes({ route: toMeal, withPet: plan.withPet }),
-    )
-    const mealTiming = evaluateMealArrival({
-      travelArrivalTime: mealTravelArrivalTime,
-      constraint: mealConstraint,
-      meal,
-    })
-
-    if (mealTiming.isFeasible) candidates.push({ visit, toVisit, toMeal })
-  }
-
-  return candidates.sort((first, second) =>
-    getCandidateScore(first, courseType) - getCandidateScore(second, courseType),
-  )[0] ?? null
-}
-
 function distanceKm(first, second) {
   const toRadians = (value) => Number(value) * Math.PI / 180
   const latitudeDifference = toRadians(second.latitude - first.latitude)
@@ -242,9 +193,27 @@ function distanceKm(first, second) {
  * 변경: 주변 추천 식사는 현재 장소와 다음 방문 후보 양쪽에서 500m를 먼저 찾고,
  * 없을 때만 1km로 넓힙니다. 두 위치 중 가까운 쪽과 평점을 함께 사용해 우회 가능성을 줄입니다.
  */
-async function selectNearbyMeal({ meal, currentPlace, currentTime, remainingVisits, plan }) {
-  const nextPlace = sortByDistanceFrom(currentPlace, remainingVisits)[0] ?? null
+async function selectNearbyMeal({
+  meal,
+  currentPlace,
+  currentTime,
+  remainingVisits,
+  plan,
+  usedMealPlaceIds,
+}) {
+  // 변경: 출발 위치가 없을 때는 첫 방문 후보를 주변 음식점 추천의 기준점으로 사용합니다.
+  // 방문 장소도 없으면 "주변"을 판단할 기준이 없으므로 아래에서 지정 음식점을 안내합니다.
+  const nextPlace = currentPlace
+    ? sortByDistanceFrom(currentPlace, remainingVisits)[0] ?? null
+    : remainingVisits[0] ?? null
   const anchors = [currentPlace, nextPlace].filter(Boolean)
+
+  if (anchors.length === 0) {
+    throw createConstraintError([{
+      code: "NEARBY_MEAL_ANCHOR_MISSING",
+      message: "출발 위치와 방문 장소가 없어 주변 음식점을 추천할 기준이 없습니다. 지정 음식점을 선택하거나 방문 장소를 추가해 주세요.",
+    }])
+  }
 
   for (const radiusKm of [0.5, 1]) {
     const candidatesById = new Map()
@@ -254,6 +223,9 @@ async function selectNearbyMeal({ meal, currentPlace, currentTime, remainingVisi
         longitude: anchor.longitude,
         radiusKm,
         withPet: plan.withPet,
+        // 변경: 점심·저녁이 같은 자동 추천 음식점을 사용하지 않도록,
+        // 현재 코스에서 이미 식사로 사용한 모든 placeId를 DB 조회 전에 제외합니다.
+        excludePlaceIds: [...usedMealPlaceIds],
       })
       candidates.forEach((candidate) => candidatesById.set(Number(candidate.placeId), candidate))
     }
@@ -288,6 +260,313 @@ async function selectNearbyMeal({ meal, currentPlace, currentTime, remainingVisi
   }])
 }
 
+// 변경: 세 코스의 이동 기준에 불필요한 대기 시간을 보정해 Branch-and-Bound의 현재 비용을 계산합니다.
+// 이후에 추가될 이동·대기 비용은 모두 0 이상이므로, 이 값이 이미 최적 점수보다 크면 안전하게 가지를 버릴 수 있습니다.
+function getCourseScore({ summary, idleMinutes = 0 }, courseType) {
+  if (courseType === "SHORTEST_WALK") {
+    return summary.walkingDistanceMeters * 1_000 + summary.totalMinutes + idleMinutes * 10
+  }
+  if (courseType === "FASTEST_TRANSIT") {
+    return summary.totalMinutes * 1_000
+      + summary.transferCount * 10
+      + summary.walkingDistanceMeters / 1_000
+      // 변경: 식사 시간까지 몇 시간 대기하는 경로가 이동시간만 짧다는 이유로 선택되지 않게 합니다.
+      + idleMinutes * 100
+  }
+  return summary.totalMinutes * 0.7
+    + (summary.walkingDistanceMeters / 1_000) * 0.3
+    + summary.transferCount * 8
+    + summary.estimatedFare / 500
+    + idleMinutes * 0.5
+}
+
+function createInitialSearchState({ startPlace, plan, meals }) {
+  const hasStartPlace = Boolean(startPlace)
+  const startNode = hasStartPlace ? { ...startPlace, nodeType: "START", stayMinutes: 0 } : null
+
+  return {
+    currentPlace: startNode,
+    currentTime: new Date(plan.startTime),
+    nodes: startNode
+      ? [{
+        placeId: startNode.placeId,
+        visitOrder: 1,
+        nodeType: "START",
+        arrivalTime: new Date(plan.startTime).toISOString(),
+        departureTime: new Date(plan.startTime).toISOString(),
+        stayMinutes: 0,
+      }]
+      : [],
+    summary: {
+      totalMinutes: 0,
+      walkingDistanceMeters: 0,
+      transferCount: 0,
+      estimatedFare: 0,
+    },
+    warnings: [],
+    usedWalkingFallback: false,
+    // 변경: UI의 이동시간 합계와 분리해, 식사·영업 시작 전 불필요한 대기 시간을 최적화 점수에 반영합니다.
+    idleMinutes: 0,
+    // 변경: 지정 음식점은 처음부터 사용 중으로 기록해 주변 추천 식당과 중복되지 않게 합니다.
+    usedMealPlaceIds: new Set(
+      meals
+        .filter((meal) => meal.mode === "DESIGNATED" && Number.isSafeInteger(Number(meal.placeId)))
+        .map((meal) => Number(meal.placeId)),
+    ),
+  }
+}
+
+function appendSearchWarning(warnings, message) {
+  return warnings.includes(message) ? warnings : [...warnings, message]
+}
+
+/**
+ * 변경: 한 탐색 가지에서 다음 장소 하나를 방문했을 때의 시간·제약·이동 수치를 계산합니다.
+ * 불가능한 장소는 예외를 전파하지 않고 null을 반환해 해당 Branch를 즉시 종료합니다.
+ */
+async function createSearchTransition({
+  state,
+  stop,
+  courseType,
+  plan,
+  routeAlternativesByPlacePair,
+}) {
+  let travelArrivalTime = new Date(state.currentTime)
+  let leg = createInitialLeg()
+
+  if (state.currentPlace) {
+    leg = await getRouteLeg({
+      from: state.currentPlace,
+      to: stop,
+      courseType,
+      routeAlternativesByPlacePair,
+    })
+    const bufferMinutes = getTravelBufferMinutes({ route: leg, withPet: plan.withPet })
+    travelArrivalTime = addMinutes(state.currentTime, leg.durationMinutes + bufferMinutes)
+  }
+
+  let visitStart = travelArrivalTime
+  let departureTime = travelArrivalTime
+  let idleMinutes = 0
+  let warnings = state.warnings
+
+  if (stop.nodeType === "MEAL") {
+    const mealConstraint = createMealConstraint({ plan, meal: stop })
+    const mealTiming = evaluateMealArrival({
+      travelArrivalTime,
+      constraint: mealConstraint,
+      meal: stop,
+    })
+    if (!mealTiming.isFeasible) return null
+
+    visitStart = mealTiming.visitStart
+    if (mealTiming.waitMinutes > 0) {
+      warnings = appendSearchWarning(
+        warnings,
+        `${getMealLabel(stop.mealSlot)} 식사 전 ${mealTiming.waitMinutes}분의 대기 시간이 포함됩니다.`,
+      )
+    }
+  }
+
+  if (stop.nodeType !== "END") {
+    const placeTiming = evaluatePlaceVisit({
+      plan,
+      place: stop,
+      travelArrivalTime,
+      stayMinutes: stop.stayMinutes,
+      requestedStart: stop.nodeType === "MEAL" ? visitStart : null,
+      enforceLastOrder: stop.nodeType === "MEAL",
+    })
+    if (!placeTiming.isFeasible) return null
+    visitStart = placeTiming.visitStart
+    departureTime = placeTiming.departureTime
+    idleMinutes = placeTiming.waitMinutes
+  }
+
+  // 변경: 현재 시간이 이미 여행 종료 시각을 넘은 가지는 이후에 더 좋아질 수 없으므로 즉시 잘라냅니다.
+  if (departureTime > new Date(plan.endTime)) return null
+
+  const nextSummary = {
+    totalMinutes: state.summary.totalMinutes + leg.durationMinutes,
+    walkingDistanceMeters: state.summary.walkingDistanceMeters + leg.walkingDistanceMeters,
+    transferCount: state.summary.transferCount + leg.transferCount,
+    estimatedFare: state.summary.estimatedFare + leg.estimatedFare,
+  }
+
+  return {
+    ...state,
+    currentPlace: stop,
+    currentTime: departureTime,
+    nodes: [...state.nodes, {
+      placeId: stop.placeId,
+      visitOrder: state.nodes.length + 1,
+      nodeType: stop.nodeType,
+      arrivalTime: visitStart.toISOString(),
+      departureTime: departureTime.toISOString(),
+      stayMinutes: stop.stayMinutes,
+    }],
+    summary: nextSummary,
+    warnings,
+    usedWalkingFallback: state.usedWalkingFallback || leg.source === "WALK_FALLBACK",
+    idleMinutes: state.idleMinutes + idleMinutes,
+  }
+}
+
+/**
+ * 변경: 최대 방문 5곳·식사 2곳(총 7곳) 범위에서 모든 유효한 순서를 Branch-and-Bound로 탐색합니다.
+ * 방문지는 어느 순서로도 분기하고, 식사는 점심→저녁 시간 순서를 유지합니다.
+ */
+async function buildCourseByBranchAndBound({
+  courseType,
+  startPlace,
+  endPlace,
+  visits,
+  meals,
+  plan,
+  routeAlternativesByPlacePair,
+}) {
+  const orderedMeals = [...meals]
+    .filter((meal) => meal.mode !== "SKIP")
+    .sort((firstMeal, secondMeal) => firstMeal.scheduledTime.localeCompare(secondMeal.scheduledTime))
+  const initialState = createInitialSearchState({ startPlace, plan, meals: orderedMeals })
+  const nearbyMealByContext = new Map()
+  const searchStats = { explored: 0, prunedByBound: 0, prunedByConstraint: 0 }
+  let bestState = null
+  let bestScore = Number.POSITIVE_INFINITY
+
+  async function resolveNearbyMeal(state, meal, remainingVisits) {
+    const key = [
+      meal.mealSlot,
+      state.currentPlace?.placeId ?? "NO_START",
+      state.currentTime.getTime(),
+      remainingVisits.map((visit) => visit.placeId).sort((first, second) => Number(first) - Number(second)).join(","),
+      [...state.usedMealPlaceIds].sort((first, second) => first - second).join(","),
+    ].join(":")
+    if (nearbyMealByContext.has(key)) return nearbyMealByContext.get(key)
+
+    try {
+      const resolvedMeal = await selectNearbyMeal({
+        meal,
+        currentPlace: state.currentPlace,
+        currentTime: state.currentTime,
+        remainingVisits,
+        plan,
+        usedMealPlaceIds: state.usedMealPlaceIds,
+      })
+      nearbyMealByContext.set(key, resolvedMeal)
+      return resolvedMeal
+    } catch (error) {
+      // 변경: 주변 음식점 후보가 없거나 영업 조건을 만족하지 않은 422만 현재 가지를 끝냅니다.
+      // DB·ODsay 같은 시스템 오류는 숨기지 않고 기존 오류 처리기로 전달합니다.
+      if (error.status !== 422) throw error
+      nearbyMealByContext.set(key, null)
+      return null
+    }
+  }
+
+  async function explore(state, remainingVisits, remainingMeals) {
+    const currentScore = getCourseScore(state, courseType)
+    // 변경: 모든 이동 수치는 음수가 아니므로 현재 점수만으로도 안전한 하한(bound)이 됩니다.
+    if (currentScore >= bestScore) {
+      searchStats.prunedByBound += 1
+      return
+    }
+
+    if (remainingVisits.length === 0 && remainingMeals.length === 0) {
+      const completedState = endPlace
+        ? await createSearchTransition({
+          state,
+          stop: { ...endPlace, nodeType: "END", stayMinutes: 0 },
+          courseType,
+          plan,
+          routeAlternativesByPlacePair,
+        })
+        : state
+      if (!completedState) {
+        searchStats.prunedByConstraint += 1
+        return
+      }
+
+      const completedScore = getCourseScore(completedState, courseType)
+      if (completedScore < bestScore) {
+        bestState = completedState
+        bestScore = completedScore
+      }
+      return
+    }
+
+    const candidates = remainingVisits.map((visit) => ({
+      stop: visit,
+      remainingVisits: remainingVisits.filter((candidate) => candidate.placeId !== visit.placeId),
+      remainingMeals,
+      isNearbyMeal: false,
+    }))
+
+    // 변경: 식사는 정해진 시간 창을 지키기 위해 아직 배치하지 않은 가장 이른 식사만 다음 후보로 둡니다.
+    if (remainingMeals[0]) {
+      candidates.push({
+        stop: remainingMeals[0],
+        remainingVisits,
+        remainingMeals: remainingMeals.slice(1),
+        isNearbyMeal: remainingMeals[0].mode === "NEARBY",
+      })
+    }
+
+    for (const candidate of candidates) {
+      searchStats.explored += 1
+      const stop = candidate.isNearbyMeal
+        ? await resolveNearbyMeal(state, candidate.stop, candidate.remainingVisits)
+        : candidate.stop
+      if (!stop) {
+        searchStats.prunedByConstraint += 1
+        continue
+      }
+
+      const nextState = await createSearchTransition({
+        state,
+        stop,
+        courseType,
+        plan,
+        routeAlternativesByPlacePair,
+      })
+      if (!nextState) {
+        searchStats.prunedByConstraint += 1
+        continue
+      }
+
+      if (candidate.isNearbyMeal) {
+        // 변경: 이번 가지에서 확정한 주변 추천 음식점은 다음 식사 후보에서 제외합니다.
+        nextState.usedMealPlaceIds = new Set([...state.usedMealPlaceIds, Number(stop.placeId)])
+      }
+
+      await explore(nextState, candidate.remainingVisits, candidate.remainingMeals)
+    }
+  }
+
+  await explore(initialState, visits, orderedMeals)
+
+  if (!bestState) {
+    throw createConstraintError([{
+      code: "NO_FEASIBLE_ROUTE",
+      message: "방문 장소·식사 시간·영업시간·종료 시간 조건을 모두 만족하는 경로를 찾지 못했습니다.",
+    }])
+  }
+
+  const warnings = [...bestState.warnings]
+  if (bestState.usedWalkingFallback) {
+    warnings.push("일부 구간은 대중교통 경로가 없어 장소 좌표 기준 도보 추정으로 계산했습니다.")
+  }
+  // 변경: 결과에 탐색 수를 남겨 Branch-and-Bound가 실제로 적용됐는지 팀에서 확인할 수 있게 합니다.
+  warnings.push(`최적 경로 탐색: ${searchStats.explored}개 가지 검토, ${searchStats.prunedByBound + searchStats.prunedByConstraint}개 가지 제외`)
+
+  return {
+    courseType,
+    summary: bestState.summary,
+    warnings,
+    nodes: bestState.nodes,
+  }
+}
+
 async function buildCourse({
   courseType,
   startPlace,
@@ -298,8 +577,24 @@ async function buildCourse({
   routeAlternativesByPlacePair,
   orderedStops = null,
 }) {
+  // 변경: 새 추천 생성은 그리디 순서 선택 대신 Branch-and-Bound 전체 탐색을 사용합니다.
+  // 결과 화면에서 사용자가 직접 편집한 순서는 기존처럼 orderedStops를 그대로 재검증합니다.
+  if (!orderedStops) {
+    return buildCourseByBranchAndBound({
+      courseType,
+      startPlace,
+      endPlace,
+      visits,
+      meals,
+      plan,
+      routeAlternativesByPlacePair,
+    })
+  }
+
   let currentTime = new Date(plan.startTime)
-  let currentPlace = { ...startPlace, nodeType: "START", stayMinutes: 0 }
+  // 변경: 출발 위치가 선택된 경우에만 START 노드를 만들고,
+  // 선택하지 않으면 첫 실제 방문 장소 또는 식사에서 일정이 시작됩니다.
+  let currentPlace = startPlace ? { ...startPlace, nodeType: "START", stayMinutes: 0 } : null
   let totalMinutes = 0
   let walkingDistanceMeters = 0
   let transferCount = 0
@@ -307,7 +602,6 @@ async function buildCourse({
   let usedWalkingFallback = false
   const nodes = []
   const warnings = []
-  const remainingVisits = [...visits]
 
   function addWarning(message) {
     if (!warnings.includes(message)) warnings.push(message)
@@ -316,7 +610,9 @@ async function buildCourse({
   async function appendStop(stop, { precomputedLeg = null, mealConstraint = null } = {}) {
     let travelArrivalTime = new Date(currentTime)
 
-    if (nodes.length > 0) {
+    // 변경: START 노드가 없을 때 첫 실제 일정에는 이동 구간이 없습니다.
+    // 이후에는 현재 장소가 생기므로 기존과 동일하게 모든 구간의 이동 경로를 계산합니다.
+    if (currentPlace) {
       const leg = precomputedLeg ?? await getRouteLeg({
         from: currentPlace,
         to: stop,
@@ -384,57 +680,17 @@ async function buildCourse({
     currentTime = departureTime
   }
 
-  await appendStop(currentPlace)
+  // 변경: 출발 위치를 입력한 계획에서만 일정 첫 항목으로 START 경계 노드를 저장합니다.
+  if (currentPlace) await appendStop(currentPlace)
 
-  if (orderedStops) {
-    // 변경: 결과 화면에서 사용자가 만든 순서는 서버가 다시 섞지 않고 그대로 검증·재계산합니다.
-    for (const stop of orderedStops) {
-      const mealConstraint = stop.nodeType === "MEAL" ? createMealConstraint({ plan, meal: stop }) : null
-      await appendStop(stop, { mealConstraint })
-    }
-  } else {
-    const orderedMeals = [...meals]
-      .filter((meal) => meal.mode !== "SKIP")
-      .sort((firstMeal, secondMeal) => firstMeal.scheduledTime.localeCompare(secondMeal.scheduledTime))
-
-    for (let meal of orderedMeals) {
-      if (meal.mode === "NEARBY") {
-        meal = await selectNearbyMeal({
-          meal,
-          currentPlace,
-          currentTime,
-          remainingVisits,
-          plan,
-        })
-      }
-      const mealConstraint = createMealConstraint({ plan, meal })
-
-      while (remainingVisits.length > 0) {
-        const candidate = await chooseVisitBeforeMeal({
-          currentPlace,
-          currentTime,
-          remainingVisits,
-          meal,
-          mealConstraint,
-          courseType,
-          plan,
-          routeAlternativesByPlacePair,
-        })
-        if (!candidate) break
-
-        await appendStop(candidate.visit, { precomputedLeg: candidate.toVisit })
-        remainingVisits.splice(remainingVisits.findIndex((visit) => visit.placeId === candidate.visit.placeId), 1)
-      }
-      await appendStop(meal, { mealConstraint })
-    }
-
-    const finalVisits = courseType === "FASTEST_TRANSIT"
-      ? [...remainingVisits].reverse()
-      : sortByDistanceFrom(currentPlace, remainingVisits)
-    for (const visit of finalVisits) await appendStop(visit)
+  // 변경: 결과 화면에서 사용자가 직접 편집한 순서는 Branch-and-Bound로 다시 섞지 않고 그대로 재검증합니다.
+  for (const stop of orderedStops) {
+    const mealConstraint = stop.nodeType === "MEAL" ? createMealConstraint({ plan, meal: stop }) : null
+    await appendStop(stop, { mealConstraint })
   }
 
-  await appendStop({ ...endPlace, nodeType: "END", stayMinutes: 0 })
+  // 변경: 종료 위치가 선택된 경우에만 마지막 실제 일정 뒤에 END 경계 노드와 이동 구간을 추가합니다.
+  if (endPlace) await appendStop({ ...endPlace, nodeType: "END", stayMinutes: 0 })
 
   if (currentTime > new Date(plan.endTime)) {
     throw createConstraintError([{
@@ -455,13 +711,20 @@ async function buildCourse({
 }
 
 async function resolveCourseBoundaries(plan) {
-  // 변경: 현재 스키마의 COURSE_NODE가 PLACE FK를 요구하므로 출발·도착 좌표에 가장 가까운 PLACE를 경계 노드로 사용합니다.
+  // 변경: 현재 스키마의 COURSE_NODE가 PLACE FK를 요구하므로, 입력된 출발·도착 좌표에만
+  // 가장 가까운 PLACE를 경계 노드로 사용합니다. 위치를 선택하지 않은 쪽은 null로 유지합니다.
+  const hasStartLocation = hasCoordinates({ latitude: plan.startLatitude, longitude: plan.startLongitude })
+  const hasEndLocation = hasCoordinates({ latitude: plan.endLatitude, longitude: plan.endLongitude })
   const [startPlace, endPlace] = await Promise.all([
-    recommendationRepository.findClosestPlace(plan.startLatitude, plan.startLongitude),
-    recommendationRepository.findClosestPlace(plan.endLatitude, plan.endLongitude),
+    hasStartLocation
+      ? recommendationRepository.findClosestPlace(plan.startLatitude, plan.startLongitude)
+      : Promise.resolve(null),
+    hasEndLocation
+      ? recommendationRepository.findClosestPlace(plan.endLatitude, plan.endLongitude)
+      : Promise.resolve(null),
   ])
-  if (!startPlace || !endPlace) {
-    throw createHttpError("출발지 또는 도착지 주변 장소를 찾을 수 없습니다.", 422)
+  if ((hasStartLocation && !startPlace) || (hasEndLocation && !endPlace)) {
+    throw createHttpError("입력한 출발지 또는 도착지 주변 장소를 찾을 수 없습니다.", 422)
   }
   return { startPlace, endPlace }
 }
@@ -470,6 +733,9 @@ async function createPlanStops({ plan }) {
   const themePreference = parseStoredJson(plan.preferredThemes, { selectedPlaces: [] })
   const mealPreference = parseStoredJson(plan.mealPreference, { meals: [] })
   const selectedPlaces = Array.isArray(themePreference.selectedPlaces) ? themePreference.selectedPlaces : []
+  if (selectedPlaces.length > MAX_VISIT_STOPS) {
+    throw createHttpError(`필수 방문 장소는 최대 ${MAX_VISIT_STOPS}곳까지 선택할 수 있습니다.`)
+  }
   const selectedMeals = Array.isArray(mealPreference.meals) ? mealPreference.meals : []
   const selectedPlaceIds = [...selectedPlaces, ...selectedMeals]
     .map((selection) => Number(selection.placeId))
@@ -537,6 +803,12 @@ export async function rebuildCourseForEdit({ plan, courseType, editableNodes }) 
     }
     return { placeId, nodeType, stayMinutes: Math.round(stayMinutes) }
   })
+
+  // 변경: 결과 화면 API를 직접 호출해 VISIT 노드를 추가하는 경우에도 관광지·카페 최대 5곳 규칙을 지킵니다.
+  const visitNodeCount = normalizedNodes.filter((node) => node.nodeType === "VISIT").length
+  if (visitNodeCount > MAX_VISIT_STOPS) {
+    throw createHttpError(`방문 장소는 최대 ${MAX_VISIT_STOPS}곳까지 수정할 수 있습니다.`)
+  }
 
   const places = await recommendationRepository.findPlacesByIds(normalizedNodes.map((node) => node.placeId))
   const placesById = new Map(places.map((place) => [Number(place.placeId), place]))

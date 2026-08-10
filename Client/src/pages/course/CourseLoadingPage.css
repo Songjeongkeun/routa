@@ -23,7 +23,13 @@
 
 .course-loading-card h1 { margin: 4px 0 0; font-size: 23px; letter-spacing: -0.04em; }
 .course-loading-card p { margin: 0; color: #71809d; font-size: 14px; line-height: 1.6; }
+.course-loading-card small { color: #94a3b8; font-size: 12px; line-height: 1.5; }
 .course-loading-card button { min-height: 44px; padding: 0 18px; border: 1px solid #5138ef; border-radius: 10px; color: #fff; background: #5138ef; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* 변경: 실패 시 재시도와 입력 단계 복귀를 나란히 제공하고, 로딩 중 복귀 버튼은 보조 행동으로 표시합니다. */
+.course-loading-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.course-loading-actions button:last-child, .course-loading-back { border-color: #cbd5e1; color: #475569; background: #fff; }
+.course-loading-back { margin-top: 4px; }
 
 /* 변경: CSS 애니메이션만 사용해 외부 라이브러리 없이도 서버 요청 진행 상태를 전달합니다. */
 .course-loading-spinner { width: 46px; height: 46px; border: 5px solid #e6e2ff; border-top-color: #5138ef; border-radius: 50%; animation: course-loading-spin .85s linear infinite; }

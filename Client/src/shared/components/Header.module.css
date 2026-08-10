@@ -46,6 +46,11 @@
   color: #fff;
 }
 
+/* 변경: 활성 상태가 아닌 메뉴도 같은 버튼 규격을 유지하되, 현재 위치만 밑줄로 구분합니다. */
+.menuButton {
+  color: #69748d;
+}
+
 .activeMenu::after {
   position: absolute;
   right: 0;
@@ -101,6 +106,16 @@
   background: #fff;
   content: "";
   transform: translateX(-50%);
+}
+
+/* 변경: 프로필·문의처럼 상단 중앙 메뉴에 없는 화면도 현재 위치를 인지할 수 있게 합니다. */
+.currentUserMenu {
+  color: #bdb4ff !important;
+}
+
+.profileButtonActive {
+  border-color: #9b8cff !important;
+  box-shadow: 0 0 0 3px rgb(100 71 255 / 28%);
 }
 
 .logoutButton {

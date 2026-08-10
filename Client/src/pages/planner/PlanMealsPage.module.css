@@ -397,6 +397,9 @@
 .categoryNotice { flex: 0 0 auto; color: #8994ad; font-size: 11px; }
 .statusMessage { margin: 18px 0; color: #71809d; text-align: center; }
 
+/* 변경: 준비되지 않은 필터를 노출하지 않고 실제 검색 가능한 기준을 안내합니다. */
+.searchHint { margin: 10px 2px 14px; color: #71809d; font-size: 12px; }
+
 /* 변경: 음식점 목록도 PlaceSelector와 동일한 페이지 번호 탐색 형태를 사용합니다. */
 .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 10px 0; color: #71809d; font-size: 13px; }
 .pagination button { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid #d8e0ee; border-radius: 9px; color: #553af1; background: #fff; cursor: pointer; }
@@ -436,7 +439,8 @@
 
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }
-  .summary { grid-row: 1; }
+  /* 변경: 식사 선택보다 요약 패널이 먼저 나타나지 않도록 태블릿 순서를 자연스럽게 유지합니다. */
+  .summary { grid-row: auto; }
 }
 
 @media (max-width: 760px) {

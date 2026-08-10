@@ -49,8 +49,9 @@ function formatTimeWithPeriod(time) {
 }
 
 function formatLocation(address, placeName) {
-  if (address && placeName) return `${address} (${placeName})`
-  return address || placeName || "입력해 주세요"
+    if (address && placeName) return `${address} (${placeName})`
+    // 변경: 위치를 선택하지 않은 계획도 식사 단계까지 정상 진행할 수 있게 요약 문구를 통일합니다.
+    return address || placeName || "선택 안 함"
 }
 
 /**
@@ -320,11 +321,8 @@ export default function PlanMealsPage() {
             </button>
           </form>
 
-          <div className={styles.filters} aria-label="음식점 데이터 필터 상태">
-            <span className={styles.activeFilter}>전체 음식점</span>
-            {/* 변경: PLACE 테이블에는 한식·일식 등의 음식 종류 컬럼이 없어 실제로 동작하지 않는 필터는 표시하지 않습니다. */}
-            <span className={styles.categoryNotice}>음식 종류 정보는 아직 제공되지 않습니다.</span>
-          </div>
+          {/* 변경: 동작하지 않는 음식 종류 필터 대신 현재 사용할 수 있는 이름·지역 검색 기준을 짧게 안내합니다. */}
+          <p className={styles.searchHint}>매장명 또는 동네명으로 검색하고, 카드에서 반려동물 동반 가능 여부를 확인하세요.</p>
 
           {isLoading && <p className={styles.statusMessage}>음식점 목록을 불러오는 중입니다.</p>}
           {loadError && <p className={styles.statusMessage} role="alert">{loadError}</p>}

@@ -6,6 +6,7 @@ import {
 import * as recommendationRepository from "../recommendations/recommendation.repository.mjs"
 import { rebuildCourseForEdit } from "../recommendations/recommendation.service.mjs"
 import { MEAL_TIME_WINDOWS, createKoreanDateTime } from "../../utils/mealSchedule.mjs"
+import { randomUUID } from "node:crypto"
 
 const COURSE_META = {
   // 변경: ODsay 대중교통 후보 중 도보 거리가 가장 적은 경로이므로 표현을 실제 계산 기준에 맞춥니다.
@@ -13,6 +14,7 @@ const COURSE_META = {
   FASTEST_TRANSIT: { title: "최소 시간", description: "이동 시간을 줄인 코스" },
   BALANCED: { title: "추천 코스", description: "장소와 이동을 균형 있게 고려한 코스" },
 }
+const COURSE_TYPES = new Set(Object.keys(COURSE_META))
 
 function createHttpError(message, status = 400) {
   const error = new Error(message)
@@ -89,11 +91,13 @@ function getMealTimingDetails({ node, meal, courseStartTime }) {
 
 function formatCourse(course) {
   const meta = COURSE_META[course.courseKind] ?? COURSE_META.BALANCED
+  const isSaved = course.status === "SAVED"
   return {
     itineraryId: course.itineraryId,
     tripPlanId: course.tripPlanId,
     courseKind: course.courseKind,
-    title: meta.title,
+    // 변경: DRAFT는 코스 종류 제목을 쓰고, SAVED는 사용자가 입력한 일정 제목을 우선 표시합니다.
+    title: isSaved && course.savedTitle ? course.savedTitle : meta.title,
     description: meta.description,
     travelDate: formatDate(course.startTime),
     startTime: formatTime(course.startTime),
@@ -105,7 +109,55 @@ function formatCourse(course) {
       estimatedFare: course.estimatedFare,
     },
     warnings: parseStoredJson(course.warningsJson, []),
+    status: course.status ?? "DRAFT",
+    savedAt: course.savedAt ? new Date(course.savedAt).toISOString() : null,
   }
+}
+
+function getSavedSnapshot(course) {
+  if (course.status !== "SAVED") return null
+  const snapshot = parseStoredJson(course.savedSnapshotJson, null)
+  if (!snapshot || typeof snapshot !== "object") return null
+
+  // 변경: 저장 시점 DTO를 그대로 쓰되, 제목·저장 시각처럼 이후에 바뀔 수 있는 COURSE 값은 덮어씁니다.
+  return {
+    ...snapshot,
+    itineraryId: course.itineraryId,
+    tripPlanId: course.tripPlanId,
+    courseKind: course.courseKind,
+    title: course.savedTitle || snapshot.title,
+    status: "SAVED",
+    savedAt: course.savedAt ? new Date(course.savedAt).toISOString() : null,
+  }
+}
+
+function normalizeTitle(value, fallback) {
+  const title = String(value ?? "").trim() || fallback
+  if (!title) throw createHttpError("일정 제목을 입력해 주세요.")
+  if (title.length > 50) throw createHttpError("일정 제목은 50자 이내로 입력해 주세요.")
+  return title
+}
+
+function normalizePage(value, fallback = 1, maximum = 100) {
+  const number = Number(value ?? fallback)
+  if (!Number.isSafeInteger(number) || number < 1 || number > maximum) {
+    throw createHttpError("페이지 값이 올바르지 않습니다.")
+  }
+  return number
+}
+
+function normalizeCourseType(value) {
+  if (!value) return null
+  if (!COURSE_TYPES.has(value)) throw createHttpError("코스 종류 필터가 올바르지 않습니다.")
+  return value
+}
+
+function normalizeTravelDate(value) {
+  if (!value) return null
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw createHttpError("여행 날짜 필터는 YYYY-MM-DD 형식이어야 합니다.")
+  }
+  return value
 }
 
 export async function getItineraries({ userId, tripPlanId }) {
@@ -116,12 +168,37 @@ export async function getItineraries({ userId, tripPlanId }) {
   return courses.map(formatCourse)
 }
 
+/** 변경: 저장 일정 목록은 DRAFT 추천 코스를 제외하고 현재 사용자 소유의 SAVED 코스만 반환합니다. */
+export async function getSavedItineraries({ userId, keyword, courseType, travelDate, page, pageSize }) {
+  const normalizedPage = normalizePage(page)
+  const normalizedPageSize = normalizePage(pageSize, 12, 50)
+  const result = await itineraryRepository.findSavedOwnedCourses({
+    userId,
+    keyword: String(keyword ?? ""),
+    courseType: normalizeCourseType(courseType),
+    travelDate: normalizeTravelDate(travelDate),
+    page: normalizedPage,
+    pageSize: normalizedPageSize,
+  })
+
+  return {
+    itineraries: result.rows.map(formatCourse),
+    page: normalizedPage,
+    pageSize: normalizedPageSize,
+    totalCount: result.totalCount,
+  }
+}
+
 export async function getItineraryById({ userId, itineraryId }) {
   const course = await itineraryRepository.findOwnedCourseById({
     userId,
     itineraryId: normalizeId(itineraryId, "추천 코스"),
   })
   if (!course) throw createHttpError("추천 코스를 찾을 수 없거나 접근 권한이 없습니다.", 404)
+
+  // 변경: 저장 일정은 추천 재생성·ROUTE_SECTION 갱신과 무관하게 저장 당시의 지도·시간표를 보여 줍니다.
+  const savedSnapshot = getSavedSnapshot(course)
+  if (savedSnapshot) return savedSnapshot
 
   const itinerary = formatCourse(course)
   const mealPreference = parseStoredJson(course.mealPreference, { meals: [] })
@@ -218,5 +295,79 @@ export async function updateItineraryNodes({ userId, itineraryId, nodes }) {
     course: recalculatedCourse,
   })
 
+  // 변경: replaceCourseContents는 이전 저장 스냅샷을 비워 두므로, 편집 직후에는 실제 재계산 결과를 읽습니다.
+  const itinerary = await getItineraryById({ userId, itineraryId: normalizedItineraryId })
+  if (course.status === "SAVED") {
+    // 변경: 저장 일정도 편집은 가능하되, 성공적으로 재계산된 결과만 새 스냅샷으로 확정합니다.
+    await itineraryRepository.updateSavedSnapshot({
+      userId,
+      itineraryId: normalizedItineraryId,
+      snapshotJson: JSON.stringify(itinerary),
+    })
+  }
+
+  return itinerary
+}
+
+/**
+ * 변경: 선택한 추천 코스 한 개를 SAVED로 전환하고, 현재 items·legs·지도 좌표 전체를 스냅샷으로 보관합니다.
+ * 같은 courseId는 다시 저장해도 복제되지 않아 더블 클릭·네트워크 재전송에 안전합니다.
+ */
+export async function saveItinerary({ userId, itineraryId, title, saveRequestId }) {
+  const normalizedItineraryId = normalizeId(itineraryId, "추천 코스")
+  const course = await itineraryRepository.findOwnedCourseById({ userId, itineraryId: normalizedItineraryId })
+  if (!course) throw createHttpError("추천 코스를 찾을 수 없거나 저장 권한이 없습니다.", 404)
+
+  if (course.status === "SAVED") {
+    return getItineraryById({ userId, itineraryId: normalizedItineraryId })
+  }
+
+  const defaultTitle = `${formatDate(course.startTime)} ${COURSE_META[course.courseKind]?.title ?? "여행 일정"}`
+  const normalizedTitle = normalizeTitle(title, defaultTitle)
+  // 변경: 브라우저가 requestId를 보내지 못한 경우에도 서버가 UUID를 만들어 중복 저장 방지 키를 보장합니다.
+  const normalizedSaveRequestId = saveRequestId || randomUUID()
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalizedSaveRequestId)) {
+    throw createHttpError("저장 요청 식별자가 올바르지 않습니다.")
+  }
+  const itinerary = await getItineraryById({ userId, itineraryId: normalizedItineraryId })
+  const snapshot = {
+    ...itinerary,
+    title: normalizedTitle,
+    status: "SAVED",
+  }
+
+  const savedCourse = await itineraryRepository.saveOwnedCourse({
+    userId,
+    itineraryId: normalizedItineraryId,
+    title: normalizedTitle,
+    saveRequestId: normalizedSaveRequestId,
+    snapshotJson: JSON.stringify(snapshot),
+  })
+  if (!savedCourse) throw createHttpError("추천 코스를 찾을 수 없거나 저장 권한이 없습니다.", 404)
+
   return getItineraryById({ userId, itineraryId: normalizedItineraryId })
+}
+
+/** 변경: 저장 일정 목록에서 제목을 수정할 수 있도록 SAVED 코스의 제목만 변경합니다. */
+export async function updateSavedItineraryTitle({ userId, itineraryId, title }) {
+  const normalizedItineraryId = normalizeId(itineraryId, "저장 일정")
+  const normalizedTitle = normalizeTitle(title, "")
+  const updatedCourse = await itineraryRepository.updateOwnedSavedCourseTitle({
+    userId,
+    itineraryId: normalizedItineraryId,
+    title: normalizedTitle,
+  })
+  if (!updatedCourse) throw createHttpError("저장 일정을 찾을 수 없거나 수정 권한이 없습니다.", 404)
+
+  return getItineraryById({ userId, itineraryId: normalizedItineraryId })
+}
+
+/** 변경: 삭제 확인 이후에만 현재 사용자 소유의 SAVED 일정과 그 노드를 함께 삭제합니다. */
+export async function deleteSavedItinerary({ userId, itineraryId }) {
+  const normalizedItineraryId = normalizeId(itineraryId, "저장 일정")
+  const didDelete = await itineraryRepository.deleteOwnedSavedCourse({
+    userId,
+    itineraryId: normalizedItineraryId,
+  })
+  if (!didDelete) throw createHttpError("저장 일정을 찾을 수 없거나 삭제 권한이 없습니다.", 404)
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { searchPlaces } from "../../place/place.api.js"
+import { recommendVisitPlaces, searchPlaces } from "../../place/place.api.js"
 import styles from "./PlaceSelector.module.css"
 
 const PLACE_FILTERS = [
@@ -12,6 +12,9 @@ const PLACE_FILTERS = [
 
 const PAGE_SIZE = 6
 const PAGE_GROUP_SIZE = 5
+// 변경: 관광지(관광명소·문화시설)와 카페를 합친 필수 방문 장소의 최대 개수입니다.
+// 음식점은 식사 선택 단계에서 별도로 최대 2개까지 관리하므로 이 제한에 포함하지 않습니다.
+const MAX_VISIT_STOPS = 5
 
 // 페이지
 function getVisiblePages(currentPage, totalPages) {
@@ -28,6 +31,10 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
     const [searchResults, setSearchResults] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState("")
+    // 변경: 자동 추천 요청 중에는 버튼을 중복 클릭하지 못하도록 별도 로딩 상태를 둡니다.
+    const [isRecommending, setIsRecommending] = useState(false)
+    // 변경: 추천 결과와 최대 개수 안내를 검색 오류와 구분해서 표시합니다.
+    const [recommendationMessage, setRecommendationMessage] = useState("")
     // Pagination : 검색 결과가 많을 때 여러 페이지로 나누어 보여주는 기능
     const [pagination, setPagination] = useState({ page: 1, totalPages: 0, totalItems: 0 })
 
@@ -44,6 +51,8 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
             startLongitude: plannerData.startLongitude,
             startTime: plannerData.startTime,
             endTime: plannerData.endTime,
+            // 변경: 이 화면은 관광지·카페 선택 전용이므로 음식점을 조회하지 않습니다.
+            visitOnly: true,
         })
             .then((data) => {
                 if (!ignore) {
@@ -86,6 +95,8 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                 startLongitude: plannerData.startLongitude,
                 startTime: plannerData.startTime,
                 endTime: plannerData.endTime,
+                // 변경: 검색 결과에서도 음식점을 제외해 식사 선택과 역할을 분리합니다.
+                visitOnly: true,
             })
             setSearchResults(data.places)
             setPagination(data.pagination)
@@ -124,10 +135,68 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
             return
         }
 
+        // 변경: 수동 추가도 자동 추천과 동일하게 관광지·카페 최대 5개 제한을 지킵니다.
+        if (selectedPlaces.length >= MAX_VISIT_STOPS) {
+            setRecommendationMessage("필수 방문 장소는 관광지·카페를 합쳐 최대 5곳까지 선택할 수 있습니다.")
+            return
+        }
+
         onSelectedPlacesChange([
             ...selectedPlaces,
-            { ...place, stayMinutes: place.defaultStayMins || 90 },
+            // 변경: 사용자가 직접 고른 장소임을 남겨, 자동 추천 배지와 구분할 수 있게 합니다.
+            { ...place, stayMinutes: place.defaultStayMins || 90, selectionSource: "USER" },
         ])
+        setRecommendationMessage("")
+    }
+
+    const handleRecommendPlaces = async () => {
+        const requestedCount = MAX_VISIT_STOPS - selectedPlaces.length
+
+        if (requestedCount <= 0) {
+            setRecommendationMessage("이미 필수 방문 장소 5곳이 선택되어 있습니다.")
+            return
+        }
+
+        try {
+            setIsRecommending(true)
+            setRecommendationMessage("")
+
+            // 변경: 현재 선택한 장소 ID를 서버에 보내 중복 추천을 막고,
+            // 출발·도착 좌표와 여행 조건에 맞는 부족한 수만 추천받습니다.
+            const data = await recommendVisitPlaces({
+                selectedPlaceIds: selectedPlaces.map((place) => place.placeId),
+                tripType: plannerData.tripType,
+                travelDate: plannerData.date,
+                startLatitude: plannerData.startLatitude,
+                startLongitude: plannerData.startLongitude,
+                endLatitude: plannerData.endLatitude,
+                endLongitude: plannerData.endLongitude,
+                startTime: plannerData.startTime,
+                endTime: plannerData.endTime,
+                themes: plannerData.themes,
+            })
+            const selectedPlaceIds = new Set(selectedPlaces.map((place) => place.placeId))
+            const recommendedPlaces = (data.places || [])
+                .filter((place) => !selectedPlaceIds.has(place.placeId))
+                .slice(0, requestedCount)
+                .map((place) => ({
+                    ...place,
+                    // 변경: 추천된 장소도 수동 선택과 동일한 체류시간 형식으로 계획에 저장합니다.
+                    stayMinutes: place.defaultStayMins || 90,
+                    selectionSource: "RECOMMENDED",
+                }))
+
+            onSelectedPlacesChange([...selectedPlaces, ...recommendedPlaces])
+            setRecommendationMessage(
+                recommendedPlaces.length === requestedCount
+                    ? `${recommendedPlaces.length}곳을 추천 장소로 추가했습니다.`
+                    : `조건에 맞는 장소 ${recommendedPlaces.length}곳을 추가했습니다. 더 많은 장소는 직접 선택해 주세요.`,
+            )
+        } catch (recommendationError) {
+            setRecommendationMessage(recommendationError.message || "추천 장소를 불러오지 못했습니다.")
+        } finally {
+            setIsRecommending(false)
+        }
     }
 
     const changeStayMinutes = (placeId, amount) => {
@@ -171,6 +240,22 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                 ))}
             </div>
 
+            <section className={styles.recommendationBar} aria-label="필수 방문 장소 자동 추천">
+                <div>
+                    <strong>필수 방문 장소 {selectedPlaces.length} / {MAX_VISIT_STOPS}</strong>
+                    <span>부족한 수만큼 관광지·카페를 추천합니다.</span>
+                </div>
+                <button
+                    className={styles.recommendationButton}
+                    type="button"
+                    disabled={isRecommending || selectedPlaces.length >= MAX_VISIT_STOPS}
+                    onClick={handleRecommendPlaces}
+                >
+                    {isRecommending ? "추천 중..." : "관광지 추천"}
+                </button>
+            </section>
+            {recommendationMessage && <p className={styles.recommendationMessage} role="status">{recommendationMessage}</p>}
+
             {isLoading && <p className={styles.statusMessage}>장소를 불러오는 중입니다.</p>}
             {error && <p className={styles.statusMessage} role="alert">{error}</p>}
             {!isLoading && !error && searchResults.length === 0 && (
@@ -180,6 +265,7 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
             <div className={styles.placeGrid}>
                 {searchResults.map((place, index) => {
                     const selected = selectedPlaces.some(({ placeId }) => placeId === place.placeId)
+                    const isSelectionLimitReached = !selected && selectedPlaces.length >= MAX_VISIT_STOPS
 
                     return (
                         <article className={`${styles.placeCard} ${selected ? styles.selected : ""}`} key={place.placeId}>
@@ -199,6 +285,7 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                                 type="button"
                                 onClick={() => handleTogglePlace(place)}
                                 aria-pressed={selected}
+                                disabled={isSelectionLimitReached}
                             >
                                 <span>{selected ? "−" : "＋"}</span> {selected ? "선택 취소" : "추가"}
                             </button>
@@ -262,7 +349,7 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
             <section className={styles.selectedPlaces}>
                 <header>
                     <h2>선택한 필수 방문 장소</h2>
-                    <span>{selectedPlaces.length}개</span>
+                    <span>{selectedPlaces.length} / {MAX_VISIT_STOPS}개</span>
                 </header>
                 {selectedPlaces.length === 0 ? (
                     <p className={styles.emptySelection}>장소의 추가 버튼을 눌러 필수 방문 장소를 선택해 주세요.</p>
@@ -271,7 +358,11 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                         {selectedPlaces.map((place) => (
                             <li key={place.placeId}>
                                 <span className={styles.drag} aria-hidden="true">⠿</span>
-                                <strong>{place.placeName}</strong>
+                                <div className={styles.selectedPlaceName}>
+                                    <strong>{place.placeName}</strong>
+                                    {/* 변경: 자동 추천으로 추가된 장소만 표시해 사용자의 직접 선택과 구분합니다. */}
+                                    {place.selectionSource === "RECOMMENDED" && <span className={styles.recommendedBadge}>추천</span>}
+                                </div>
                                 <div className={styles.duration}>
                                     <button type="button" onClick={() => changeStayMinutes(place.placeId, -30)} aria-label={`${place.placeName} 체류시간 줄이기`}>−</button>
                                     <span>{place.stayMinutes}분</span>

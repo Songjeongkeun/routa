@@ -20,7 +20,25 @@ export async function getPlaces(req, res) {
     startLongitude: req.query.startLongitude,
     startTime: req.query.startTime,
     endTime: req.query.endTime,
+    visitOnly: req.query.visitOnly,
   })
 
+  return res.status(200).json(result)
+}
+
+/** 변경: 장소 선택 화면의 추천 버튼이 현재 선택을 유지한 채 부족한 방문 장소만 받습니다. */
+export async function recommendVisitPlaces(req, res) {
+  const result = await placeService.recommendVisitPlaces({
+    selectedPlaceIds: req.body?.selectedPlaceIds,
+    tripType: req.body?.tripType,
+    travelDate: req.body?.travelDate,
+    startLatitude: req.body?.startLatitude,
+    startLongitude: req.body?.startLongitude,
+    endLatitude: req.body?.endLatitude,
+    endLongitude: req.body?.endLongitude,
+    startTime: req.body?.startTime,
+    endTime: req.body?.endTime,
+    themes: req.body?.themes,
+  })
   return res.status(200).json(result)
 }

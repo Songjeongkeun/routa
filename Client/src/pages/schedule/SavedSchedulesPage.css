@@ -1,0 +1,72 @@
+.saved-schedules-page {
+  min-height: 100%;
+  background: #f8fafc;
+  color: #172033;
+  padding: 48px 24px 72px;
+}
+
+.saved-schedules-content { max-width: 1120px; margin: 0 auto; }
+.saved-schedules-header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 28px; }
+.saved-schedules-eyebrow { margin: 0 0 6px; color: #4f46e5; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.saved-schedules-header h1 { margin: 0; font-size: 32px; }
+.saved-schedules-header p { margin: 10px 0 0; color: #64748b; }
+.saved-schedules-header strong { padding: 10px 14px; border-radius: 99px; background: #eef2ff; color: #4338ca; white-space: nowrap; }
+
+.saved-schedules-filter { display: grid; grid-template-columns: minmax(220px, 1fr) 170px 170px auto; gap: 12px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
+.saved-schedules-filter label { display: grid; gap: 6px; color: #475569; font-size: 13px; font-weight: 700; }
+.saved-schedules-filter input, .saved-schedules-filter select { min-height: 40px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 10px; color: #172033; background: #fff; }
+.saved-schedules-reset { align-self: end; min-height: 40px; border: 1px solid #c7d2fe; border-radius: 8px; background: #fff; color: #4f46e5; cursor: pointer; }
+.saved-schedules-error { margin: 16px 0 0; color: #b91c1c; }
+
+.saved-schedule-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+.saved-schedule-card { display: flex; flex-direction: column; gap: 12px; min-height: 260px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; box-shadow: 0 4px 16px rgba(15, 23, 42, .04); }
+.saved-schedule-card__badge { width: fit-content; padding: 5px 9px; border-radius: 999px; background: #eef2ff; color: #4338ca; font-size: 12px; font-weight: 700; }
+.saved-schedule-card__title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.saved-schedule-card h2 { min-width: 0; margin: 0; overflow: hidden; font-size: 19px; text-overflow: ellipsis; white-space: nowrap; }
+.saved-schedule-card__edit { flex: none; border: 0; color: #4f46e5; background: transparent; font-size: 12px; font-weight: 700; cursor: pointer; }
+.saved-schedule-card > p { margin: -4px 0 0; color: #64748b; font-size: 14px; }
+.saved-schedule-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 2px 0 auto; }
+.saved-schedule-card dl div { padding: 8px; border-radius: 8px; background: #f8fafc; }
+.saved-schedule-card dt { color: #64748b; font-size: 12px; }
+.saved-schedule-card dd { margin: 4px 0 0; font-size: 13px; font-weight: 700; }
+.saved-schedule-card__actions { display: flex; gap: 8px; }
+.saved-schedule-card__actions button { flex: 1; min-height: 38px; border: 0; border-radius: 8px; background: #4f46e5; color: #fff; cursor: pointer; }
+.saved-schedule-card__actions .saved-schedule-card__delete { background: #fff1f2; color: #be123c; }
+
+.saved-schedules-state { margin-top: 24px; padding: 56px 20px; border: 1px dashed #cbd5e1; border-radius: 16px; background: #fff; text-align: center; color: #64748b; }
+.saved-schedules-state h2 { margin: 0; color: #334155; }
+.saved-schedules-state p { margin: 10px 0 18px; }
+.saved-schedules-state button { border: 0; border-radius: 8px; padding: 10px 14px; background: #4f46e5; color: #fff; cursor: pointer; }
+.saved-schedules-pagination { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 28px; }
+.saved-schedules-pagination button { border: 1px solid #cbd5e1; border-radius: 7px; padding: 8px 12px; background: #fff; cursor: pointer; }
+.saved-schedules-pagination button:disabled { cursor: not-allowed; opacity: .45; }
+
+.saved-schedule-modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, .45); }
+.saved-schedule-delete-modal { width: min(100%, 410px); border-radius: 14px; padding: 24px; background: #fff; }
+.saved-schedule-delete-modal h2 { margin: 0; }
+.saved-schedule-delete-modal p { color: #64748b; line-height: 1.6; }
+.saved-schedule-delete-modal > div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.saved-schedule-delete-modal button { border: 0; border-radius: 8px; padding: 10px 14px; background: #e2e8f0; color: #334155; cursor: pointer; }
+.saved-schedule-delete-modal button:last-child { background: #dc2626; color: #fff; }
+
+/* 변경: 제목 수정은 삭제 모달과 같은 맥락에서 보여 주되, 저장 중에는 중복 제출하지 못하게 합니다. */
+.saved-schedule-title-modal { width: min(100%, 410px); border-radius: 14px; padding: 24px; background: #fff; }
+.saved-schedule-title-modal h2 { margin: 0 0 18px; }
+.saved-schedule-title-modal form { display: grid; gap: 8px; }
+.saved-schedule-title-modal label { color: #475569; font-size: 13px; font-weight: 700; }
+.saved-schedule-title-modal input { min-height: 42px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
+.saved-schedule-title-modal form > div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.saved-schedule-title-modal button { border: 0; border-radius: 8px; padding: 10px 14px; background: #e2e8f0; color: #334155; cursor: pointer; }
+.saved-schedule-title-modal button[type="submit"] { background: #4f46e5; color: #fff; }
+
+@media (max-width: 800px) {
+  .saved-schedules-page { padding: 28px 16px 48px; }
+  .saved-schedules-header { display: block; }
+  .saved-schedules-header strong { display: inline-block; margin-top: 16px; }
+  .saved-schedules-filter { grid-template-columns: 1fr 1fr; }
+  .saved-schedule-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .saved-schedules-filter { grid-template-columns: 1fr; }
+}

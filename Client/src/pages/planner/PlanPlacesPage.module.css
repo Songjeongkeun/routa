@@ -87,8 +87,9 @@
 .summaryEmpty { margin: 15px 0 0 27px; color: #8b98b2; font-size: 12px; }
 
 @media (max-width: 1000px) {
-    .layout { grid-template-columns: 1fr; }
-    .summary { grid-row: 1; }
+  .layout { grid-template-columns: 1fr; }
+  /* 변경: 좁은 화면에서는 장소 선택을 먼저, 요약을 그 다음에 보여 주어 단계 흐름을 유지합니다. */
+  .summary { grid-row: auto; }
 }
 
 @media (max-width: 680px) {

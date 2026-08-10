@@ -11,16 +11,22 @@ export default function CourseLoadingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [error, setError] = useState("")
+  const [attempt, setAttempt] = useState(0)
+  const [loadingMessage, setLoadingMessage] = useState("여행 조건을 확인하고 있어요.")
   const tripPlanId = searchParams.get("tripPlanId")
 
   useEffect(() => {
     let isCancelled = false
+    const controller = new AbortController()
 
     async function requestRecommendation() {
       try {
-        const { recommendation } = await createRecommendation(tripPlanId)
+        setError("")
+        setLoadingMessage("장소·음식점·운영시간을 확인하고 있어요.")
+        const { recommendation } = await createRecommendation(tripPlanId, { signal: controller.signal })
         if (isCancelled) return
 
+        setLoadingMessage("추천 경로를 저장하고 있어요.")
         // 변경: BALANCED 코스가 세 번째로 생성되므로 기본 선택 코스로 사용하고, 없으면 첫 코스를 사용합니다.
         const itineraryId = recommendation.itineraryIds[2] ?? recommendation.itineraryIds[0]
         if (!itineraryId) throw new Error("생성된 추천 코스를 찾을 수 없습니다.")
@@ -30,8 +36,9 @@ export default function CourseLoadingPage() {
           { replace: true },
         )
       } catch (requestError) {
-        if (!isCancelled) {
-          setError(requestError.message || "추천 경로를 계산하지 못했습니다.")
+        // 변경: 입력 단계로 돌아가면서 취소한 브라우저 요청은 실패 메시지로 표시하지 않습니다.
+        if (!isCancelled && requestError.name !== "AbortError") {
+          setError(getRecommendationErrorMessage(requestError))
         }
       }
     }
@@ -46,8 +53,9 @@ export default function CourseLoadingPage() {
     return () => {
       isCancelled = true
       window.clearTimeout(requestTimer)
+      controller.abort()
     }
-  }, [navigate, tripPlanId])
+  }, [attempt, navigate, tripPlanId])
 
   return (
     <main className="course-loading-page">
@@ -57,16 +65,30 @@ export default function CourseLoadingPage() {
             <span className="course-loading-icon" aria-hidden="true">!</span>
             <h1>추천 경로를 만들지 못했습니다</h1>
             <p>{error}</p>
-            <button type="button" onClick={() => navigate("/planner/meals")}>음식점 선택으로 돌아가기</button>
+            <div className="course-loading-actions">
+              <button type="button" onClick={() => setAttempt((previous) => previous + 1)}>다시 시도</button>
+              <button type="button" onClick={() => navigate("/planner/meals")}>음식점 선택으로 돌아가기</button>
+            </div>
           </>
         ) : (
           <>
             <span className="course-loading-spinner" aria-hidden="true" />
             <h1>여행 경로를 계산하고 있어요</h1>
-            <p>선택한 장소·음식점·여행 시간을 바탕으로 추천 코스 3개를 만들고 있습니다.</p>
+            <p>{loadingMessage}</p>
+            <small>선택한 장소·음식점·여행 시간을 바탕으로 추천 코스 3개를 만들고 있습니다.</small>
+            {/* 변경: 현재 동기 추천 API에서는 서버 계산 자체를 취소할 수 없으므로, 버튼 의미를 정확히 표시합니다. */}
+            <button className="course-loading-back" type="button" onClick={() => navigate("/planner/meals")}>입력으로 돌아가기</button>
           </>
         )}
       </section>
     </main>
   )
+}
+
+/** 변경: 상태 코드별로 사용자가 다음 행동을 알 수 있는 안내 문구를 제공합니다. */
+function getRecommendationErrorMessage(error) {
+  if (error.status === 422) return "선택한 장소·식사 시간·영업시간 조건으로는 일정을 만들 수 없습니다. 조건을 조정해 주세요."
+  if (error.status === 429) return "길찾기 API 호출 한도를 초과했습니다. 잠시 후 다시 시도해 주세요."
+  if (error.status === 502 || error.status === 504) return "외부 길찾기 서비스에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요."
+  return error.message || "추천 경로를 계산하지 못했습니다."
 }

@@ -160,12 +160,82 @@
   line-height: 1.75;
 }
 
+/* 변경: 실제 저장 일정 3개를 홈에서 간단히 확인하는 카드 목록입니다. */
+.recentScheduleList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.recentScheduleCard {
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 20px;
+  border: 1px solid #e0e4f3;
+  border-radius: 12px;
+  color: #17213f;
+  text-align: left;
+  cursor: pointer;
+  background: #fafbff;
+}
+
+.recentScheduleCard:hover {
+  border-color: #6954f5;
+  box-shadow: 0 7px 18px rgb(79 53 235 / 10%);
+}
+
+.recentScheduleCard strong {
+  overflow: hidden;
+  width: 100%;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentScheduleCard span,
+.recentScheduleCard small,
+.savedLoading {
+  color: #71809f;
+  font-size: 13px;
+}
+
+.recentScheduleCard small {
+  margin-top: auto;
+}
+
+.savedMoreButton {
+  grid-column: 1 / -1;
+  justify-self: end;
+  padding: 7px 2px;
+  border: 0;
+  color: #543cff;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+}
+
+.savedLoading {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px dashed #d6def2;
+  border-radius: 15px;
+}
+
 @media (max-width: 960px) {
   .content {
     width: min(calc(100% - 40px), 1466px);
   }
 
   .featureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .recentScheduleList {
     grid-template-columns: 1fr;
   }
 
