@@ -4,9 +4,9 @@ import styles from "./PlaceSelector.module.css"
 
 const PLACE_FILTERS = [
     { label: "전체", keyword: "" },
-    { label: "문화유적", keyword: "문화유적" },
-    { label: "전시 •문화", keyword: "박람회" },
-    { label: "자연•산책", keyword: "공원 산책" },
+    { label: "문화유적", keyword: "관광명소" },
+    { label: "전시 •문화", keyword: "문화시설" },
+    // { label: "자연•산책", keyword: "공원 산책" },
     { label: "전망•야경", keyword: "전망대" },
 ]
 
