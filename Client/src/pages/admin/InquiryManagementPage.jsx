@@ -3,7 +3,10 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../shared/api/httpClient.js"; // 실제 경로에 맞게 수정하세요
+import { API_URL } from "../../shared/api/httpClient.js";
+import defaultAvatar from "../../shared/assets/icons/default-avatar.png";
 import "../inquiry/MyInquiriesPage.css"; // .inquiry-badge 등 공통 스타일 재사용
 import "./InquiryManagementPage.css";
 
@@ -13,6 +16,7 @@ const STATUS_LABEL = {
 };
 
 export default function InquiryManagementPage() {
+  const navigate = useNavigate();
   //목록 관련 상태 
   const [inquiries, setInquiries] = useState([]);
   const [statusFilter, setStatusFilter] = useState(""); // "" | "WAITING" | "ANSWERED"
@@ -36,15 +40,14 @@ export default function InquiryManagementPage() {
     setIsListLoading(true);
     setListError(null);
     try {
-      const query = statusFilter ? `?status=${statusFilter}` : "";
-      const result = await apiRequest(`/admin/inquiries${query}`);
+      const result = await apiRequest("/admin/inquiries");
       setInquiries(result.data);
     } catch (err) {
       setListError(err);
     } finally {
       setIsListLoading(false);
     }
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
     loadInquiries();
@@ -92,109 +95,136 @@ export default function InquiryManagementPage() {
     }
   }
 
-  const hasFilter = Boolean(statusFilter);
+  const total = inquiries.length;
+  const waitingCount = inquiries.filter((item) => item.status === "WAITING").length;
+
 
   return (
     <div className="admin-inquiry-page">
-      {/*  왼쪽: 문의 목록 */}
-      <div className="admin-inquiry-list-panel">
-        <h1>문의 답변 관리</h1>
-
-        <div className="admin-inquiry-filter">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">전체</option>
-            <option value="WAITING">답변 대기</option>
-            <option value="ANSWERED">답변 완료</option>
-          </select>
+      <div className="admin-inquiry-topbar">
+        <div>
+          <h1>문의 답변 관리</h1>
+          <p>사용자의 소중한 피드백과 문의에 신속하게 답변해 주세요.</p>
         </div>
+        <button className="admin-inquiry-back-btn" onClick={() => navigate("/admin")}>
+          ← 유저 관리로 돌아가기
+        </button>
+      </div>
+
+      <div className="admin-inquiry-body">
+        {/* 왼쪽: 목록 */}
+        <div className="admin-inquiry-list-panel">
+          <div className="admin-inquiry-list-header">
+            <h2>전체 문의 목록</h2>
+            <span className="admin-inquiry-list-summary">
+              미답변 {waitingCount}건 / 총 {total}건
+            </span>
+          </div>
 
         {isListLoading && <div className="inquiry-state">불러오는 중...</div>}
 
-        {!isListLoading && listError && (
-          <div className="inquiry-state inquiry-state--error">
-            <p>목록을 불러오지 못했습니다.</p>
-            <button onClick={loadInquiries}>다시 시도</button>
-          </div>
-        )}
+          {!isListLoading && listError && (
+            <div className="inquiry-state inquiry-state--error">
+              <p>목록을 불러오지 못했습니다.</p>
+              <button onClick={loadInquiries}>다시 시도</button>
+            </div>
+          )}
 
-        {!isListLoading && !listError && inquiries.length === 0 && (
-          <div className="inquiry-state">
-            {hasFilter ? "검색 결과가 없습니다." : "등록된 문의가 없습니다."}
-          </div>
-        )}
+          {!isListLoading && !listError && inquiries.length === 0 && (
+            <div className="inquiry-state">등록된 문의가 없습니다.</div>
+          )}
 
-        {!isListLoading && !listError && inquiries.length > 0 && (
-          <ul className="admin-inquiry-list">
-            {inquiries.map((item) => (
-              <li
-                key={item.inquiry_id}
-                className={
-                  "admin-inquiry-list-item" +
-                  (item.inquiry_id === selectedId ? " admin-inquiry-list-item--active" : "")
-                }
-                onClick={() => loadDetail(item.inquiry_id)}
-              >
-                <div className="admin-inquiry-list-item__header">
-                  <span className={`inquiry-badge inquiry-badge--${item.status.toLowerCase()}`}>
-                    {STATUS_LABEL[item.status]}
-                  </span>
-                  <span className="admin-inquiry-list-item__date">
-                    {new Date(item.created_at).toLocaleString("ko-KR")}
-                  </span>
-                </div>
-                <div>{item.title}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          {!isListLoading && !listError && inquiries.length > 0 && (
+            <ul className="admin-inquiry-list">
+              {inquiries.map((item) => (
+                <li
+                  key={item.inquiry_id}
+                  className={
+                    "admin-inquiry-list-item" +
+                    (item.inquiry_id === selectedId ? " admin-inquiry-list-item--active" : "")
+                  }
+                  onClick={() => loadDetail(item.inquiry_id)}
+                >
+                  <div className="admin-inquiry-list-item__header">
+                    <span className="admin-inquiry-list-item__requester">
+                      {item.requester_name}
+                      <span className="admin-inquiry-list-item__date">
+                        {new Date(item.created_at).toLocaleDateString("ko-KR")}
+                      </span>
+                    </span>
+                    <span className={`inquiry-badge inquiry-badge--${item.status.toLowerCase()}`}>
+                      {STATUS_LABEL[item.status]}
+                    </span>
+                  </div>
+                  <div className="admin-inquiry-list-item__title">{item.title}</div>
+                  <p className="admin-inquiry-list-item__preview">{item.content}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-      {/*  오른쪽: 상세 + 답변  */}
-      <div className="admin-inquiry-detail-panel">
-        {!selectedId && <div className="inquiry-state">왼쪽 목록에서 문의를 선택해 주세요.</div>}
+        {/* 오른쪽: 상세 + 답변 */}
+        <div className="admin-inquiry-detail-panel">
+          {!selectedId && <div className="inquiry-state">왼쪽 목록에서 문의를 선택해 주세요.</div>}
 
-        {selectedId && isDetailLoading && <div className="inquiry-state">불러오는 중...</div>}
+          {selectedId && isDetailLoading && <div className="inquiry-state">불러오는 중...</div>}
 
-        {selectedId && !isDetailLoading && detailError && (
-          <div className="inquiry-state inquiry-state--error">
-            <p>상세 정보를 불러오지 못했습니다.</p>
-            <button onClick={() => loadDetail(selectedId)}>다시 시도</button>
-          </div>
-        )}
-
-        {selectedId && !isDetailLoading && !detailError && detail && (
-          <>
-            <span className={`inquiry-badge inquiry-badge--${detail.status.toLowerCase()}`}>
-              {STATUS_LABEL[detail.status]}
-            </span>
-            <h2>{detail.title}</h2>
-            <p className="admin-inquiry-detail__content">{detail.content}</p>
-
-            {/* 이미 답변이 있다면: 답변 내용을 보여주고, 폼은 안 보여줌 (MVP 규칙: 재답변 불가) */}
-            {detail.status === "ANSWERED" ? (
-              <>
-                <strong>등록된 답변</strong>
-                <div className="admin-inquiry-answer-box">{detail.answer_content}</div>
-              </>
-            ) : (
-              <form className="admin-inquiry-reply-form" onSubmit={handleReplySubmit}>
-                <strong>답변 작성</strong>
-                <textarea
-                  rows={6}
-                  value={answerContent}
-                  onChange={(e) => setAnswerContent(e.target.value)}
-                  placeholder="답변 내용을 입력하세요"
+          {selectedId && !isDetailLoading && detailError && (
+            <div className="inquiry-state inquiry-state--error">
+              <p>상세 정보를 불러오지 못했습니다.</p>
+              <button onClick={() => loadDetail(selectedId)}>다시 시도</button>
+            </div>
+          )}
+          {selectedId && !isDetailLoading && !detailError && detail && (
+            <>
+              <div className="admin-inquiry-requester-row">
+                <img
+                  className="admin-inquiry-avatar"
+                  src={detail.requester_profile_image_url ? `${API_URL}${detail.requester_profile_image_url}` : defaultAvatar}
+                  alt=""
                 />
-                {replyError && <p className="inquiry-form__error">{replyError}</p>}
-                <div className="inquiry-form__actions">
-                  <button type="submit" disabled={isReplying}>
-                    {isReplying ? "등록 중..." : "답변 등록"}
-                  </button>
+                <div>
+                  <div className="admin-inquiry-requester-name">{detail.requester_name}</div>
+                  <div className="admin-inquiry-requester-meta">
+                    {detail.requester_email} · 접수 일시: {new Date(detail.created_at).toLocaleString("ko-KR")}
+                  </div>
                 </div>
-              </form>
-            )}
-          </>
-        )}
+              </div>
+
+              <span className="admin-inquiry-section-label">문의 제목</span>
+              <h2 className="admin-inquiry-title">{detail.title}</h2>
+
+              <span className="admin-inquiry-section-label">문의 상세 내용</span>
+              <p className="admin-inquiry-detail__content">{detail.content}</p>
+
+              <hr className="admin-inquiry-divider" />
+
+              {detail.status === "ANSWERED" ? (
+                <>
+                  <span className="admin-inquiry-section-label">등록된 답변</span>
+                  <div className="admin-inquiry-answer-box">{detail.answer_content}</div>
+                </>
+              ) : (
+                <form className="admin-inquiry-reply-form" onSubmit={handleReplySubmit}>
+                  <span className="admin-inquiry-section-label">답변 작성하기</span>
+                  <textarea
+                    rows={7}
+                    value={answerContent}
+                    onChange={(e) => setAnswerContent(e.target.value)}
+                    placeholder="답변 내용을 입력하세요"
+                  />
+                  {replyError && <p className="inquiry-form__error">{replyError}</p>}
+                  <div className="admin-inquiry-reply-form__actions">
+                    <button type="submit" disabled={isReplying}>
+                      {isReplying ? "등록 중..." : "답변 등록 완료"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
