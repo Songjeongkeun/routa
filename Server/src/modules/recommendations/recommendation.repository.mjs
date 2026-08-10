@@ -201,9 +201,9 @@ export function replaceCourseContents({ itineraryId, course }) {
     await execute(`DELETE FROM public."COURSE_NODE" WHERE course_id = $1`, [itineraryId])
     await execute(
       `UPDATE public."COURSE"
-       SET total_moving_time = $2, total_walking_dist = $3, total_transfer_count = $4,
-           total_estimated_fare = $5, warnings_json = $6
-       WHERE course_id = $1`,
+      SET total_moving_time = $2, total_walking_dist = $3, total_transfer_count = $4,
+          total_estimated_fare = $5, warnings_json = $6
+      WHERE course_id = $1`,
       [
         itineraryId,
         course.summary.totalMinutes,
