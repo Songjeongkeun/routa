@@ -1,4 +1,24 @@
 import * as adminService from "./admin.service.mjs"
+// kakakoAPI 불러오기
+import { collectAndSaveData } from "../../providers/kakakoAPI.mjs"
+
+// <========================================
+// isCollecting : 이미 돌아가는 중에 버튼을 또 눌러서 중복 실행되는 것을 막아준다.
+let isCollecting = false
+
+// collectPlaces : 장소 수집
+export async function collectPlaces(req, res) {
+    if (isCollecting) {
+        return res.status(409).json({ success: false, message: "이미 데이터 수집이 진행 중입니다." })
+    }
+    isCollecting = true
+    res.status(202).json({ success: true, message: "장소 데이터 수집을 시작했습니다. 서버 콘솔에서 진행 상황을 확인하세요." })
+
+    collectAndSaveData()
+        .catch((error) => console.error("장소 데이터 수집 실패:", error))
+        .finally(() => { isCollecting = false })
+}
+// ========================================>
 
 /** 통계 카드 3개 + 월별 차트 데이터를 한 번에 모아서 반환 */
 export async function getUserStats(req, res) {

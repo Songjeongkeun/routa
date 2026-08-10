@@ -24,6 +24,23 @@
   font-size: 14px;
 }
 
+.collectButton {
+  padding: 12px 20px;
+  border: 1px solid #4b3fd6;
+  border-radius: 10px;
+  color: #4b3fd6;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.collectButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .inquiryButton {
   padding: 12px 20px;
   border: 0;

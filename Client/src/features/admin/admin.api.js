@@ -4,6 +4,10 @@ export function getUserStats() {
   return apiRequest("/admin/users/stats")
 }
 
+export function collectPlaces() {
+  return apiRequest("/admin/collect-places", { method: "POST" })
+}
+
 export function getUsers({ page = 1, pageSize = 20 } = {}) {
   return apiRequest(`/admin/users?page=${page}&pageSize=${pageSize}`)
 }
