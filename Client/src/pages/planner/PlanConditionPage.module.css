@@ -113,6 +113,19 @@
   margin-top: 8px;
 }
 
+/* 변경: 다음 버튼을 누른 뒤에도 문맥을 잃지 않도록 카드 하단에 인라인 오류를 표시합니다. */
+.formError {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #f1bcc6;
+  border-radius: 9px;
+  color: #a82d43;
+  background: #fff4f6;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .actions button {
   min-height: 54px;
   border-radius: 11px;
@@ -178,7 +191,8 @@
   }
 
   .summary {
-    grid-row: 1;
+    /* 변경: 태블릿에서는 입력 폼을 먼저 두어, 읽기 전용 요약이 실제 입력보다 앞서는 흐름을 막습니다. */
+    grid-row: auto;
   }
 }
 

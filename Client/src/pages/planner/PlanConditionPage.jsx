@@ -24,7 +24,8 @@ function formatTimeWithPeriod(time) {
 
 function formatLocation(address, placeName) {
     if (address && placeName) return `${address} (${placeName})`
-    return address || placeName || "입력해 주세요"
+    // 변경: 출발·종료 위치는 선택 사항이므로 비어 있을 때 검증 오류처럼 보이지 않게 표시합니다.
+    return address || placeName || "선택 안 함"
 }
 
 function createTransitCondition(plan) {
@@ -49,6 +50,8 @@ export default function PlanConditionPage() {
     const [selectDate, setSelectDate] = useState(plan.date)
     const [selectTransport, setSelectTransport] = useState(plan.transport)
     const [isResolvingLocations, setIsResolvingLocations] = useState(false)
+    // 변경: 브라우저 alert 대신 버튼 가까이에 입력 문제를 표시해 사용자가 바로 고칠 수 있게 합니다.
+    const [formError, setFormError] = useState("")
 
     const navigate = useNavigate()
 
@@ -79,8 +82,27 @@ export default function PlanConditionPage() {
     const handleNextClick = async () => {
         if (isResolvingLocations) return
 
+        // 변경: 서버 요청 전 필수 여행 조건과 시간 순서를 검사해 다음 단계에서 갑작스러운 오류가 나지 않게 합니다.
+        if (!selectOption) {
+            setFormError("여행 성격을 선택해 주세요.")
+            return
+        }
+        if (!selectDate) {
+            setFormError("여행 날짜를 선택해 주세요.")
+            return
+        }
+        if (!selectTransport) {
+            setFormError("교통 기준을 선택해 주세요.")
+            return
+        }
+        if (!transitCondition.startTime || !transitCondition.endTime || transitCondition.startTime >= transitCondition.endTime) {
+            setFormError("여행 종료 시간은 출발 시간보다 늦어야 합니다.")
+            return
+        }
+
         try {
             setIsResolvingLocations(true)
+            setFormError("")
             const [startResolved, endResolved] = await Promise.all([
                 resolveLocation(transitCondition, "start"),
                 resolveLocation(transitCondition, "end"),
@@ -120,7 +142,8 @@ export default function PlanConditionPage() {
 
             navigate("/planner/places")
         } catch (error) {
-            window.alert(error.message || "위치를 검색하지 못했습니다.")
+            // 변경: 위치는 선택 사항이지만 입력했다면 찾을 수 있어야 하므로 오류를 화면 안에서 안내합니다.
+            setFormError(error.message || "입력한 위치를 찾지 못했습니다. 위치를 고치거나 비워 주세요.")
         } finally {
             setIsResolvingLocations(false)
         }
@@ -175,6 +198,7 @@ export default function PlanConditionPage() {
                     </section>
 
                     <div className={styles.actions}>
+                        {formError && <p className={styles.formError} role="alert">{formError}</p>}
                         <button className={styles.cancelButton} type="button" onClick={handleCancelClick}>취소</button>
                         <button className={styles.nextButton} type="button" onClick={handleNextClick} disabled={isResolvingLocations}>
                             {isResolvingLocations ? "위치 검색 중..." : "다음"}

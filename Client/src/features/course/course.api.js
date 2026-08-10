@@ -1,10 +1,13 @@
 import { apiRequest } from "../../shared/api/httpClient.js"
 
 /** 변경: 로딩 화면에서 저장된 여행 계획을 기준으로 실제 추천 코스 생성을 요청합니다. */
-export function createRecommendation(tripPlanId) {
+export function createRecommendation(tripPlanId, { signal } = {}) {
   return apiRequest("/recommendations", {
     method: "POST",
     body: JSON.stringify({ tripPlanId }),
+    // 변경: 로딩 화면에서 입력 단계로 돌아갈 때 브라우저 요청은 중단할 수 있게 합니다.
+    // 이미 시작된 서버 계산 자체를 취소하는 기능은 별도 Recommendation Run 구현에서 담당합니다.
+    signal,
   })
 }
 
@@ -27,5 +30,13 @@ export function updateItineraryNodes(itineraryId, nodes) {
   return apiRequest(`/itineraries/${itineraryId}/nodes`, {
     method: "PUT",
     body: JSON.stringify({ nodes }),
+  })
+}
+
+/** 변경: 추천 결과의 선택 코스 한 개를 저장 일정으로 확정합니다. */
+export function saveItinerary(itineraryId, { title, saveRequestId }) {
+  return apiRequest(`/itineraries/${itineraryId}/save`, {
+    method: "POST",
+    body: JSON.stringify({ title, saveRequestId }),
   })
 }

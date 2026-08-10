@@ -1,78 +1,49 @@
-/*JSX=화면구조  CSS=디자인*/
-.inquiry-page{
-
-    padding:40px;
-
-    background:#f6f7fb;
-
-    min-height:100vh;
-
+.inquiry-page {
+  min-height: calc(100vh - 68px);
+  padding: 48px 24px 72px;
+  color: #17213a;
+  background: #f8f9fd;
 }
 
-/*제목*/
-.page-title{
-
-    font-size:38px;
-
-    font-weight:bold;
-
-    color:#222;
-
+.inquiry-page__header,
+.inquiry-empty-state {
+  width: min(100%, 900px);
+  margin: 0 auto;
 }
 
-/*설명*/
-.page-description{
-
-    margin-top:10px;
-
-    color:#777;
-
+.inquiry-page__header p {
+  margin: 0 0 7px;
+  color: #513dff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .09em;
 }
 
-/*통계 카드를 감싸는 부모*/
-.stats-container{
-    display:flex;
-    gap:20px;
-     margin-top:35px;
+.inquiry-page__header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 36px);
 }
 
-/*검색+버튼*/
-.top-action{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    margin-top:35px;
-
+.inquiry-page__header span {
+  display: block;
+  margin-top: 10px;
+  color: #71809d;
 }
 
-/*버튼*/
-.new-button{
-
-    border:none;
-
-    background:#5146f0;
-
-    color:white;
-
-    padding:14px 28px;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    font-size:15px;
-
+/* 변경: API가 없는 화면은 빈 표나 동작하지 않는 검색창 대신 단일 안내 상태로 제공합니다. */
+.inquiry-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 70px 24px;
+  border: 1px dashed #cfd8ec;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
 }
 
-
-/* 마우스를 올렸을 때 */
-
-.new-button:hover{
-
-    background:#4037d8;
-
-}
+.inquiry-empty-state > span { font-size: 34px; }
+.inquiry-empty-state h2 { margin: 4px 0 0; font-size: 20px; }
+.inquiry-empty-state p { margin: 0; color: #71809d; font-size: 14px; }
+.inquiry-empty-state a { margin-top: 8px; padding: 10px 14px; border-radius: 9px; color: #fff; background: #513dff; font-size: 14px; font-weight: 700; text-decoration: none; }

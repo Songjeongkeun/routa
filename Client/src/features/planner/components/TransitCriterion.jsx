@@ -64,7 +64,8 @@ export default function TransitionCriterion({
     return (
         <div className={styles.fields}>
             <label className={styles.field}>
-                <span>출발 위치</span>
+                {/* 변경: 출발 위치를 비워도 여행 계획을 계속 진행할 수 있음을 화면에서 명확히 알립니다. */}
+                <span>출발 위치 (선택)</span>
                 <span className={styles.locationControl}>
                     <input
                         className={`${styles.locationInput} ${locationErrors.start ? styles.invalidInput : ""}`}
@@ -72,7 +73,7 @@ export default function TransitionCriterion({
                         onChange={(event) => handleLocationChange("start", event.target.value)}
                         onBlur={(event) => handleLocationBlur("start", event.target.value)}
                         onKeyDown={handleLocationKeyDown}
-                        placeholder="출발지 입력"
+                        placeholder="출발지 입력 (선택)"
                         aria-invalid={Boolean(locationErrors.start)}
                     />
                     {searchingField === "start" && <small>검색 중...</small>}
@@ -84,7 +85,8 @@ export default function TransitionCriterion({
             </label>
 
             <label className={styles.field}>
-                <span>종료 위치</span>
+                {/* 변경: 종료 위치가 없으면 마지막 실제 방문 장소에서 일정이 끝납니다. */}
+                <span>종료 위치 (선택)</span>
                 <span className={styles.locationControl}>
                     <input
                         className={`${styles.locationInput} ${locationErrors.end ? styles.invalidInput : ""}`}
@@ -92,7 +94,7 @@ export default function TransitionCriterion({
                         onChange={(event) => handleLocationChange("end", event.target.value)}
                         onBlur={(event) => handleLocationBlur("end", event.target.value)}
                         onKeyDown={handleLocationKeyDown}
-                        placeholder="출발지로 돌아오기"
+                        placeholder="출발지로 돌아오기 (선택)"
                         aria-invalid={Boolean(locationErrors.end)}
                     />
                     {searchingField === "end" && <small>검색 중...</small>}

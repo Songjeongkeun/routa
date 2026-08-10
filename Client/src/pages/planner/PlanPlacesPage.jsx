@@ -15,7 +15,8 @@ function formatTimeWithPeriod(time) {
 
 function formatLocation(address, placeName) {
     if (address && placeName) return `${address} (${placeName})`
-    return address || placeName || "입력해 주세요"
+    // 변경: 선택하지 않은 출발·종료 위치는 이후 단계 요약에서도 "선택 안 함"으로 통일합니다.
+    return address || placeName || "선택 안 함"
 }
 
 export default function PlanPlacesPage() {
@@ -91,7 +92,8 @@ export default function PlanPlacesPage() {
                     <section className={styles.summarySection} aria-label="선택한 필수 방문 장소 요약">
                         <div className={styles.summaryTitle}>
                             <span>⌖ 필수 방문 장소</span>
-                            <strong>{selectedPlaces.length}개</strong>
+                            {/* 변경: 관광지·카페 최대 5곳 규칙을 요약 패널에서도 동일하게 보여 줍니다. */}
+                            <strong>{selectedPlaces.length} / 5개</strong>
                         </div>
                         {selectedPlaces.length > 0 ? (
                             <ul>

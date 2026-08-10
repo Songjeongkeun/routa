@@ -65,7 +65,18 @@ export async function findClosestPlace(latitude, longitude) {
  * 변경: 주변 음식점 추천은 계획된 경로의 현재·다음 장소 반경에서만 후보를 읽습니다.
  * 영업·휴무·라스트오더의 정확한 판정은 도착 시각이 계산된 뒤 서비스 계층에서 다시 수행합니다.
  */
-export async function findNearbyRestaurants({ latitude, longitude, radiusKm, withPet, limit = 20 }) {
+export async function findNearbyRestaurants({
+  latitude,
+  longitude,
+  radiusKm,
+  withPet,
+  // 변경: 점심에 이미 확정했거나 다른 슬롯에 지정한 음식점은 SQL 단계에서 제외합니다.
+  // LIMIT 전에 제외해야 상위 20개가 모두 중복 음식점인 경우에도 다음 후보를 정상적으로 찾을 수 있습니다.
+  excludePlaceIds = [],
+  limit = 20,
+}) {
+  const normalizedExcludedPlaceIds = [...new Set(excludePlaceIds.map(Number))]
+    .filter((placeId) => Number.isSafeInteger(placeId) && placeId > 0)
   const result = await query(
     `SELECT
        place_id AS "placeId", place_name AS "placeName", place_category AS "placeCategory",
@@ -82,14 +93,17 @@ export async function findNearbyRestaurants({ latitude, longitude, radiusKm, wit
      WHERE place_category = '음식점'
        AND latitude IS NOT NULL AND longitude IS NOT NULL
        AND (NOT $4::BOOLEAN OR pet_is_allowed = TRUE)
+       -- 변경: 빈 BIGINT 배열에 대한 "<> ALL" 조건은 항상 참이므로,
+       -- 제외할 음식점이 없을 때도 별도 동적 SQL 없이 같은 쿼리를 사용할 수 있습니다.
+       AND place_id <> ALL($5::BIGINT[])
        AND 6371 * 2 * ASIN(SQRT(
          POWER(SIN(RADIANS(latitude - $1) / 2), 2)
          + COS(RADIANS($1)) * COS(RADIANS(latitude))
          * POWER(SIN(RADIANS(longitude - $2) / 2), 2)
        )) <= $3
      ORDER BY "distanceKm" ASC, average_rating DESC NULLS LAST, place_id ASC
-     LIMIT $5`,
-    [latitude, longitude, radiusKm, withPet, limit],
+     LIMIT $6`,
+    [latitude, longitude, radiusKm, withPet, normalizedExcludedPlaceIds, limit],
   )
   return result.rows
 }
@@ -129,11 +143,18 @@ export async function upsertRouteSection({ originPlaceId, destinationPlaceId, ro
       route.durationMinutes,
       route.walkingDistanceMeters,
       route.transferCount,
-      // 변경: 대중교통 후보가 없었던 행은 조회 시에도 도보 대체 경로였음을 구분할 수 있게 저장합니다.
-      route.source === "WALK_FALLBACK" ? "WALK_FALLBACK" : "PUBLIC_TRANSIT",
+      // 변경: 실제 보행 네트워크(KAKAO_WALK)와 최후의 직선거리 추정(WALK_FALLBACK)을
+      // 결과 조회·지도 표시에서 구분할 수 있도록 이동수단 값을 나누어 저장합니다.
+      route.source === "KAKAO_WALK"
+        ? "WALK_REAL"
+        : (route.source === "WALK_FALLBACK" ? "WALK_FALLBACK" : "PUBLIC_TRANSIT"),
       route.estimatedFare,
       // 변경: 대표 경로 수치와 함께 후보 전체를 저장해야 코스별로 다른 기준을 적용할 수 있습니다.
-      JSON.stringify({ provider: "ODSAY", alternatives: route.alternatives }),
+      JSON.stringify({
+        // 변경: 실제 도보 경로가 저장된 경우에는 어느 외부 Provider가 계산했는지도 보존합니다.
+        provider: route.source === "KAKAO_WALK" ? "KAKAO" : "ODSAY",
+        alternatives: route.alternatives,
+      }),
     ],
   )
   return result.rows[0]
@@ -141,13 +162,21 @@ export async function upsertRouteSection({ originPlaceId, destinationPlaceId, ro
 
 export function replaceCourses({ tripPlanId, courses }) {
   return withTransaction(async (execute) => {
-    // 변경: 같은 계획을 다시 계산하면 이전 추천 코스와 노드를 먼저 지워 최신 결과만 남깁니다.
+    // 변경: 같은 계획을 다시 계산하면 이전 DRAFT 추천 코스만 지웁니다.
+    // 사용자가 SAVED로 확정한 일정은 재추천 때문에 삭제되면 안 되므로 그대로 보존합니다.
     await execute(
       `DELETE FROM public."COURSE_NODE"
-      WHERE course_id IN (SELECT course_id FROM public."COURSE" WHERE plan_id = $1)`,
+      WHERE course_id IN (
+        SELECT course_id
+        FROM public."COURSE"
+        WHERE plan_id = $1 AND status = 'DRAFT'
+      )`,
       [tripPlanId],
     )
-    await execute(`DELETE FROM public."COURSE" WHERE plan_id = $1`, [tripPlanId])
+    await execute(
+      `DELETE FROM public."COURSE" WHERE plan_id = $1 AND status = 'DRAFT'`,
+      [tripPlanId],
+    )
 
     const insertedCourses = []
     for (const course of courses) {
@@ -202,7 +231,10 @@ export function replaceCourseContents({ itineraryId, course }) {
     await execute(
       `UPDATE public."COURSE"
        SET total_moving_time = $2, total_walking_dist = $3, total_transfer_count = $4,
-           total_estimated_fare = $5, warnings_json = $6
+           total_estimated_fare = $5, warnings_json = $6,
+           -- 변경: 저장 일정 편집은 새 시간표·지도 좌표를 만들므로, 이전 스냅샷을 먼저 비웁니다.
+           -- service가 재계산 상세를 읽은 직후 최신 스냅샷을 다시 저장합니다.
+           saved_snapshot_json = NULL
        WHERE course_id = $1`,
       [
         itineraryId,

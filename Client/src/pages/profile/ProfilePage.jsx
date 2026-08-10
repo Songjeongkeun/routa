@@ -1,43 +1,45 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../app/providers/authContext.js"
 import { API_URL } from "../../shared/api/httpClient.js"
-import { withdrawUser } from "../../features/profile/profile.api.js"
-import { changePassword } from "../../features/profile/profile.api.js"
-
+import { getSavedItineraries } from "../../features/schedule/schedule.api.js"
+import { changePassword, withdrawUser } from "../../features/profile/profile.api.js"
 import styles from "./ProfilePage.module.css"
 
 import defaultAvatar from "../../shared/assets/icons/default-avatar.png"
 import savedScheduleIcon from "../../shared/assets/icons/Saved-schedule.png"
-import visitedPlaceIcon from "../../shared/assets/icons/Visited-place.png"
-import totalDistanceIcon from "../../shared/assets/icons/Total-distance-traveled.png"
 import securityIcon from "../../shared/assets/icons/Security icon.png"
 import passwordRowIcon from "../../shared/assets/icons/Account row icon 0.png"
-import alertRowIcon from "../../shared/assets/icons/Account row icon 1.png"
-import privacyRowIcon from "../../shared/assets/icons/Account row icon 2.png"
-import travelRecordIcon from "../../shared/assets/icons/Travel record icon.png"
-import hartIcon from "../../shared/assets/icons/Preferences icon.png"
 
-const INTEREST_THEMES = ["역사·전통", "카페·감성", "전시·문화", "쇼핑", "자연·산책", "힐링·여유"]
-const MOVE_MODES = ["도보 위주", "대중교통 위주", "균형 있게"]
-const MEAL_MODES = ["경로 주변 추천", "직접 선택"]
-
+/**
+ * 변경: 실제 API가 없는 방문 장소·거리·취향을 임의 수치로 보여 주지 않습니다.
+ * 프로필에서는 사용자 정보와 실제 저장 일정 수, 실제로 동작하는 계정 관리만 제공합니다.
+ */
 export default function ProfilePage() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [passwordError, setPasswordError] = useState("")
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false)
-  const [selectedThemes, setSelectedThemes] = useState(["카페·감성"])
-  const [moveMode, setMoveMode] = useState("도보 위주")
-  const [mealMode, setMealMode] = useState("경로 주변 추천")
+  const [savedScheduleCount, setSavedScheduleCount] = useState(null)
 
-  const navigate = useNavigate()
+  useEffect(() => {
+    let isMounted = true
 
-  function toggleTheme(theme) {
-    setSelectedThemes((prev) =>
-      prev.includes(theme) ? prev.filter((item) => item !== theme) : [...prev, theme]
-    )
-  }
+    async function loadSavedScheduleCount() {
+      try {
+        // 변경: 프로필 통계는 실제 SAVED 일정 목록 API의 totalCount만 사용합니다.
+        const result = await getSavedItineraries({ page: 1, pageSize: 1 })
+        if (isMounted) setSavedScheduleCount(result.totalCount ?? 0)
+      } catch {
+        // 오류 시 임의 숫자를 보여 주지 않고 값이 아직 확인되지 않았음을 유지합니다.
+        if (isMounted) setSavedScheduleCount(null)
+      }
+    }
+
+    loadSavedScheduleCount()
+    return () => { isMounted = false }
+  }, [])
 
   async function handlePasswordSubmit(event) {
     event.preventDefault()
@@ -50,14 +52,13 @@ export default function ProfilePage() {
       return
     }
 
-    setPasswordError("")
-    setIsPasswordSubmitting(true)
     try {
+      setPasswordError("")
+      setIsPasswordSubmitting(true)
       await changePassword({ currentPassword, newPassword })
       setIsPasswordModalOpen(false)
-      window.alert("비밀번호가 변경됐어요.")
     } catch (error) {
-      setPasswordError(error.message)
+      setPasswordError(error.message || "비밀번호를 변경하지 못했습니다.")
     } finally {
       setIsPasswordSubmitting(false)
     }
@@ -69,14 +70,14 @@ export default function ProfilePage() {
   }
 
   async function handleWithdraw() {
-    const ok = window.confirm("정말 탈퇴하시겠어요? 이 작업은 되돌릴 수 없어요.")
-    if (!ok) return
+    if (!window.confirm("정말 탈퇴하시겠어요? 이 작업은 되돌릴 수 없어요.")) return
+
     try {
       await withdrawUser()
       await logout()
       navigate("/auth/login", { replace: true })
     } catch (error) {
-      window.alert(error.message)
+      setPasswordError(error.message || "회원 탈퇴를 처리하지 못했습니다.")
     }
   }
 
@@ -90,7 +91,7 @@ export default function ProfilePage() {
     <main className={styles.page}>
       <header className={styles.pageHeader}>
         <h1>내 정보</h1>
-        <p>나의 여행 취향과 활동을 한눈에 확인하고 관리해요.</p>
+        <p>계정 정보와 저장한 여행 일정을 관리해요.</p>
       </header>
 
       <div className={styles.layout}>
@@ -100,180 +101,67 @@ export default function ProfilePage() {
             <div className={styles.profileInfo}>
               <div className={styles.nameRow}>
                 <span className={styles.name}>{user?.nickname}</span>
-                <button
-                  type="button"
-                  className={styles.editButton}
-                  onClick={() => navigate("/profile/edit")}
-                >
-                  프로필 수정
-                </button>
+                <button type="button" className={styles.editButton} onClick={() => navigate("/profile/edit")}>프로필 수정</button>
               </div>
               <p className={styles.role}>{user?.introduction || "ROUTA 여행자"}</p>
               <p className={styles.email}>{user?.email}</p>
             </div>
           </section>
 
-          <section className={styles.statsRow}>
-            <div className={styles.statCard}>
-              <img className={styles.statIcon} src={savedScheduleIcon} alt="" />
-              <div className={styles.statText}>
-                <span className={styles.statLabel}>저장한 일정</span>
-                <strong className={styles.statValue}>4</strong>
-              </div>
+          <section className={styles.scheduleSummaryCard}>
+            <img className={styles.statIcon} src={savedScheduleIcon} alt="" />
+            <div>
+              <p>저장한 일정</p>
+              <strong>{savedScheduleCount == null ? "불러오는 중" : `${savedScheduleCount}개`}</strong>
+              <span>마음에 든 경로는 저장 일정에서 다시 확인할 수 있어요.</span>
             </div>
-            <div className={styles.statCard}>
-              <img className={styles.statIcon} src={visitedPlaceIcon} alt="" />
-              <div className={styles.statText}>
-                <span className={styles.statLabel}>방문한 장소</span>
-                <strong className={styles.statValue}>16</strong>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <img className={styles.statIcon} src={totalDistanceIcon} alt="" />
-              <div className={styles.statText}>
-                <span className={styles.statLabel}>총 이동 거리</span>
-                <strong className={styles.statValue}>42.8km</strong>
-              </div>
-            </div>
+            <button type="button" onClick={() => navigate("/schedules")}>저장 일정 보기</button>
           </section>
 
-          <section className={styles.recordCard}>
-            <h2><img className={styles.titleIcon} src={travelRecordIcon} alt="" /> 나의 서울 여행 기록</h2>
-            <p className={styles.recordText}>
-              서울 ?개 구 중 ?개 구를 여행했어요
-            </p>
-            <div className={styles.progressTrack}></div>
-
+          <section className={styles.nextPlanCard}>
+            <h2>다음 여행을 준비해 볼까요?</h2>
+            <p>관심 테마와 식사 방식은 여행 계획을 만들 때 선택하고 추천 경로에 바로 반영할 수 있어요.</p>
+            <button type="button" onClick={() => navigate("/planner/condition")}>여행 일정 만들기</button>
           </section>
         </div>
 
         <div className={styles.sideColumn}>
-          <section className={styles.preferenceCard}>
-            <h2><img className={styles.titleIcon} src={hartIcon} alt="" /> 나의 여행 취향</h2>
-            <p className={styles.cardSubtitle}>추천 경로에 반영되는 정보를 관리해요.</p>
-
-            <div className={styles.preferenceGroup}>
-              <span className={styles.groupLabel}>관심 테마</span>
-              <div className={styles.tagRow}>
-                {INTEREST_THEMES.map((theme) => (
-                  <button
-                    key={theme}
-                    type="button"
-                    className={`${styles.tag} ${selectedThemes.includes(theme) ? styles.tagActive : ""}`}
-                    onClick={() => toggleTheme(theme)}
-                  >
-                    {theme}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.preferenceGroup}>
-              <span className={styles.groupLabel}>선호 이동 방식</span>
-              <div className={styles.tagRow}>
-                {MOVE_MODES.map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className={`${styles.tag} ${moveMode === mode ? styles.tagActive : ""}`}
-                    onClick={() => setMoveMode(mode)}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.preferenceGroup}>
-              <span className={styles.groupLabel}>식사 추천</span>
-              <div className={styles.tagRow}>
-                {MEAL_MODES.map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className={`${styles.tag} ${mealMode === mode ? styles.tagActive : ""}`}
-                    onClick={() => setMealMode(mode)}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button type="button" className={styles.saveButton}>취향 저장하기</button>
-          </section>
-
           <section className={styles.securityCard}>
             <h2><img className={styles.titleIcon} src={securityIcon} alt="" /> 계정 및 보안</h2>
             <ul className={styles.securityList}>
               {user?.authProvider === "LOCAL" && (
                 <li>
-                  <button type="button" onClick={() => setIsPasswordModalOpen(true)}>
-                    <span className={styles.rowLeft}>
-                      <img src={passwordRowIcon} alt="" />
-                      비밀번호 변경
-                    </span>
+                  <button type="button" onClick={() => { setPasswordError(""); setIsPasswordModalOpen(true) }}>
+                    <span className={styles.rowLeft}><img src={passwordRowIcon} alt="" />비밀번호 변경</span>
                     <span aria-hidden="true">›</span>
                   </button>
                 </li>
               )}
-              <li>
-                <button type="button">
-                  <span className={styles.rowLeft}>
-                    <img src={alertRowIcon} alt="" />
-                    알림 설정
-                  </span>
-                  <span aria-hidden="true">›</span>
-                </button>
-              </li>
-              <li>
-                <button type="button">
-                  <span className={styles.rowLeft}>
-                    <img src={privacyRowIcon} alt="" />
-                    개인정보 관리
-                  </span>
-                  <span aria-hidden="true">›</span>
-                </button>
-              </li>
             </ul>
-
+            {passwordError && <p className={styles.errorText} role="alert">{passwordError}</p>}
             <div className={styles.accountActions}>
-              <button type="button" className={styles.logoutButton} onClick={handleLogout}>
-                로그아웃
-              </button>
-              <button type="button" className={styles.withdrawButton} onClick={handleWithdraw}>
-                회원 탈퇴
-              </button>
+              <button type="button" className={styles.logoutButton} onClick={handleLogout}>로그아웃</button>
+              <button type="button" className={styles.withdrawButton} onClick={handleWithdraw}>회원 탈퇴</button>
             </div>
           </section>
         </div>
       </div>
+
       {isPasswordModalOpen && (
         <div className={styles.modalOverlay}>
-          <section className={styles.modal} role="dialog" aria-modal="true">
+          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="password-change-title">
             <header className={styles.modalHeader}>
-              <h2>비밀번호 변경</h2>
+              <h2 id="password-change-title">비밀번호 변경</h2>
               <button type="button" aria-label="닫기" onClick={() => setIsPasswordModalOpen(false)}>×</button>
             </header>
             <form onSubmit={handlePasswordSubmit} className={styles.modalForm}>
-              <label>
-                <span>현재 비밀번호</span>
-                <input type="password" name="currentPassword" required />
-              </label>
-              <label>
-                <span>새 비밀번호</span>
-                <input type="password" name="newPassword" minLength={8} required />
-              </label>
-              <label>
-                <span>새 비밀번호 확인</span>
-                <input type="password" name="newPasswordConfirm" minLength={8} required />
-              </label>
-              {passwordError && <p className={styles.errorText}>{passwordError}</p>}
+              <label><span>현재 비밀번호</span><input type="password" name="currentPassword" required /></label>
+              <label><span>새 비밀번호</span><input type="password" name="newPassword" minLength={8} required /></label>
+              <label><span>새 비밀번호 확인</span><input type="password" name="newPasswordConfirm" minLength={8} required /></label>
+              {passwordError && <p className={styles.errorText} role="alert">{passwordError}</p>}
               <div className={styles.modalActions}>
                 <button type="button" onClick={() => setIsPasswordModalOpen(false)}>취소</button>
-                <button type="submit" disabled={isPasswordSubmitting}>
-                  {isPasswordSubmitting ? "변경 중..." : "변경하기"}
-                </button>
+                <button type="submit" disabled={isPasswordSubmitting}>{isPasswordSubmitting ? "변경 중…" : "변경하기"}</button>
               </div>
             </form>
           </section>
