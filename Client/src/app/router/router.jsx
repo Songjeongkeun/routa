@@ -17,6 +17,8 @@ import NotFoundPage from "../../pages/NotFoundPage.jsx"
 import ProfilePage from "../../pages/profile/ProfilePage.jsx"
 import ProfileEditPage from "../../pages/profile/ProfileEditPage.jsx"
 import InquiryManagementPage from "../../pages/admin/InquiryManagementPage.jsx"
+import MyInquiriesPage from "../../pages/inquiry/MyInquiriesPage.jsx"
+import NewInquiryPage from "../../pages/inquiry/NewInquiryPage.jsx"
 
 export const router = createBrowserRouter([
   {
@@ -45,6 +47,10 @@ export const router = createBrowserRouter([
           { path: "course/loading", element: <CourseLoadingPage /> },
           // 변경: 음식점 선택 완료 후 확인할 경로 결과 화면을 라우터에 연결합니다.
           { path: "course/result", element: <CourseResultPage /> },
+          { path: "profile", element: <ProfilePage /> },
+          { path: "profile/edit", element: <ProfileEditPage /> },
+          { path: "inquiry", element: <MyInquiriesPage /> },
+          { path: "inquiry/new", element: <NewInquiryPage /> },
           { path: "admin",
             element: <AdminRoute />,
             children: [

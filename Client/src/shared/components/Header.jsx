@@ -20,7 +20,7 @@ export default function Header() {
   }
 
   async function handleInquiryClick() {
-    await navigate("/api/inquiries")
+    await navigate("/inquiry")
   }
   
   return (
