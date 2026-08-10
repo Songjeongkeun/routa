@@ -1,26 +1,5 @@
 import { query } from "../../db/database.mjs"
 
-export async function findCoordinatesByLocation(location) {
-  const result = await query(
-    `SELECT latitude, longitude
-     FROM public."PLACE"
-     WHERE place_name ILIKE $1
-        OR address ILIKE $1
-        OR address ILIKE '%' || $1 || '%'
-     ORDER BY
-       CASE
-         WHEN place_name ILIKE $1 THEN 0
-         WHEN address ILIKE $1 THEN 1
-         ELSE 2
-       END,
-       place_id ASC
-     LIMIT 1`,
-    [location],
-  )
-
-  return result.rows[0] ?? null
-}
-
 export async function findPlaces({
   keyword,
   placeCategory,
@@ -28,8 +7,6 @@ export async function findPlaces({
   closedWeekday,
   startTime,
   endTime,
-  originLatitude,
-  originLongitude,
   limit,
   offset,
 }) {
@@ -50,14 +27,6 @@ export async function findPlaces({
        default_stay_mins AS "defaultStayMins",
        pet_is_allowed AS "petIsAllowed",
        google_place_id AS "googlePlaceId",
-       CASE
-         WHEN $6::DOUBLE PRECISION IS NULL OR $7::DOUBLE PRECISION IS NULL THEN NULL
-         ELSE ROUND((6371 * 2 * ASIN(SQRT(
-           POWER(SIN(RADIANS(latitude - $6) / 2), 2)
-           + COS(RADIANS($6)) * COS(RADIANS(latitude))
-           * POWER(SIN(RADIANS(longitude - $7) / 2), 2)
-         )))::NUMERIC, 2)::DOUBLE PRECISION
-       END AS "distanceKm",
        COUNT(*) OVER()::INT AS "totalItems"
      FROM public."PLACE"
      WHERE (
@@ -72,7 +41,7 @@ export async function findPlaces({
      )
      -- 변경: 검색어와 별개로 장소 대분류를 정확히 제한합니다.
      -- placeCategory가 '음식점'이면 PLACE의 음식점 행만 반환합니다.
-     AND ($8::TEXT IS NULL OR place_category = $8)
+     AND ($6::TEXT IS NULL OR place_category = $6)
      AND (NOT $2::BOOLEAN OR pet_is_allowed = TRUE)
      AND (
        $3::TEXT IS NULL
@@ -88,38 +57,15 @@ export async function findPlaces({
        OR $5::TIME IS NULL
        OR (start_time IS NOT NULL AND end_time IS NOT NULL AND start_time < $5 AND end_time > $4)
      )
-     AND (
-       $6::DOUBLE PRECISION IS NULL
-       OR $7::DOUBLE PRECISION IS NULL
-       OR 6371 * 2 * ASIN(SQRT(
-         POWER(SIN(RADIANS(latitude - $6) / 2), 2)
-         + COS(RADIANS($6)) * COS(RADIANS(latitude))
-         * POWER(SIN(RADIANS(longitude - $7) / 2), 2)
-       )) <= 5
-     )
-     ORDER BY
-       CASE
-         WHEN $6::DOUBLE PRECISION IS NULL OR $7::DOUBLE PRECISION IS NULL THEN NULL
-         ELSE 6371 * 2 * ASIN(SQRT(
-           POWER(SIN(RADIANS(latitude - $6) / 2), 2)
-           + COS(RADIANS($6)) * COS(RADIANS(latitude))
-           * POWER(SIN(RADIANS(longitude - $7) / 2), 2)
-         ))
-       END ASC NULLS LAST,
-       average_rating DESC NULLS LAST,
-       place_name ASC,
-       place_id ASC
-     -- 변경: placeCategory가 $8을 사용하므로 페이지네이션 파라미터는 뒤 번호로 이동합니다.
-     LIMIT $9
-     OFFSET $10`,
+     ORDER BY RANDOM()
+     LIMIT $7
+     OFFSET $8`,
     [
       keyword,
       petOnly,
       closedWeekday,
       startTime,
       endTime,
-      originLatitude,
-      originLongitude,
       placeCategory,
       limit,
       offset,

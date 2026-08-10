@@ -42,7 +42,7 @@
 .placeInfo strong { display: block; margin-top: 4px; color: #00aa96; font-size: 13px; }
 .addButton { height: 36px; border: 1px solid #6448ff; border-radius: 11px; color: #553af1; background: #fff; font: inherit; font-size: 14px; cursor: pointer; }
 .addButton span { font-size: 20px; vertical-align: -1px; }
-.addButton:disabled { border-color: #10bda9; color: #078b7c; background: #f0fffc; cursor: default; }
+.addButton[aria-pressed="true"] { border-color: #10bda9; color: #078b7c; background: #f0fffc; }
 .statusMessage { grid-column: 1 / -1; margin: 18px 0; color: #71809d; text-align: center; }
 .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 10px 0; color: #71809d; font-size: 13px; }
 .pagination button { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid #d8e0ee; border-radius: 9px; color: #553af1; background: #fff; cursor: pointer; }

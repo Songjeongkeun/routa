@@ -116,8 +116,13 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
         runSearch(filter.keyword)
     }
 
-    const handleAddPlace = (place) => {
-        if (selectedPlaces.some((selected) => selected.placeId === place.placeId)) return
+    const handleTogglePlace = (place) => {
+        const isSelected = selectedPlaces.some((selected) => selected.placeId === place.placeId)
+
+        if (isSelected) {
+            onSelectedPlacesChange(selectedPlaces.filter((selected) => selected.placeId !== place.placeId))
+            return
+        }
 
         onSelectedPlacesChange([
             ...selectedPlaces,
@@ -192,10 +197,10 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                             <button
                                 className={styles.addButton}
                                 type="button"
-                                onClick={() => handleAddPlace(place)}
-                                disabled={selected}
+                                onClick={() => handleTogglePlace(place)}
+                                aria-pressed={selected}
                             >
-                                <span>{selected ? "✓" : "＋"}</span> {selected ? "선택됨" : "추가"}
+                                <span>{selected ? "−" : "＋"}</span> {selected ? "선택 취소" : "추가"}
                             </button>
                         </article>
                     )
@@ -243,8 +248,11 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                     <button
                         type="button"
                         disabled={isLoading || pagination.page === pagination.totalPages}
-                        aria-label="마지막 페이지"
-                        onClick={() => runSearch(activeFilter.keyword || keyword, pagination.totalPages)}
+                        aria-label="5페이지 앞으로"
+                        onClick={() => runSearch(
+                            activeFilter.keyword || keyword,
+                            Math.min(pagination.page + PAGE_GROUP_SIZE, pagination.totalPages),
+                        )}
                     >
                         &gt;&gt;
                     </button>
