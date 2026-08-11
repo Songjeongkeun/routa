@@ -1,13 +1,13 @@
 .page {
     min-height: calc(100vh - 68px);
     padding: 28px 40px 48px;
-    color: #14203a;
-    background: #f8f9fd;
+    color: var(--color-text);
+    background: var(--color-surface-muted);
 }
 
 .intro { text-align: center; }
 .intro h1 { margin: 0; font-size: clamp(28px, 3vw, 37px); line-height: 1.3; letter-spacing: -1.3px; }
-.intro p { margin: 7px 0 0; color: #8190ad; font-size: 13px; }
+.intro p { margin: 7px 0 0; color: var(--color-text-subtle); font-size: 13px; }
 
 .stepper {
     max-width: 610px;
@@ -24,7 +24,7 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    color: #71809d;
+    color: var(--color-text-muted);
     font-size: 13px;
     font-weight: 600;
 }
@@ -35,15 +35,15 @@
     right: -18px;
     width: 54px;
     height: 1px;
-    background: #dce3f0;
+    background: var(--color-border);
     content: "";
 }
 
-.stepper li:first-child::after { background: #28c4b1; }
-.stepper li > span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #f0f3f9; }
-.stepper .completedStep > span { color: #fff; background: #10b9a5; }
-.stepper .currentStep { color: #14203a; }
-.stepper .currentStep > span { color: #fff; background: #5138ef; }
+.stepper li:first-child::after { background: var(--color-progress); }
+.stepper li > span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--color-surface-muted); }
+.stepper .completedStep > span { color: var(--color-surface); background: var(--color-progress); }
+.stepper .currentStep { color: var(--color-text); }
+.stepper .currentStep > span { color: var(--color-surface); background: var(--color-primary); }
 
 .layout {
     width: min(100%, 1240px);
@@ -56,35 +56,42 @@
 .content { min-width: 0; }
 .actions { display: grid; grid-template-columns: 0.56fr 1fr; gap: 18px; margin-top: 20px; }
 .actions button { min-height: 52px; border-radius: 11px; font: inherit; font-weight: 700; cursor: pointer; }
-.cancelButton { border: 1px solid #6047ff; color: #543af0; background: #fff; }
-.nextButton { border: 1px solid #4d36ee; color: #fff; background: #4d36ee; }
+.cancelButton { border: 1px solid var(--color-primary); color: var(--color-primary); background: var(--color-surface); }
+.nextButton { border: 1px solid var(--color-primary); color: var(--color-surface); background: var(--color-primary); }
 
 .summary {
     min-width: 0;
     padding: 24px;
-    border: 1px solid #d8e0ee;
+    border: 1px solid var(--color-border);
     border-radius: 13px;
-    background: #fff;
+    background: var(--color-surface);
 }
 
 .summary h2 { margin: 0 0 18px; font-size: 17px; }
 .summary dl { margin: 0; }
 .summary dl > div,
-.summaryRow { min-height: 48px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid #e0e5ef; }
+.summaryRow { min-height: 48px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-border); }
 .summary dt,
-.summaryRow span { color: #74829d; font-size: 12px; }
+.summaryRow span { color: var(--color-text-muted); font-size: 12px; }
 .summary dt span { display: inline-block; width: 19px; color: #354462; }
 .summary dd,
-.summaryRow strong { margin: 0; color: #18233d; font-size: 12px; font-weight: 700; text-align: right; }
+.summaryRow strong { margin: 0; color: var(--color-text); font-size: 12px; font-weight: 700; text-align: right; }
 .summary .accent { color: #5740ee; }
-.summarySection { padding: 20px 0 17px; border-bottom: 1px solid #e0e5ef; }
+.summarySection { padding: 20px 0 17px; border-bottom: 1px solid var(--color-border); }
 .summaryTitle { display: flex; justify-content: space-between; font-size: 12px; }
-.summaryTitle span { color: #74829d; }
-.summaryTitle strong { color: #18233d; }
+.summaryTitle span { color: var(--color-text-muted); }
+.summaryTitle strong { color: var(--color-text); }
 .summarySection ul { display: grid; gap: 14px; margin: 18px 0 0 27px; padding: 0; list-style: none; font-size: 12px; }
 .summarySection li { display: flex; justify-content: space-between; }
-.summarySection time { color: #8491ac; }
-.summaryEmpty { margin: 15px 0 0 27px; color: #8b98b2; font-size: 12px; }
+.summarySection time { color: var(--color-text-subtle); }
+.summaryEmpty { margin: 15px 0 0 27px; color: var(--color-text-subtle); font-size: 12px; }
+
+.summaryIcon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 4px;
+}
 
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }

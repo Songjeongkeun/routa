@@ -1,8 +1,8 @@
 .panel {
   padding: 20px;
-  border: 1px solid #dce2ef;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .header {
@@ -15,12 +15,12 @@
 
 .header h2 {
   margin: 0;
-  color: #151e38;
+  color: var(--color-text);
   font-size: 15px;
 }
 
 .header span {
-  color: #513dff;
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -41,17 +41,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: #24324f;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .modeControl select {
   min-width: 150px;
   padding: 7px 9px;
-  border: 1px solid #d8def0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  color: #24324f;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .row {
@@ -60,21 +60,21 @@
   align-items: center;
   gap: 8px;
   padding: 7px 11px;
-  border: 1px solid #dce2ef;
+  border: 1px solid var(--color-border);
   border-radius: 7px;
-  color: #17213a;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .row:nth-child(even) {
-  background: #f5f6fc;
+  background: var(--color-surface-muted);
 }
 
 .dragHandle,
 .remove {
   flex: none;
   border: 0;
-  color: #8190ae;
+  color: var(--color-text-subtle);
   background: transparent;
   cursor: pointer;
 }
@@ -90,7 +90,7 @@
 }
 
 .meta {
-  color: #8490aa;
+  color: var(--color-text-subtle);
   font-size: 11px;
 }
 
@@ -99,7 +99,7 @@
   align-items: center;
   gap: 3px;
   margin-left: auto;
-  color: #202941;
+  color: var(--color-text);
   font-size: 12px;
   font-weight: 750;
 }
@@ -122,10 +122,10 @@
   gap: 8px;
   min-height: 42px;
   padding: 8px 11px;
-  border: 1px solid #e0e5f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  color: #344263;
-  background: #fafbff;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
   font-size: 12px;
   font-weight: 700;
 }
@@ -136,10 +136,10 @@
   height: 34px;
   min-width: 0;
   padding: 0 8px;
-  border: 1px solid #d8def0;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   color: inherit;
-  background: #fff;
+  background: var(--color-surface);
   font: inherit;
   line-height: 1.2;
   outline: none;
@@ -149,13 +149,13 @@
 .mealTimeControl input:focus-visible {
   /* 변경: 전역 3px 포커스 외곽선이 네이티브 time 입력과 겹쳐 두껍게 보이므로,
      이 화면에서는 테두리와 은은한 그림자로 현재 입력칸만 명확히 표시합니다. */
-  border-color: #6247f5;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 2px rgb(98 71 245 / 14%);
+  box-shadow: 0 0 0 2px rgb(76 60 244 / 14%);
 }
 
 .mealTimeControl small {
-  color: #72809b;
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 500;
 }
@@ -173,9 +173,9 @@
   min-height: 64px;
   display: grid;
   place-items: center;
-  border: 1px dashed #dce2ef;
+  border: 1px dashed var(--color-border);
   border-radius: 8px;
-  color: #7c88a3;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 

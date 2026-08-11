@@ -1,331 +1,14 @@
-.page {
-  min-height: calc(100vh - 72px);
-  padding: 14px 24px 52px;
-  color: #121b35;
-  background: #f8f9fd;
-}
-
-.container {
-  width: min(960px, 100%);
-  margin: 0 auto;
-}
-
-.intro {
-  text-align: center;
-}
-
-.intro h1 {
-  margin: 0;
-  font-size: clamp(24px, 3vw, 28px);
-  font-weight: 850;
-  letter-spacing: -0.045em;
-}
-
-.intro p {
-  margin: 5px 0 0;
-  color: #8994ad;
-  font-size: 12px;
-}
-
-.stepper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 58px;
-  margin: 16px 0 18px;
-  padding: 0;
-  list-style: none;
-}
-
-.stepper li {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #8793ad;
-  font-size: 12px;
-}
-
-.stepper li:not(:last-child)::after {
-  position: absolute;
-  left: calc(100% + 20px);
-  width: 38px;
-  height: 1px;
-  background: #dfe4f1;
-  content: "";
-}
-
-.stepper li span {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: #8090ae;
-  background: #f0f2f8;
-  font-weight: 800;
-}
-
-.stepper .complete span {
-  color: #fff;
-  background: #12b8a6;
-}
-
-.stepper .complete::after {
-  background: #4ed1c2;
-}
-
-.stepper .active {
-  color: #141e39;
-  font-weight: 800;
-}
-
-.stepper .active span {
-  color: #fff;
-  background: #4e3df5;
-}
-
-.topGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 284px;
-  gap: 24px;
-  align-items: start;
-}
-
-.finder {
-  min-width: 0;
-}
-
-.searchBar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 66px;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border: 1px solid #dce2ef;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.searchBar label {
-  font-size: 14px;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
-.searchBar input {
-  min-width: 0;
-  height: 36px;
-  padding: 0 14px;
-  border: 1px solid #dce2ef;
-  border-radius: 10px;
-  color: #1a2440;
-  background: #fff;
-  font: inherit;
-  font-size: 12px;
-}
-
-.searchBar input::placeholder {
-  color: #929db5;
-}
-
-.searchBar button {
-  height: 36px;
-  border: 1px solid #dce2ef;
-  border-radius: 10px;
-  color: #17213a;
-  background: #f8f9fd;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 14px 0;
-}
-
-.chips button {
-  min-width: 45px;
-  height: 31px;
-  padding: 0 14px;
-  border: 1px solid #dce2ef;
-  border-radius: 999px;
-  color: #71809e;
-  background: #fff;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-/* 변경: DB에 음식 종류 컬럼이 없어 현재 적용 중인 '전체 음식점' 상태만 칩으로 표시합니다. */
-.chips .chipActive {
-  min-width: 72px;
-  height: 31px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
-  border: 1px solid #5a46ff;
-  border-radius: 999px;
-  border-color: #5a46ff;
-  color: #513dff;
-  background: #faf9ff;
-  font-size: 11px;
-}
-
-/* 변경: 한식·일식 필터가 없는 이유를 화면에 명확히 알려 잘못된 검색 동작을 막습니다. */
-.categoryNotice {
-  display: inline-flex;
-  align-items: center;
-  color: #8994ad;
-  font-size: 11px;
-}
-
-/* 변경: 서버의 다음 페이지를 요청해 많은 음식점 결과를 이어서 볼 수 있게 하는 버튼입니다. */
-.loadMore {
-  display: block;
-  min-width: 112px;
-  height: 34px;
-  margin: 16px auto 0;
-  border: 1px solid #dce2ef;
-  border-radius: 9px;
-  color: #513dff;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 750;
-  cursor: pointer;
-}
-
-.selectedSummary {
-  min-height: 225px;
-  padding: 19px 22px;
-  border: 1px solid #dce2ef;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.selectedSummary h2 {
-  margin: 0 0 18px;
-  font-size: 14px;
-}
-
-.selectedSummary ul {
-  display: grid;
-  gap: 22px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.selectedSummary li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-}
-
-.selectedSummary li span {
-  color: #7485a6;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.summaryEmpty {
-  color: #8994ad;
-  font-size: 12px;
-}
-
-.message {
-  margin: 12px 0;
-  padding: 9px 13px;
-  border-radius: 8px;
-  color: #4330d9;
-  background: #efedff;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.actions {
-  display: grid;
-  grid-template-columns: 264px minmax(0, 1fr);
-  gap: 18px;
-  margin-top: 20px;
-}
-
-.actions button {
-  height: 48px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.cancel {
-  border: 1px solid #513dff;
-  color: #513dff;
-  background: #fff;
-}
-
-.confirm {
-  border: 1px solid #513dff;
-  color: #fff;
-  background: #513dff;
-}
-
-@media (max-width: 980px) {
-  .topGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .selectedSummary {
-    min-height: 0;
-  }
-}
-
-@media (max-width: 640px) {
-  .page {
-    padding: 22px 14px 40px;
-  }
-
-  .stepper {
-    gap: 26px;
-  }
-
-  .stepper li {
-    gap: 6px;
-    font-size: 10px;
-  }
-
-  .stepper li:not(:last-child)::after {
-    display: none;
-  }
-
-  .searchBar {
-    grid-template-columns: 1fr 62px;
-  }
-
-  .searchBar label {
-    grid-column: 1 / -1;
-  }
-
-  .actions {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* 변경: 아래 스타일은 PlanPlacesPage의 화면 규격을 음식점 선택 단계에도 동일하게 적용합니다. */
 .page {
   min-height: calc(100vh - 68px);
   padding: 28px 40px 48px;
-  color: #14203a;
-  background: #f8f9fd;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
 }
 
 .intro { text-align: center; }
 .intro h1 { margin: 0; font-size: clamp(28px, 3vw, 37px); line-height: 1.3; letter-spacing: -1.3px; }
-.intro p { margin: 7px 0 0; color: #8190ad; font-size: 13px; }
+.intro p { margin: 7px 0 0; color: var(--color-text-subtle); font-size: 13px; }
 
 .stepper {
   max-width: 610px;
@@ -342,7 +25,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #71809d;
+  color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 600;
 }
@@ -353,15 +36,15 @@
   right: -18px;
   width: 54px;
   height: 1px;
-  background: #dce3f0;
+  background: var(--color-border);
   content: "";
 }
 
-.stepper .completedStep::after { background: #28c4b1; }
-.stepper li > span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #f0f3f9; }
-.stepper .completedStep > span { color: #fff; background: #10b9a5; }
-.stepper .currentStep { color: #14203a; }
-.stepper .currentStep > span { color: #fff; background: #5138ef; }
+.stepper .completedStep::after { background: var(--color-progress); }
+.stepper li > span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--color-surface-muted); }
+.stepper .completedStep > span { color: var(--color-surface); background: var(--color-progress); }
+.stepper .currentStep { color: var(--color-text); }
+.stepper .currentStep > span { color: var(--color-surface); background: var(--color-primary); }
 
 .layout {
   width: min(100%, 1240px);
@@ -379,63 +62,70 @@
   align-items: center;
   gap: 16px;
   padding: 14px 10px 14px 20px;
-  border: 1px solid #d8e0ee;
+  border: 1px solid var(--color-border);
   border-radius: 13px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .searchBox label { font-size: 17px; font-weight: 800; white-space: nowrap; }
-.searchBox input { min-width: 0; height: 46px; padding: 0 14px; border: 1px solid #d8e0ee; border-radius: 11px; outline: none; color: #18233d; background: #fff; font: inherit; }
-.searchBox input:focus { border-color: #5b44f5; box-shadow: 0 0 0 3px rgb(91 68 245 / 10%); }
-.searchBox input::placeholder { color: #8b98b2; }
-.searchBox button { height: 46px; border: 1px solid #d8e0ee; border-radius: 11px; color: #18233d; background: #fbfcff; font: inherit; font-weight: 700; cursor: pointer; }
+.searchBox input { min-width: 0; height: 46px; padding: 0 14px; border: 1px solid var(--color-border); border-radius: 11px; outline: none; color: var(--color-text); background: var(--color-surface); font: inherit; }
+.searchBox input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgb(76 60 244 / 10%); }
+.searchBox input::placeholder { color: var(--color-text-subtle); }
+.searchBox button { height: 46px; border: 1px solid var(--color-border); border-radius: 11px; color: var(--color-text); background: var(--color-surface-muted); font: inherit; font-weight: 700; cursor: pointer; }
 .searchBox button:disabled { cursor: wait; opacity: .65; }
 
 .filters { display: flex; align-items: center; gap: 9px; padding: 0 10px; margin: 10px 0; overflow-x: auto; scrollbar-width: none; }
 .filters::-webkit-scrollbar { display: none; }
 .activeFilter { flex: 0 0 auto; min-height: 35px; display: inline-flex; align-items: center; padding: 0 20px; border: 1px solid #694dff; border-radius: 999px; color: #563cf1; background: #fff; font-size: 12px; }
 .categoryNotice { flex: 0 0 auto; color: #8994ad; font-size: 11px; }
-.statusMessage { margin: 18px 0; color: #71809d; text-align: center; }
+.statusMessage { margin: 18px 0; color: var(--color-text-muted); text-align: center; }
 
 /* 변경: 준비되지 않은 필터를 노출하지 않고 실제 검색 가능한 기준을 안내합니다. */
-.searchHint { margin: 10px 2px 14px; color: #71809d; font-size: 12px; }
+.searchHint { margin: 10px 2px 14px; color: var(--color-text-muted); font-size: 12px; }
 
 /* 변경: 음식점 목록도 PlaceSelector와 동일한 페이지 번호 탐색 형태를 사용합니다. */
-.pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 10px 0; color: #71809d; font-size: 13px; }
-.pagination button { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid #d8e0ee; border-radius: 9px; color: #553af1; background: #fff; cursor: pointer; }
-.pagination button:disabled { color: #aab4c7; cursor: default; opacity: .65; }
-.pagination .currentPage { border-color: #6448ff; color: #fff; background: #6448ff; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 10px 0; color: var(--color-text-muted); font-size: 13px; }
+.pagination button { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: 9px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; }
+.pagination button:disabled { color: var(--color-text-subtle); cursor: default; opacity: .65; }
+.pagination .currentPage { border-color: var(--color-primary); color: var(--color-surface); background: var(--color-primary); }
 
 .summary {
   min-width: 0;
   padding: 24px;
-  border: 1px solid #d8e0ee;
+  border: 1px solid var(--color-border);
   border-radius: 13px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .summary h2 { margin: 0 0 18px; font-size: 17px; }
 .summary dl { margin: 0; }
 .summary dl > div,
-.summaryRow { min-height: 48px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid #e0e5ef; }
+.summaryRow { min-height: 48px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-border); }
 .summary dt,
-.summaryRow span { color: #74829d; font-size: 12px; }
+.summaryRow span { color: var(--color-text-muted); font-size: 12px; }
 .summary dd,
-.summaryRow strong { margin: 0; color: #18233d; font-size: 12px; font-weight: 700; text-align: right; }
-.summarySection { padding: 20px 0 17px; border-bottom: 1px solid #e0e5ef; }
+.summaryRow strong { margin: 0; color: var(--color-text); font-size: 12px; font-weight: 700; text-align: right; }
+.summarySection { padding: 20px 0 17px; border-bottom: 1px solid var(--color-border); }
 .summaryTitle { display: flex; justify-content: space-between; font-size: 12px; }
-.summaryTitle span { color: #74829d; }
-.summaryTitle strong { color: #18233d; }
+.summaryTitle span { color: var(--color-text-muted); }
+.summaryTitle strong { color: var(--color-text); }
 .summarySection ul { display: grid; gap: 14px; margin: 18px 0 0 27px; padding: 0; list-style: none; font-size: 12px; }
 .summarySection li { display: flex; justify-content: space-between; gap: 10px; }
-.summarySection time { color: #8491ac; white-space: nowrap; }
-.summaryEmpty { margin: 15px 0 0 27px; color: #8b98b2; font-size: 12px; }
+.summarySection time { color: var(--color-text-subtle); white-space: nowrap; }
+.summaryEmpty { margin: 15px 0 0 27px; color: var(--color-text-subtle); font-size: 12px; }
 
-.message { margin: 12px 0; padding: 9px 13px; border-radius: 8px; color: #4330d9; background: #efedff; font-size: 12px; font-weight: 650; }
+.message { margin: 12px 0; padding: 9px 13px; border-radius: 8px; color: #4330d9; background: var(--color-primary-soft); font-size: 12px; font-weight: 650; }
 .actions { display: grid; grid-template-columns: 0.56fr 1fr; gap: 18px; margin-top: 20px; }
 .actions button { min-height: 52px; height: auto; border-radius: 11px; font: inherit; font-weight: 700; cursor: pointer; }
-.cancelButton { border: 1px solid #6047ff; color: #543af0; background: #fff; }
-.nextButton { border: 1px solid #4d36ee; color: #fff; background: #4d36ee; }
+.cancelButton { border: 1px solid var(--color-primary); color: var(--color-primary); background: var(--color-surface); }
+.nextButton { border: 1px solid var(--color-primary); color: var(--color-surface); background: var(--color-primary); }
+
+.summaryIcon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 4px;
+}
 
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }

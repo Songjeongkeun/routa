@@ -94,7 +94,7 @@
 
 .admin-inquiry-list-summary {
   font-size: 13px;
-  color: #5b4fe0;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -116,12 +116,12 @@
 }
 
 .admin-inquiry-list-item:hover {
-  border-color: #7c6ff0;
+  border-color: var(--color-primary);
 }
 
 .admin-inquiry-list-item--active {
-  border-color: #5b4fe0;
-  background-color: #f5f3ff;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
 .admin-inquiry-list-item__header {
@@ -183,7 +183,7 @@
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  background-color: #ece9fb;
+  background-color: var(--color-primary-soft);
 }
 
 .admin-inquiry-requester-name {
@@ -235,7 +235,7 @@
 
 .admin-inquiry-reply-form textarea {
   width: 100%;
-  border: 1px solid #7c6ff0;
+  border: 1px solid var(--color-primary);
   border-radius: 10px;
   padding: 16px 18px;
   font-size: 14px;
@@ -252,7 +252,7 @@
 }
 
 .admin-inquiry-reply-form__actions button {
-  background-color: #5b4fe0;
+  background-color: var(--color-primary);
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -263,7 +263,7 @@
 }
 
 .admin-inquiry-reply-form__actions button:hover {
-  background-color: #4b3fd0;
+  background-color: #4b3fd6;
 }
 
 .admin-inquiry-reply-form__actions button:disabled {

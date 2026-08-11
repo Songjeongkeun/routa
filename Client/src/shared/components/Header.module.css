@@ -37,7 +37,7 @@
   position: relative;
   min-width: 132px;
   padding: 2px 18px 0;
-  color: #69748d;
+  color: var(--color-text-muted);
   font-size: 17px;
   font-weight: 600;
 }
@@ -48,7 +48,7 @@
 
 /* 변경: 활성 상태가 아닌 메뉴도 같은 버튼 규격을 유지하되, 현재 위치만 밑줄로 구분합니다. */
 .menuButton {
-  color: #69748d;
+  color: var(--color-text-muted);
 }
 
 .activeMenu::after {
@@ -57,7 +57,7 @@
   bottom: 0;
   left: 0;
   height: 5px;
-  background: #6447ff;
+  background: var(--color-primary);
   content: "";
 }
 
@@ -127,7 +127,7 @@
 
 .header button:hover,
 .header a:hover {
-  color: #bdb4ff;
+  color: #fff;
 }
 
 @media (max-width: 760px) {
