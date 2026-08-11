@@ -2,18 +2,10 @@
 
 
 
-/* 공통 초기화 */
-
-* {
-  margin: 0;              /* 모든 요소의 바깥 여백 제거 */
-  padding: 0;              /* 모든 요소의 안쪽 여백 제거 */
-  box-sizing: border-box;  
-}
- 
-body {
+/* 변경: 이 파일은 문의 화면에서만 쓰여야 합니다.
+   전역 * / body 선택자를 제거해 헤더·여행 계획·관리자 화면의 여백과 배경을 덮어쓰지 않습니다. */
+.inquiry-page {
   font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
-  /* 한글 폰트 우선순위: Pretendard가 없으면 Noto Sans KR, 그것도 없으면 시스템 폰트 */
-  background-color: #f4f5f9; /* 페이지 전체 배경 */
   color: #1a1a1a;            
 }
 
@@ -284,6 +276,17 @@ body {
   line-height: 1.6;
 }
 
+/* 변경: 일정에서 진입한 문의는 연결 대상이 있음을 작성 전에 명확히 보여 줍니다. */
+.inquiry-linked-schedule {
+  max-width: 640px;
+  margin: 0 auto 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f5f3ff;
+  color: #5b4fe0;
+  font-size: 13px;
+}
+
 /*폼 전체 레이아웃*/
 .inquiry-page form {
   display: flex;
@@ -408,5 +411,3 @@ body {
   font-size: 16px;
   color: #7c6ff0;
 }
-
-

@@ -115,7 +115,9 @@
 /* 변경: 지정·주변 추천 식사 모두에 공통으로 보이는 도착 희망 시각 영역입니다. */
 .mealTimeControl {
   display: grid;
-  grid-template-columns: auto 82px minmax(0, 1fr);
+  /* 변경: macOS 시간 입력은 '오후 12:00'처럼 오전·오후 표기를 포함하므로,
+     기존 82px 폭에서는 값과 시계 아이콘이 답답하게 붙어 보였습니다. */
+  grid-template-columns: auto 118px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   min-height: 42px;
@@ -129,13 +131,27 @@
 }
 
 .mealTimeControl input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
   min-width: 0;
-  padding: 5px;
+  padding: 0 8px;
   border: 1px solid #d8def0;
   border-radius: 6px;
   color: inherit;
   background: #fff;
   font: inherit;
+  line-height: 1.2;
+  outline: none;
+}
+
+.mealTimeControl input:focus,
+.mealTimeControl input:focus-visible {
+  /* 변경: 전역 3px 포커스 외곽선이 네이티브 time 입력과 겹쳐 두껍게 보이므로,
+     이 화면에서는 테두리와 은은한 그림자로 현재 입력칸만 명확히 표시합니다. */
+  border-color: #6247f5;
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(98 71 245 / 14%);
 }
 
 .mealTimeControl small {
@@ -179,7 +195,8 @@
   }
 
   .mealTimeControl {
-    grid-template-columns: 1fr 82px;
+    /* 변경: 작은 화면에서도 오전·오후가 잘리지 않도록 데스크톱과 같은 입력 폭을 유지합니다. */
+    grid-template-columns: 1fr 118px;
   }
 
   .mealTimeControl small {

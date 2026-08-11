@@ -109,6 +109,30 @@ export async function findNearbyRestaurants({
 }
 
 /**
+ * 변경: 추천 탐색 전에 저장된 장소 쌍의 이동 후보를 다시 읽어 옵니다.
+ * ROUTE_SECTION은 서버 재시작 뒤에도 남는 공용 캐시이므로, 메모리 캐시가 비어 있어도
+ * 같은 장소 쌍에 대해 ODsay·카카오 길찾기 API를 다시 호출하지 않게 합니다.
+ */
+export async function findRouteSection({ originPlaceId, destinationPlaceId }) {
+  const result = await query(
+    `SELECT
+       route_id AS "routeId",
+       origin_place_id AS "originPlaceId",
+       dest_place_id AS "destinationPlaceId",
+       transit_time_mins AS "durationMinutes",
+       walking_distance_m AS "walkingDistanceMeters",
+       transfer_count AS "transferCount",
+       transport_mode AS "transportMode",
+       estimated_fare AS "estimatedFare",
+       path_details AS "pathDetails"
+     FROM public."ROUTE_SECTION"
+     WHERE origin_place_id = $1 AND dest_place_id = $2`,
+    [originPlaceId, destinationPlaceId],
+  )
+  return result.rows[0] ?? null
+}
+
+/**
  * 변경: ROUTE_SECTION은 장소 쌍마다 하나의 행을 유지하는 실제 대중교통 경로 캐시입니다.
  * 같은 장소 쌍을 여러 코스가 사용해도 ODsay를 반복 호출하지 않도록, 후보 경로 전체를
  * path_details(TEXT)에 JSON 문자열로 저장합니다.

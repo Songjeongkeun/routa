@@ -1,4 +1,6 @@
-import { query } from "../../db/database.mjs"
+// 변경: 저장 일정 확정은 여러 DB 작업을 하나의 단위로 처리하므로 트랜잭션 함수도 함께 가져옵니다.
+// withTransaction import가 없으면 저장 버튼을 눌렀을 때 ReferenceError가 발생합니다.
+import { query, withTransaction } from "../../db/database.mjs"
 
 const COURSE_COLUMNS = `
   course.course_id AS "itineraryId",

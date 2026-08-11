@@ -186,6 +186,8 @@ export default function SavedSchedulesPage() {
                 </dl>
                 <div className="saved-schedule-card__actions">
                   <button type="button" onClick={() => navigate(`/course/result?tripPlanId=${schedule.tripPlanId}&itineraryId=${schedule.itineraryId}&saved=1`)}>상세 보기</button>
+                  {/* 변경: 저장 일정과 관련한 문의는 itineraryId를 함께 전달해 서버에 관계를 남깁니다. */}
+                  <button type="button" className="saved-schedule-card__inquiry" onClick={() => navigate(`/inquiry/new?itineraryId=${schedule.itineraryId}`)}>일정 문의</button>
                   <button type="button" className="saved-schedule-card__delete" onClick={() => setDeleteTarget(schedule)}>삭제</button>
                 </div>
               </article>

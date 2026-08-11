@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../shared/api/httpClient.js";
 import "./MyInquiriesPage.css";
 
@@ -12,6 +12,10 @@ const CONTENT_PLACEHOLDER = `문의하실 내용을 상세히 적어주시면 �
 
 export default function NewInquiryPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // 변경: 저장 일정 카드에서 넘어온 itineraryId를 선택적으로 함께 전송합니다.
+  // 값 검증과 실제 소유 여부 확인은 서버가 최종적으로 처리합니다.
+  const itineraryId = searchParams.get("itineraryId");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -41,10 +45,14 @@ export default function NewInquiryPage() {
     try {
       await apiRequest("/inquiries", {
         method: "POST",
-        body: JSON.stringify({ title: title.trim(), content: content.trim() }),
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          ...(itineraryId ? { itineraryId } : {}),
+        }),
       });
       navigate("/inquiry");
-    } catch (err) {
+    } catch {
       setSubmitError("문의 등록에 실패했습니다. 다시 시도해 주세요.");
     } finally {
       setIsSubmitting(false);
@@ -57,6 +65,7 @@ export default function NewInquiryPage() {
         <h1>새 문의 작성</h1>
         <p>궁금한 점이나 불편한 사항을 문의해 주세요. 최대한 빠르게 답변드리겠습니다.</p>
       </div>
+      {itineraryId && <p className="inquiry-linked-schedule">저장 일정 #{itineraryId}에 연결해 문의를 등록합니다.</p>}
       {submitError && <p className="inquiry-form__error">{submitError}</p>}
       <form onSubmit={handleSubmit}>
         <div className="inquiry-form__field">
