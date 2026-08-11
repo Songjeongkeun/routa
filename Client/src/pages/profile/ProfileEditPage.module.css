@@ -39,7 +39,7 @@
   height: 28px;
   padding: 0;
 
-  color: #536078;
+  color: var(--color-text-muted);
   font-size: 23px;
   line-height: 1;
 
@@ -49,7 +49,7 @@
 }
 
 .closeButton:hover {
-  color: #212a3d;
+  color: var(--color-text);
 }
 
 .header {
@@ -60,7 +60,7 @@
 .header h1 {
   margin: 0 0 6px;
 
-  color: #17223b;
+  color: var(--color-text);
   font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -69,7 +69,7 @@
 .header p {
   margin: 0;
 
-  color: #8a94a8;
+  color: var(--color-text-subtle);
   font-size: 11px;
 }
 
@@ -100,9 +100,9 @@
   height: 100%;
   object-fit: cover;
 
-  border: 7px solid #f0edff;
+  border: 7px solid var(--color-primary-soft);
   border-radius: 50%;
-  background: #f4f2ff;
+  background: var(--color-primary-soft);
 }
 
 .statusCircle {
@@ -113,7 +113,7 @@
   width: 22px;
   height: 22px;
 
-  border: 2px solid #e4e7ef;
+  border: 2px solid var(--color-border-ui);
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(42, 48, 65, 0.12);
@@ -128,11 +128,11 @@
   height: 28px;
   padding: 0 14px;
 
-  color: #5837ff;
+  color: var(--color-primary);
   font-size: 11px;
   font-weight: 700;
 
-  border: 1px solid #6a4cff;
+  border: 1px solid var(--color-primary);
   border-radius: 7px;
   background: #ffffff;
   cursor: pointer;
@@ -140,7 +140,7 @@
 
 .imageButton:hover {
   color: #ffffff;
-  background: #6242f5;
+  background: var(--color-primary);
 }
 
 .fileInput {
@@ -168,7 +168,7 @@
   font: inherit;
   font-size: 12px;
 
-  border: 1px solid #dfe4ef;
+  border: 1px solid var(--color-border);
   border-radius: 7px;
   outline: none;
   background: #ffffff;
@@ -176,16 +176,16 @@
 }
 
 .field input::placeholder {
-  color: #a2aabd;
+  color: var(--color-text-subtle);
 }
 
 .field input:focus {
-  border-color: #6544f5;
-  box-shadow: 0 0 0 3px rgba(101, 68, 245, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(100, 71, 255, 0.1);
 }
 
 .field small {
-  color: #98a1b3;
+  color: var(--color-text-subtle);
   font-size: 10px;
 }
 
@@ -196,7 +196,7 @@
 
   margin-top: 4px;
   padding-top: 14px;
-  border-top: 1px solid #edf0f5;
+  border-top: 1px solid var(--color-border-card);
 }
 
 .actions button {
@@ -210,15 +210,15 @@
 }
 
 .cancelButton {
-  color: #6043ef;
-  border: 1px solid #6a4cff;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   background: #ffffff;
 }
 
 .submitButton {
   color: #ffffff;
-  border: 1px solid #5535eb;
-  background: linear-gradient(135deg, #6849ff, #4930eb);
+  border: 1px solid #4b3fd6;
+  background: linear-gradient(135deg, var(--color-primary), #4b3fd6);
 }
 
 .cancelButton:hover {

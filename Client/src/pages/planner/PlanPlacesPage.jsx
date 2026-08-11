@@ -3,6 +3,15 @@ import { usePlan } from "../../app/providers/planContext.js"
 import PlaceSelector from "../../features/planner/components/PlaceSelector.jsx"
 import styles from "./PlanPlacesPage.module.css"
 
+import tripTypeIcon from "../../shared/assets/icons/Travel_conditions/Row icon 0.png"
+import dateIcon from "../../shared/assets/icons/Travel_conditions/Row icon 1.png"
+import transportIcon from "../../shared/assets/icons/Travel_conditions/Row icon 2.png"
+import startLocationIcon from "../../shared/assets/icons/Travel_conditions/Row icon 3.png"
+import timeIcon from "../../shared/assets/icons/Travel_conditions/Row icon 5.png"
+import placesIcon from "../../shared/assets/icons/Travel_conditions/Row icon 6.png"
+import mealIcon from "../../shared/assets/icons/Travel_conditions/Row icon 8.png"
+import hartIcon from "../../shared/assets/icons/Travel_conditions/Row icon 9.png"
+
 function formatTimeWithPeriod(time) {
     if (!time) return "시간을 선택해 주세요"
 
@@ -72,15 +81,15 @@ export default function PlanPlacesPage() {
                     <h2>입력한 여행 조건</h2>
                     <dl>
                         <div>
-                            <dt>▥ 여행 성격</dt>
+                            <dt><img className={styles.summaryIcon} src={tripTypeIcon} alt="" /> 여행 성격</dt>
                             <dd>{plannerData.tripType === "PET" ? "반려동물 여행" : plannerData.tripType === "GENERAL" ? "일반 여행" : "선택해 주세요"}</dd>
                         </div>
-                        <div><dt>▦ 날짜</dt><dd>{plannerData.date || "날짜를 선택해 주세요"}</dd></div>
-                        <div><dt>▣ 교통 기준</dt><dd>{plannerData.transport || "교통 기준을 선택해주세요"}</dd></div>
-                        <div><dt>⌖ 출발 위치</dt><dd>{formatLocation(plannerData.startAddress, plannerData.startLocation)}</dd></div>
-                        <div><dt>⌖ 종료 위치</dt><dd>{formatLocation(plannerData.endAddress, plannerData.endLocation)}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={dateIcon} alt="" /> 날짜</dt><dd>{plannerData.date || "날짜를 선택해 주세요"}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={transportIcon} alt="" /> 교통 기준</dt><dd>{plannerData.transport || "교통 기준을 선택해주세요"}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={startLocationIcon} alt="" /> 출발 위치</dt><dd>{formatLocation(plannerData.startAddress, plannerData.startLocation)}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={startLocationIcon} alt="" /> 종료 위치</dt><dd>{formatLocation(plannerData.endAddress, plannerData.endLocation)}</dd></div>
                         <div>
-                            <dt>◷ 여행 시간</dt>
+                            <dt><img className={styles.summaryIcon} src={timeIcon} alt="" /> 여행 시간</dt>
                             <dd>
                                 {formatTimeWithPeriod(plannerData.startTime)}
                                 {" ~ "}
@@ -91,7 +100,7 @@ export default function PlanPlacesPage() {
 
                     <section className={styles.summarySection} aria-label="선택한 필수 방문 장소 요약">
                         <div className={styles.summaryTitle}>
-                            <span>⌖ 필수 방문 장소</span>
+                            <span><img className={styles.summaryIcon} src={placesIcon} alt="" /> 필수 방문 장소</span>
                             {/* 변경: 관광지·카페 최대 5곳 규칙을 요약 패널에서도 동일하게 보여 줍니다. */}
                             <strong>{selectedPlaces.length} / 5개</strong>
                         </div>
@@ -109,8 +118,8 @@ export default function PlanPlacesPage() {
                         )}
                     </section>
 
-                    <div className={styles.summaryRow}><span>♥ &nbsp;관심 테마</span><strong>다음 단계에서 선택</strong></div>
-                    <div className={styles.summaryRow}><span>♜ &nbsp;식사 선택</span><strong>다음 단계에서 선택</strong></div>
+                    <div className={styles.summaryRow}><span><img className={styles.summaryIcon} src={hartIcon} alt="" /> &nbsp;관심 테마</span><strong>다음 단계에서 선택</strong></div>
+                    <div className={styles.summaryRow}><span><img className={styles.summaryIcon} src={mealIcon} alt="" /> &nbsp;식사 선택</span><strong>다음 단계에서 선택</strong></div>
                 </aside>
             </div>
         </main>
