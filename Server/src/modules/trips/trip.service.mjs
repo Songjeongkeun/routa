@@ -139,7 +139,9 @@ function normalizeMeals(meals, mealTimes, mealModes) {
       mealSlot,
       scheduledTime,
       mode,
-      stayMinutes: 90,
+      // 변경: 새로 저장하거나 수정하는 여행 계획은 식사 시간을 60분으로 고정합니다.
+      // 클라이언트 값에 의존하지 않아 API를 직접 호출해도 같은 일정 규칙이 적용됩니다.
+      stayMinutes: MEAL_TIME_WINDOWS[mealSlot].defaultStayMinutes,
     }
 
     if (mode === "DESIGNATED") {

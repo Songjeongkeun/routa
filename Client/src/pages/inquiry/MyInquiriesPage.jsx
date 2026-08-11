@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../shared/api/httpClient.js";
 
@@ -18,32 +18,57 @@ export default function MyInquiriesPage() {
   const [inquiries, setInquiries] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("");
+  // 변경: 통계는 검색·상태 필터와 독립된 전체 문의 기준으로 API에서 받습니다.
+  // 그래서 "답변 대기"만 필터링해도 상단의 전체 문의 건수가 줄어들지 않습니다.
+  const [summary, setSummary] = useState({ totalCount: 0, answeredCount: 0, waitingCount: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const requestSequence = useRef(0);
 
   const loadInquiries = useCallback(async () => {
+    // 변경: 이전 검색 요청이 늦게 도착해 최신 검색 결과를 덮어쓰지 않게 요청 순서를 관리합니다.
+    const currentRequest = ++requestSequence.current;
     setIsLoading(true);
     setError(null);
     try {
       const query = new URLSearchParams();
       if (keyword) query.set("keyword", keyword);
       if (status) query.set("status", status);
-      const result = await apiRequest(`/inquiries?${query.toString()}`);
+      const queryString = query.toString();
+      const result = await apiRequest(`/inquiries${queryString ? `?${queryString}` : ""}`);
+      if (currentRequest !== requestSequence.current) return;
       setInquiries(result.data);
     } catch (err) {
-      setError(err);
+      if (currentRequest === requestSequence.current) setError(err);
     } finally {
-      setIsLoading(false);
+      if (currentRequest === requestSequence.current) setIsLoading(false);
     }
   }, [keyword, status]);
 
   useEffect(() => {
-    loadInquiries();
+    // 변경: 검색어를 입력할 때마다 요청하지 않고 300ms 동안 입력이 멈췄을 때만 목록을 조회합니다.
+    const timer = window.setTimeout(loadInquiries, 300);
+    return () => window.clearTimeout(timer);
   }, [loadInquiries]);
 
-  const total = inquiries.length;
-  const answeredCount = inquiries.filter((item) => item.status === "ANSWERED").length;
-  const waitingCount = inquiries.filter((item) => item.status === "WAITING").length;
+  const loadSummary = useCallback(async () => {
+    try {
+      const result = await apiRequest("/inquiries/summary");
+      setSummary(result.data);
+    } catch {
+      // 목록은 계속 사용할 수 있으므로 통계 조회 실패만으로 전체 화면을 오류 처리하지 않습니다.
+      setSummary({ totalCount: 0, answeredCount: 0, waitingCount: 0 });
+    }
+  }, []);
+
+  useEffect(() => {
+    // 변경: effect 본문에서 동기적으로 상태를 바꾸지 않고, 다음 이벤트 루프에서 전체 통계를 조회합니다.
+    const timer = window.setTimeout(() => {
+      void loadSummary();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadSummary]);
+
   const hasFilter = Boolean(keyword || status);
 
   return (
@@ -59,7 +84,7 @@ export default function MyInquiriesPage() {
                 </span>
                 <div>
                     <span className="inquiry-stat__label">전체 문의</span>
-                    <strong>{total}건</strong>
+                    <strong>{summary.totalCount}건</strong>
                 </div>
             </div>
         </div>
@@ -70,7 +95,7 @@ export default function MyInquiriesPage() {
                 </span>
                 <div>
                     <span className="inquiry-stat__label">답변 완료</span>
-                    <strong>{answeredCount}건</strong>
+                    <strong>{summary.answeredCount}건</strong>
                 </div>
             </div>
         </div>
@@ -81,7 +106,7 @@ export default function MyInquiriesPage() {
                 </span>
                 <div>
                     <span className="inquiry-stat__label">답변 대기</span>
-                    <strong>{waitingCount}건</strong>
+                    <strong>{summary.waitingCount}건</strong>
                 </div>
             </div>
         </div>

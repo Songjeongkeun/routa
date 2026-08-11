@@ -91,6 +91,14 @@ function getMealLabel(mealSlot) {
   return mealSlot === "DINNER" ? "저녁" : "점심"
 }
 
+// 변경: 과거 계획에 식사 체류 시간이 없을 때도 중앙 설정의 60분을 적용합니다.
+// 이미 DB에 명시적으로 저장된 기존 일정의 체류 시간은 사용자의 이전 선택 기록이므로 그대로 존중합니다.
+function getMealStayMinutes(meal) {
+  const storedStayMinutes = Number(meal?.stayMinutes)
+  if (Number.isFinite(storedStayMinutes) && storedStayMinutes > 0) return storedStayMinutes
+  return MEAL_TIME_WINDOWS[meal?.mealSlot]?.defaultStayMinutes ?? 60
+}
+
 function getTravelBufferMinutes({ route, withPet }) {
   // 변경: 기획서의 대중교통 여유 시간(일반 10분, 반려동물 동반 15분)을 실제 대중교통 구간에만 적용합니다.
   if (route.source !== "ODSAY") return 0
@@ -765,7 +773,8 @@ async function createPlanStops({ plan }) {
           scheduledTime: selection.scheduledTime,
           mode,
           isFixedReservation: false,
-          stayMinutes: Number(selection.stayMinutes) || 90,
+          // 변경: 새 기본 식사 시간(60분)은 저장값이 없는 이전 계획에도 일관되게 적용합니다.
+          stayMinutes: getMealStayMinutes(selection),
         }
       }
       const place = placesById.get(Number(selection.placeId))
@@ -776,7 +785,8 @@ async function createPlanStops({ plan }) {
         scheduledTime: selection.scheduledTime,
         isFixedReservation: selection.isFixedReservation === true,
         mode,
-        stayMinutes: Number(selection.stayMinutes) || 90,
+        // 변경: 지정 음식점도 주변 추천과 같은 60분 기본 체류 시간을 사용합니다.
+        stayMinutes: getMealStayMinutes(selection),
       }
     })
     .filter(Boolean)

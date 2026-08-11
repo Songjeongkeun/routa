@@ -19,6 +19,8 @@ import ProfileEditPage from "../../pages/profile/ProfileEditPage.jsx"
 import InquiryManagementPage from "../../pages/admin/InquiryManagementPage.jsx"
 import MyInquiriesPage from "../../pages/inquiry/MyInquiriesPage.jsx"
 import NewInquiryPage from "../../pages/inquiry/NewInquiryPage.jsx"
+// 변경: Header와 홈에서 이동하는 저장 일정 화면을 실제 라우터에 연결합니다.
+import SavedSchedulesPage from "../../pages/schedule/SavedSchedulesPage.jsx"
 
 export const router = createBrowserRouter([
   {
@@ -49,6 +51,8 @@ export const router = createBrowserRouter([
           { path: "course/result", element: <CourseResultPage /> },
           { path: "profile", element: <ProfilePage /> },
           { path: "profile/edit", element: <ProfileEditPage /> },
+          // 변경: /schedules는 API 주소가 아닌, 저장 일정 목록을 보여 주는 프론트 화면입니다.
+          { path: "schedules", element: <SavedSchedulesPage /> },
           { path: "inquiry", element: <MyInquiriesPage /> },
           { path: "inquiry/new", element: <NewInquiryPage /> },
           { path: "admin",

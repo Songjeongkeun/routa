@@ -3,8 +3,10 @@
  * 시간은 모두 사용자가 여행 계획에서 입력하는 한국 시간(KST)을 기준으로 합니다.
  */
 export const MEAL_TIME_WINDOWS = {
-  LUNCH: { start: "11:00", end: "14:00", defaultStayMinutes: 90 },
-  DINNER: { start: "17:00", end: "20:00", defaultStayMinutes: 90 },
+  // 변경: 점심·저녁의 신규 기본 체류 시간을 90분에서 60분으로 통일합니다.
+  // 이 값은 여행 계획 저장 시 사용되며, 추천 단계의 누락된 과거 설정에도 기본값으로 쓰입니다.
+  LUNCH: { start: "11:00", end: "14:00", defaultStayMinutes: 60 },
+  DINNER: { start: "17:00", end: "20:00", defaultStayMinutes: 60 },
 }
 
 export function timeToMinutes(time) {
