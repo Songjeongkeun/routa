@@ -5,6 +5,7 @@ export function getSavedItineraries({
   keyword = "",
   courseType = "",
   travelDate = "",
+  period = "",
   page = 1,
   pageSize = 12,
 } = {}) {
@@ -16,6 +17,8 @@ export function getSavedItineraries({
   if (keyword.trim()) params.set("keyword", keyword.trim())
   if (courseType) params.set("courseType", courseType)
   if (travelDate) params.set("travelDate", travelDate)
+  // 변경: 목록을 프론트에서 잘라내지 않고 서버에 기간 조건을 전달해 총 건수·페이지가 정확히 유지됩니다.
+  if (period) params.set("period", period)
 
   return apiRequest(`/itineraries?${params.toString()}`)
 }

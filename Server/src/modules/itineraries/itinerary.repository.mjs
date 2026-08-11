@@ -16,6 +16,9 @@ const COURSE_COLUMNS = `
   course.title AS "savedTitle",
   course.saved_at AS "savedAt",
   course.saved_snapshot_json AS "savedSnapshotJson",
+  -- 변경: SAVED 일정은 원본 TRIP_PLAN이 나중에 수정돼도, 확정 당시의 여행 시각을 사용합니다.
+  course.saved_travel_start_time AS "savedTravelStartTime",
+  course.saved_travel_end_time AS "savedTravelEndTime",
   plan.start_time AS "startTime",
   plan.end_time AS "endTime",
   plan.start_latitude AS "startLatitude",
@@ -59,6 +62,7 @@ export async function findSavedOwnedCourses({
   keyword = "",
   courseType = null,
   travelDate = null,
+  schedulePeriod = null,
   page,
   pageSize,
 }) {
@@ -84,10 +88,23 @@ export async function findSavedOwnedCourses({
          )
        )
        AND ($3::VARCHAR IS NULL OR course.course_type = $3)
-       AND ($4::DATE IS NULL OR (plan.start_time AT TIME ZONE 'Asia/Seoul')::DATE = $4::DATE)
-     ORDER BY course.saved_at DESC NULLS LAST, course.course_id DESC
-     LIMIT $5 OFFSET $6`,
-    [userId, normalizedKeyword, courseType, travelDate, pageSize, offset],
+       -- 변경: 날짜 필터도 계획의 현재 날짜가 아닌 저장 당시 날짜를 기준으로 적용합니다.
+       AND ($4::DATE IS NULL OR (COALESCE(course.saved_travel_start_time, plan.start_time) AT TIME ZONE 'Asia/Seoul')::DATE = $4::DATE)
+       -- 변경: 진행 중인 오늘 일정은 끝나기 전까지 다가오는 여행에 포함하고,
+       -- 종료 시각이 지난 일정만 지난 여행으로 분류합니다.
+       AND (
+         $5::VARCHAR IS NULL
+         OR ($5 = 'UPCOMING' AND COALESCE(course.saved_travel_end_time, plan.end_time) >= NOW())
+         OR ($5 = 'PAST' AND COALESCE(course.saved_travel_end_time, plan.end_time) < NOW())
+       )
+     ORDER BY
+       -- 변경: 다가오는 여행은 가까운 출발일 순, 지난 여행은 최근 종료일 순으로 보여 줍니다.
+       CASE WHEN $5 = 'UPCOMING' THEN COALESCE(course.saved_travel_start_time, plan.start_time) END ASC NULLS LAST,
+       CASE WHEN $5 = 'PAST' THEN COALESCE(course.saved_travel_end_time, plan.end_time) END DESC NULLS LAST,
+       course.saved_at DESC NULLS LAST,
+       course.course_id DESC
+     LIMIT $6 OFFSET $7`,
+    [userId, normalizedKeyword, courseType, travelDate, schedulePeriod, pageSize, offset],
   )
 
   return {
@@ -152,7 +169,11 @@ export function saveOwnedCourse({ userId, itineraryId, title, saveRequestId, sna
            title = $3,
            saved_at = NOW(),
            save_request_id = $4::UUID,
-           saved_snapshot_json = $5
+           saved_snapshot_json = $5,
+           -- 변경: 이후 원본 TRIP_PLAN을 수정해도 저장 일정의 날짜·기간 분류가 바뀌지 않도록
+           -- SAVED로 확정하는 바로 이 시점의 여행 시작·종료 시각을 COURSE에 복사합니다.
+           saved_travel_start_time = plan.start_time,
+           saved_travel_end_time = plan.end_time
        FROM public."TRIP_PLAN" AS plan
        WHERE course.course_id = $1
          AND course.plan_id = plan.plan_id
