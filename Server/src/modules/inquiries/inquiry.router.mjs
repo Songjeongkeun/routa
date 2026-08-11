@@ -20,6 +20,8 @@ router.use(isAuth); // 이 라우터의 모든 요청은 로그인 필요
 
 router.get("/", inquiryController.getMyInquiries);
 router.post("/", inquiryController.createInquiry);
+// 변경: 동적 /:inquiryId보다 먼저 두어 /summary를 상세 id로 처리하지 않습니다.
+router.get("/summary", inquiryController.getMyInquirySummary);
 router.get("/:inquiryId", inquiryController.getMyInquiryDetail);
 
 export default router;

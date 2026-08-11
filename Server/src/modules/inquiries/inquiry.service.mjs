@@ -8,12 +8,46 @@ class ServiceError extends Error {
   }
 }
 
+const INQUIRY_STATUSES = new Set(["WAITING", "ANSWERED"]);
+
+// 변경: 잘못된 id·status를 PostgreSQL까지 보내 500 오류로 만들지 않고 요청 단계에서 400으로 처리합니다.
+function normalizeInquiryId(value) {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new ServiceError("VALIDATION", "올바른 문의 번호가 아닙니다.");
+  }
+  return id;
+}
+
+function normalizeOptionalItineraryId(value) {
+  if (value === undefined || value === null || value === "") return null;
+
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new ServiceError("VALIDATION", "올바른 저장 일정 번호가 아닙니다.");
+  }
+  return id;
+}
+
+function normalizeStatus(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (!INQUIRY_STATUSES.has(value)) {
+    throw new ServiceError("VALIDATION", "올바른 문의 상태가 아닙니다.");
+  }
+  return value;
+}
+
 export async function getMyInquiries(userId, { keyword, status }) {
-  return inquiryRepository.findInquiriesByUser({ userId, keyword, status });
+  return inquiryRepository.findInquiriesByUser({ userId, keyword, status: normalizeStatus(status) });
+}
+
+/** 변경: 검색·상태 필터와 독립된 "내 문의" 전체 통계를 제공합니다. */
+export async function getMyInquirySummary(userId) {
+  return inquiryRepository.getInquirySummaryByUser(userId);
 }
 
 export async function getMyInquiryDetail(userId, inquiryId) {
-  const inquiry = await inquiryRepository.findInquiryByIdAndUser(inquiryId, userId);
+  const inquiry = await inquiryRepository.findInquiryByIdAndUser(normalizeInquiryId(inquiryId), userId);
   if (!inquiry) {
     // 존재하지 않거나 남의 문의 -> 항상 404로 통일 (문서 6번 권장사항)
     throw new ServiceError("NOT_FOUND", "문의를 찾을 수 없습니다.");
@@ -35,9 +69,21 @@ export async function createInquiry(userId, { title, content, itineraryId }) {
     throw new ServiceError("VALIDATION", "내용을 입력해 주세요.");
   }
 
+  const normalizedItineraryId = normalizeOptionalItineraryId(itineraryId);
+  if (normalizedItineraryId) {
+    // 변경: DB 외래 키만으로는 "현재 사용자의 SAVED 일정"인지 보장할 수 없어 서비스에서 소유권을 확인합니다.
+    const ownedItinerary = await inquiryRepository.findOwnedSavedItinerary({
+      userId,
+      itineraryId: normalizedItineraryId,
+    });
+    if (!ownedItinerary) {
+      throw new ServiceError("NOT_FOUND", "연결할 저장 일정을 찾을 수 없습니다.");
+    }
+  }
+
   const inquiryId = await inquiryRepository.createInquiry({
     userId,
-    itineraryId,
+    itineraryId: normalizedItineraryId,
     title: trimmedTitle,
     content: trimmedContent,
   });
@@ -46,11 +92,11 @@ export async function createInquiry(userId, { title, content, itineraryId }) {
 }
 
 export async function getAllInquiries({ status }) {
-  return inquiryRepository.findAllInquiries({ status });
+  return inquiryRepository.findAllInquiries({ status: normalizeStatus(status) });
 }
 
 export async function getInquiryDetailForAdmin(inquiryId) {
-  const inquiry = await inquiryRepository.findInquiryByIdWithRequester(inquiryId);
+  const inquiry = await inquiryRepository.findInquiryByIdWithRequester(normalizeInquiryId(inquiryId));
   if (!inquiry) {
     throw new ServiceError("NOT_FOUND", "문의를 찾을 수 없습니다.");
   }
@@ -63,7 +109,8 @@ export async function replyToInquiry(adminId, inquiryId, answerContent) {
     throw new ServiceError("VALIDATION", "답변 내용을 입력해 주세요.");
   }
 
-  const inquiry = await inquiryRepository.findInquiryById(inquiryId);
+  const normalizedInquiryId = normalizeInquiryId(inquiryId);
+  const inquiry = await inquiryRepository.findInquiryById(normalizedInquiryId);
   if (!inquiry) {
     throw new ServiceError("NOT_FOUND", "문의를 찾을 수 없습니다.");
   }
@@ -72,7 +119,7 @@ export async function replyToInquiry(adminId, inquiryId, answerContent) {
     throw new ServiceError("CONFLICT", "이미 답변이 등록된 문의입니다.");
   }
 
-  await inquiryRepository.saveAnswer({ inquiryId, answerContent: trimmed, adminId });
+  await inquiryRepository.saveAnswer({ inquiryId: normalizedInquiryId, answerContent: trimmed, adminId });
 }
 
 export { ServiceError };

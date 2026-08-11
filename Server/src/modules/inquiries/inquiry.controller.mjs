@@ -39,6 +39,17 @@ export async function getMyInquiries(req, res) {
   }
 }
 
+// GET /api/inquiries/summary
+// 변경: :inquiryId 라우트보다 먼저 등록되어 "summary"가 숫자 id로 해석되지 않게 합니다.
+export async function getMyInquirySummary(req, res) {
+  try {
+    const summary = await inquiryService.getMyInquirySummary(req.userId);
+    return ok(res, summary);
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 // GET /api/inquiries/:inquiryId
 export async function getMyInquiryDetail(req, res) {
   try {

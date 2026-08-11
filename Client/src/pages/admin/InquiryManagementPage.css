@@ -64,6 +64,34 @@
   font-weight: 700;
 }
 
+/* 변경: 목록 상단에서 실제 API와 연결된 답변 상태 필터를 제공합니다. */
+.admin-inquiry-status-filter {
+  display: block;
+  margin: -4px 0 14px;
+}
+
+.admin-inquiry-status-filter select {
+  width: 100%;
+  border: 1px solid #e3e5ec;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: #4a4d59;
+  font: inherit;
+}
+
+.admin-inquiry-status-filter .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .admin-inquiry-list-summary {
   font-size: 13px;
   color: #5b4fe0;

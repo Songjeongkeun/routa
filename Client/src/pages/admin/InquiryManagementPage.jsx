@@ -40,17 +40,24 @@ export default function InquiryManagementPage() {
     setIsListLoading(true);
     setListError(null);
     try {
-      const result = await apiRequest("/admin/inquiries");
+      // 변경: 상태 필터를 실제 관리자 API 쿼리로 전달합니다.
+      // 선택값이 없을 때는 ?status=를 보내지 않아 전체 목록을 받습니다.
+      const result = await apiRequest(`/admin/inquiries${statusFilter ? `?status=${statusFilter}` : ""}`);
       setInquiries(result.data);
     } catch (err) {
       setListError(err);
     } finally {
       setIsListLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
-    loadInquiries();
+    // 변경: effect 본문에서 즉시 상태를 바꾸지 않고 다음 이벤트 루프에서 목록을 조회합니다.
+    // React의 effect 규칙을 지키면서 statusFilter 변경 시에도 같은 로딩 함수를 재사용합니다.
+    const timer = window.setTimeout(() => {
+      void loadInquiries();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadInquiries]);
 
 
@@ -88,7 +95,7 @@ export default function InquiryManagementPage() {
       });
       await loadDetail(selectedId);
       await loadInquiries();
-    } catch (err) {
+    } catch {
       setReplyError("답변 등록에 실패했습니다. 다시 시도해 주세요.");
     } finally {
       setIsReplying(false);
@@ -97,6 +104,14 @@ export default function InquiryManagementPage() {
 
   const total = inquiries.length;
   const waitingCount = inquiries.filter((item) => item.status === "WAITING").length;
+
+  function handleStatusFilterChange(event) {
+    // 변경: 다른 상태 목록으로 전환하면 이전 목록의 상세 패널을 비워,
+    // 필터에 없는 문의를 계속 답변하는 혼란을 막습니다.
+    setStatusFilter(event.target.value);
+    setSelectedId(null);
+    setDetail(null);
+  }
 
 
   return (
@@ -117,9 +132,18 @@ export default function InquiryManagementPage() {
           <div className="admin-inquiry-list-header">
             <h2>전체 문의 목록</h2>
             <span className="admin-inquiry-list-summary">
-              미답변 {waitingCount}건 / 총 {total}건
+              미답변 {waitingCount}건 / 표시 {total}건
             </span>
           </div>
+          {/* 변경: 선언만 되어 있던 statusFilter를 목록 API와 연결해 관리자가 답변 상태별로 볼 수 있게 합니다. */}
+          <label className="admin-inquiry-status-filter">
+            <span className="sr-only">문의 상태 필터</span>
+            <select value={statusFilter} onChange={handleStatusFilterChange}>
+              <option value="">전체 상태</option>
+              <option value="WAITING">답변 대기</option>
+              <option value="ANSWERED">답변 완료</option>
+            </select>
+          </label>
 
         {isListLoading && <div className="inquiry-state">불러오는 중...</div>}
 
