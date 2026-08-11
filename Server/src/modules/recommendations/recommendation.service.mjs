@@ -15,6 +15,9 @@ import { evaluatePlaceVisit } from "../../utils/placeSchedule.mjs"
 const COURSE_TYPES = ["SHORTEST_WALK", "FASTEST_TRANSIT", "BALANCED"]
 // 변경: Branch-and-Bound 완전 탐색의 입력 크기를 안전하게 제한하기 위해 방문 장소를 최대 5곳으로 유지합니다.
 const MAX_VISIT_STOPS = 5
+// 변경: 자동 식당은 가까운 후보 중 실제로 한 곳만 선택하므로, 가지마다 많은 식당 행을 읽지 않도록
+// 후보 목록을 상위 12곳으로 제한합니다. 점심·저녁이 서로 다른 식당을 고를 여유는 유지합니다.
+const MAX_NEARBY_RESTAURANT_CANDIDATES = 12
 
 function createHttpError(message, status = 400) {
   const error = new Error(message)
@@ -155,34 +158,121 @@ function evaluateMealArrival({ travelArrivalTime, constraint, meal }) {
   }
 }
 
+/**
+ * 변경: 탐색 요청 안에서 같은 방향의 장소 쌍을 하나의 키로 관리합니다.
+ * 대중교통은 A→B와 B→A의 시간·노선이 다를 수 있으므로 두 방향을 별도 캐시합니다.
+ */
+function createRoutePairKey(from, to) {
+  return `${from.placeId}:${to.placeId}`
+}
+
+/**
+ * 변경: DB ROUTE_SECTION의 TEXT JSON을 탐색에 사용할 후보 배열로 복원합니다.
+ * 이전 형식처럼 alternatives가 없는 행도 대표 수치로 변환해, 캐시 형식 변경 때문에
+ * 추천 자체가 실패하지 않도록 호환성을 유지합니다.
+ */
+function getStoredRouteAlternatives(routeSection) {
+  const storedPath = parseStoredJson(routeSection?.pathDetails, null)
+  const alternatives = Array.isArray(storedPath?.alternatives)
+    ? storedPath.alternatives
+    : []
+
+  if (alternatives.length > 0) return alternatives
+
+  // 변경: 후보 전체를 저장하기 전의 이전 ROUTE_SECTION 행도 재사용할 수 있도록,
+  // 대표 수치만으로 최소 한 개의 호환 가능한 후보를 복원합니다.
+  if (!routeSection) return []
+  const source = routeSection.transportMode === "WALK_REAL"
+    ? "KAKAO_WALK"
+    : (routeSection.transportMode === "WALK_FALLBACK" ? "WALK_FALLBACK" : "ODSAY")
+
+  return [{
+    durationMinutes: Number(routeSection.durationMinutes) || 0,
+    walkingDistanceMeters: Number(routeSection.walkingDistanceMeters) || 0,
+    transferCount: Number(routeSection.transferCount) || 0,
+    estimatedFare: Number(routeSection.estimatedFare) || 0,
+    source,
+    steps: [],
+    geometrySegments: [],
+    mapObject: null,
+  }]
+}
+
+/**
+ * 변경: 탐색 중 새로 외부 API에서 찾은 후보와, 최종 경로에 추가된 지도 좌표를
+ * 같은 ROUTE_SECTION 행에 저장합니다. 다음 추천은 이 데이터를 먼저 읽습니다.
+ */
+async function persistRouteAlternatives({ from, to, alternatives }) {
+  const representativeRoute = selectRouteAlternative(alternatives, "BALANCED")
+  if (!representativeRoute) return
+
+  await recommendationRepository.upsertRouteSection({
+    originPlaceId: from.placeId,
+    destinationPlaceId: to.placeId,
+    route: { ...representativeRoute, alternatives },
+  })
+}
+
+/**
+ * 변경: 지도 좌표(loadLane)는 B&B가 최종 순서를 고른 뒤에만 조회합니다.
+ * 탐색 단계에서 탈락할 수백 개의 가지까지 노선 그래픽을 받지 않아 추천 응답 시간을 줄입니다.
+ */
+async function enrichSelectedRouteGeometry({ routeLegs, routeAlternativesByPlacePair }) {
+  const uniqueLegs = new Map()
+  for (const routeLeg of routeLegs) {
+    if (routeLeg.route.source !== "ODSAY" || !routeLeg.route.mapObject) continue
+    uniqueLegs.set(routeLeg.pairKey, routeLeg)
+  }
+
+  // 변경: ODsay 그래픽 API를 한 번에 과도하게 호출하지 않으면서도, 선택된 구간은 병렬로 보완합니다.
+  const selectedLegs = [...uniqueLegs.values()]
+  const workerCount = Math.min(3, selectedLegs.length)
+  let nextIndex = 0
+
+  async function enrichNextLeg() {
+    while (nextIndex < selectedLegs.length) {
+      const routeLeg = selectedLegs[nextIndex]
+      nextIndex += 1
+
+      if (!Object.hasOwn(routeLeg.route, "geometrySegments")) {
+        routeLeg.route.geometrySegments = await loadPublicTransitRouteGeometry(routeLeg.route.mapObject)
+      }
+
+      const alternatives = routeAlternativesByPlacePair.get(routeLeg.pairKey)
+      if (alternatives) {
+        // routeLeg.route는 alternatives 안의 동일 객체이므로, 좌표를 추가한 최신 후보 전체를 다시 보관합니다.
+        await persistRouteAlternatives({ from: routeLeg.from, to: routeLeg.to, alternatives })
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => enrichNextLeg()))
+}
+
 async function getRouteLeg({ from, to, courseType, routeAlternativesByPlacePair }) {
-  const pairKey = `${from.placeId}:${to.placeId}`
+  const pairKey = createRoutePairKey(from, to)
   let alternatives = routeAlternativesByPlacePair.get(pairKey)
-  let shouldSaveRoute = false
 
   if (!alternatives) {
-    alternatives = await searchPublicTransitRoutes({ from, to })
+    // 변경: 메모리 캐시가 비어도 DB의 ROUTE_SECTION 후보를 먼저 사용합니다.
+    // 이로써 서버 재시작이나 다른 사용자의 동일 경로 추천 후에도 외부 길찾기 호출을 줄입니다.
+    const storedRouteSection = await recommendationRepository.findRouteSection({
+      originPlaceId: from.placeId,
+      destinationPlaceId: to.placeId,
+    })
+    alternatives = getStoredRouteAlternatives(storedRouteSection)
+
+    if (alternatives.length === 0) {
+      alternatives = await searchPublicTransitRoutes({ from, to })
+      // 변경: 실제 길찾기로 새로 찾은 후보만 DB 캐시에 기록합니다.
+      // 지도 그래픽은 최종 경로 보강 단계에서 추가된 뒤 한 번 더 갱신됩니다.
+      await persistRouteAlternatives({ from, to, alternatives })
+    }
     routeAlternativesByPlacePair.set(pairKey, alternatives)
-    shouldSaveRoute = true
   }
 
   const route = selectRouteAlternative(alternatives, courseType)
   if (!route) throw createHttpError("대중교통 경로 후보를 선택하지 못했습니다.", 422)
-
-  // 변경: 선택된 ODsay 후보의 노선 그래픽을 캐시해 결과 지도에서 실제 버스·지하철 경로를 그립니다.
-  if (route.source === "ODSAY" && route.mapObject && !Object.hasOwn(route, "geometrySegments")) {
-    route.geometrySegments = await loadPublicTransitRouteGeometry(route.mapObject)
-    shouldSaveRoute = true
-  }
-
-  if (shouldSaveRoute) {
-    const representativeRoute = selectRouteAlternative(alternatives, "BALANCED")
-    await recommendationRepository.upsertRouteSection({
-      originPlaceId: from.placeId,
-      destinationPlaceId: to.placeId,
-      route: { ...representativeRoute, alternatives },
-    })
-  }
 
   return route
 }
@@ -208,6 +298,7 @@ async function selectNearbyMeal({
   remainingVisits,
   plan,
   usedMealPlaceIds,
+  nearbyRestaurantCandidatesByQuery,
 }) {
   // 변경: 출발 위치가 없을 때는 첫 방문 후보를 주변 음식점 추천의 기준점으로 사용합니다.
   // 방문 장소도 없으면 "주변"을 판단할 기준이 없으므로 아래에서 지정 음식점을 안내합니다.
@@ -226,15 +317,26 @@ async function selectNearbyMeal({
   for (const radiusKm of [0.5, 1]) {
     const candidatesById = new Map()
     for (const anchor of anchors) {
-      const candidates = await recommendationRepository.findNearbyRestaurants({
-        latitude: anchor.latitude,
-        longitude: anchor.longitude,
-        radiusKm,
-        withPet: plan.withPet,
-        // 변경: 점심·저녁이 같은 자동 추천 음식점을 사용하지 않도록,
-        // 현재 코스에서 이미 식사로 사용한 모든 placeId를 DB 조회 전에 제외합니다.
-        excludePlaceIds: [...usedMealPlaceIds],
-      })
+      const cacheKey = `${anchor.placeId}:${radiusKm}:${plan.withPet ? "PET" : "ALL"}`
+      let candidates = nearbyRestaurantCandidatesByQuery.get(cacheKey)
+
+      if (!candidates) {
+        // 변경: 식사 도착 시각은 가지마다 달라져도, '이 장소 반경의 식당 목록' 자체는 같습니다.
+        // 따라서 DB에서는 상위 후보를 한 번만 읽고, 가지마다의 영업·라스트오더 판정은 아래에서 계속 수행합니다.
+        candidates = await recommendationRepository.findNearbyRestaurants({
+          latitude: anchor.latitude,
+          longitude: anchor.longitude,
+          radiusKm,
+          withPet: plan.withPet,
+          excludePlaceIds: [],
+          limit: MAX_NEARBY_RESTAURANT_CANDIDATES,
+        })
+        nearbyRestaurantCandidatesByQuery.set(cacheKey, candidates)
+      }
+
+      // 변경: 캐시 목록은 점심·저녁 탐색이 공유하므로, 이미 선택한 식당 제외 조건은 SQL이 아니라
+      // 현재 가지에서만 적용합니다. 그래야 한 번 읽은 후보 목록을 다른 가지에서도 재사용할 수 있습니다.
+      candidates = candidates.filter((candidate) => !usedMealPlaceIds.has(Number(candidate.placeId)))
       candidates.forEach((candidate) => candidatesById.set(Number(candidate.placeId), candidate))
     }
 
@@ -305,6 +407,8 @@ function createInitialSearchState({ startPlace, plan, meals }) {
         stayMinutes: 0,
       }]
       : [],
+    // 변경: 탐색 중에는 이동 수치만 보관하고, 최종 경로가 확정된 뒤 이 목록의 구간에만 지도 좌표를 요청합니다.
+    routeLegs: [],
     summary: {
       totalMinutes: 0,
       walkingDistanceMeters: 0,
@@ -413,6 +517,16 @@ async function createSearchTransition({
       departureTime: departureTime.toISOString(),
       stayMinutes: stop.stayMinutes,
     }],
+    // 변경: route는 alternatives 배열 안의 같은 객체를 참조합니다.
+    // 최종 선택 후 geometrySegments를 추가하면 DB 캐시에도 그대로 저장할 수 있습니다.
+    routeLegs: state.currentPlace
+      ? [...state.routeLegs, {
+        pairKey: createRoutePairKey(state.currentPlace, stop),
+        from: state.currentPlace,
+        to: stop,
+        route: leg,
+      }]
+      : state.routeLegs,
     summary: nextSummary,
     warnings,
     usedWalkingFallback: state.usedWalkingFallback || leg.source === "WALK_FALLBACK",
@@ -438,6 +552,8 @@ async function buildCourseByBranchAndBound({
     .sort((firstMeal, secondMeal) => firstMeal.scheduledTime.localeCompare(secondMeal.scheduledTime))
   const initialState = createInitialSearchState({ startPlace, plan, meals: orderedMeals })
   const nearbyMealByContext = new Map()
+  // 변경: 자동 식당은 시간 검증 전 후보 목록만 공통으로 캐시해, B&B의 같은 반경 DB 조회를 반복하지 않습니다.
+  const nearbyRestaurantCandidatesByQuery = new Map()
   const searchStats = { explored: 0, prunedByBound: 0, prunedByConstraint: 0 }
   let bestState = null
   let bestScore = Number.POSITIVE_INFINITY
@@ -460,6 +576,7 @@ async function buildCourseByBranchAndBound({
         remainingVisits,
         plan,
         usedMealPlaceIds: state.usedMealPlaceIds,
+        nearbyRestaurantCandidatesByQuery,
       })
       nearbyMealByContext.set(key, resolvedMeal)
       return resolvedMeal
@@ -470,6 +587,126 @@ async function buildCourseByBranchAndBound({
       nearbyMealByContext.set(key, null)
       return null
     }
+  }
+
+  /**
+   * 변경: 방문지는 각각 다음 후보로 분기하고, 식사는 시간 역전을 막기 위해
+   * 점심·저녁 중 아직 남은 가장 이른 한 슬롯만 다음 후보로 만듭니다.
+   */
+  function createSearchCandidates(remainingVisits, remainingMeals) {
+    const candidates = remainingVisits.map((visit) => ({
+      stop: visit,
+      remainingVisits: remainingVisits.filter((candidate) => candidate.placeId !== visit.placeId),
+      remainingMeals,
+      isNearbyMeal: false,
+    }))
+
+    // 변경: 식사는 정해진 시간 창을 지키기 위해 아직 배치하지 않은 가장 이른 식사만 다음 후보로 둡니다.
+    if (remainingMeals[0]) {
+      candidates.push({
+        stop: remainingMeals[0],
+        remainingVisits,
+        remainingMeals: remainingMeals.slice(1),
+        isNearbyMeal: remainingMeals[0].mode === "NEARBY",
+      })
+    }
+
+    return candidates
+  }
+
+  /**
+   * 변경: 탐색 순서만 정하는 가벼운 우선순위입니다.
+   * 실제 최적성 판단은 createSearchTransition의 실제 이동 수치와 B&B 점수로 하므로,
+   * 이 근사 거리 계산은 결과의 정확도를 바꾸지 않고 빠른 초기해 탐색만 돕습니다.
+   */
+  function getCandidatePriority(state, candidate) {
+    const distance = state.currentPlace ? distanceKm(state.currentPlace, candidate.stop) : 0
+    if (candidate.stop.nodeType !== "MEAL") return distance
+
+    const constraint = createMealConstraint({ plan, meal: candidate.stop })
+    const minutesUntilLatestStart = constraint.latestStart
+      ? Math.round((constraint.latestStart.getTime() - state.currentTime.getTime()) / 60_000)
+      : Number.POSITIVE_INFINITY
+
+    // 변경: 식사 마감 시각이 한 시간 이내이면 방문지보다 먼저 시도해 시간 창 위반을 빠르게 제거합니다.
+    // 그 외에는 가까운 방문지를 우선 탐색해 기다리는 시간이 긴 초반 경로를 초기해로 채택하지 않게 합니다.
+    return minutesUntilLatestStart <= 60 ? -1_000_000 + distance : 10_000 + distance
+  }
+
+  function sortSearchCandidates(state, candidates) {
+    return [...candidates].sort((first, second) => {
+      const priorityDifference = getCandidatePriority(state, first) - getCandidatePriority(state, second)
+      if (priorityDifference !== 0) return priorityDifference
+      return Number(first.stop.placeId) - Number(second.stop.placeId)
+    })
+  }
+
+  /**
+   * 변경: 일반 방문지와 자동 추천 식당의 다음 상태 생성 과정을 한 곳으로 모읍니다.
+   * 그리디 초기해와 전체 B&B 탐색이 같은 시간 창·영업시간·중복 식당 검증을 사용하게 합니다.
+   */
+  async function createCandidateTransition(state, candidate) {
+    const stop = candidate.isNearbyMeal
+      ? await resolveNearbyMeal(state, candidate.stop, candidate.remainingVisits)
+      : candidate.stop
+    if (!stop) return null
+
+    const nextState = await createSearchTransition({
+      state,
+      stop,
+      courseType,
+      plan,
+      routeAlternativesByPlacePair,
+    })
+    if (!nextState) return null
+
+    if (candidate.isNearbyMeal) {
+      // 변경: 이번 가지에서 확정한 주변 추천 음식점은 다음 식사 후보에서 제외합니다.
+      nextState.usedMealPlaceIds = new Set([...state.usedMealPlaceIds, Number(stop.placeId)])
+    }
+
+    return { ...candidate, nextState }
+  }
+
+  /**
+   * 변경: 완전 탐색 전 가까운 후보를 따라 한 번 빠르게 완성해 초기 상한값을 만듭니다.
+   * 기존에는 첫 완성 경로 전까지 bestScore가 Infinity라 bound 가지치기가 거의 동작하지 않았습니다.
+   * 그리디 결과가 최적이라고 확정하지는 않고, 이후 B&B가 모든 유효한 순서를 계속 검토합니다.
+   */
+  async function createGreedyInitialSolution() {
+    let state = initialState
+    let remainingVisits = visits
+    let remainingMeals = orderedMeals
+
+    while (remainingVisits.length > 0 || remainingMeals.length > 0) {
+      const candidates = sortSearchCandidates(
+        state,
+        createSearchCandidates(remainingVisits, remainingMeals),
+      )
+      let selectedTransition = null
+
+      for (const candidate of candidates) {
+        const transition = await createCandidateTransition(state, candidate)
+        if (transition) {
+          selectedTransition = transition
+          break
+        }
+      }
+
+      if (!selectedTransition) return null
+      state = selectedTransition.nextState
+      remainingVisits = selectedTransition.remainingVisits
+      remainingMeals = selectedTransition.remainingMeals
+    }
+
+    if (!endPlace) return state
+    return createSearchTransition({
+      state,
+      stop: { ...endPlace, nodeType: "END", stayMinutes: 0 },
+      courseType,
+      plan,
+      routeAlternativesByPlacePair,
+    })
   }
 
   async function explore(state, remainingVisits, remainingMeals) {
@@ -503,52 +740,27 @@ async function buildCourseByBranchAndBound({
       return
     }
 
-    const candidates = remainingVisits.map((visit) => ({
-      stop: visit,
-      remainingVisits: remainingVisits.filter((candidate) => candidate.placeId !== visit.placeId),
-      remainingMeals,
-      isNearbyMeal: false,
-    }))
-
-    // 변경: 식사는 정해진 시간 창을 지키기 위해 아직 배치하지 않은 가장 이른 식사만 다음 후보로 둡니다.
-    if (remainingMeals[0]) {
-      candidates.push({
-        stop: remainingMeals[0],
-        remainingVisits,
-        remainingMeals: remainingMeals.slice(1),
-        isNearbyMeal: remainingMeals[0].mode === "NEARBY",
-      })
-    }
+    const candidates = sortSearchCandidates(
+      state,
+      createSearchCandidates(remainingVisits, remainingMeals),
+    )
 
     for (const candidate of candidates) {
       searchStats.explored += 1
-      const stop = candidate.isNearbyMeal
-        ? await resolveNearbyMeal(state, candidate.stop, candidate.remainingVisits)
-        : candidate.stop
-      if (!stop) {
+      const transition = await createCandidateTransition(state, candidate)
+      if (!transition) {
         searchStats.prunedByConstraint += 1
         continue
       }
 
-      const nextState = await createSearchTransition({
-        state,
-        stop,
-        courseType,
-        plan,
-        routeAlternativesByPlacePair,
-      })
-      if (!nextState) {
-        searchStats.prunedByConstraint += 1
-        continue
-      }
-
-      if (candidate.isNearbyMeal) {
-        // 변경: 이번 가지에서 확정한 주변 추천 음식점은 다음 식사 후보에서 제외합니다.
-        nextState.usedMealPlaceIds = new Set([...state.usedMealPlaceIds, Number(stop.placeId)])
-      }
-
-      await explore(nextState, candidate.remainingVisits, candidate.remainingMeals)
+      await explore(transition.nextState, transition.remainingVisits, transition.remainingMeals)
     }
+  }
+
+  const greedyInitialSolution = await createGreedyInitialSolution()
+  if (greedyInitialSolution) {
+    bestState = greedyInitialSolution
+    bestScore = getCourseScore(greedyInitialSolution, courseType)
   }
 
   await explore(initialState, visits, orderedMeals)
@@ -559,6 +771,12 @@ async function buildCourseByBranchAndBound({
       message: "방문 장소·식사 시간·영업시간·종료 시간 조건을 모두 만족하는 경로를 찾지 못했습니다.",
     }])
   }
+
+  // 변경: 탐색에서 살아남은 최적 경로의 실제 이동 구간만 지도용 노선 좌표를 보강합니다.
+  await enrichSelectedRouteGeometry({
+    routeLegs: bestState.routeLegs,
+    routeAlternativesByPlacePair,
+  })
 
   const warnings = [...bestState.warnings]
   if (bestState.usedWalkingFallback) {
@@ -609,6 +827,8 @@ async function buildCourse({
   let estimatedFare = 0
   let usedWalkingFallback = false
   const nodes = []
+  // 변경: 순서 편집 후 재계산도 최종 확정된 경로이므로, 이 구간들에만 지도 좌표를 추가로 요청합니다.
+  const routeLegs = []
   const warnings = []
 
   function addWarning(message) {
@@ -620,9 +840,10 @@ async function buildCourse({
 
     // 변경: START 노드가 없을 때 첫 실제 일정에는 이동 구간이 없습니다.
     // 이후에는 현재 장소가 생기므로 기존과 동일하게 모든 구간의 이동 경로를 계산합니다.
-    if (currentPlace) {
+    if (currentPlace && stop.nodeType !== "START") {
+      const from = currentPlace
       const leg = precomputedLeg ?? await getRouteLeg({
-        from: currentPlace,
+        from,
         to: stop,
         courseType,
         routeAlternativesByPlacePair,
@@ -634,6 +855,12 @@ async function buildCourse({
       transferCount += leg.transferCount
       estimatedFare += leg.estimatedFare
       usedWalkingFallback ||= leg.source === "WALK_FALLBACK"
+      routeLegs.push({
+        pairKey: createRoutePairKey(from, stop),
+        from,
+        to: stop,
+        route: leg,
+      })
     }
 
     // 출발·종료 경계 노드는 PLACE FK를 위한 좌표 대체 노드라 영업·반려동물 검증 대상이 아닙니다.
@@ -709,6 +936,9 @@ async function buildCourse({
   if (usedWalkingFallback) {
     addWarning("일부 구간은 대중교통 경로가 없어 장소 좌표 기준 도보 추정으로 계산했습니다.")
   }
+
+  // 변경: 사용자가 편집해 확정한 순서의 이동 구간만 지도 그래픽을 보강합니다.
+  await enrichSelectedRouteGeometry({ routeLegs, routeAlternativesByPlacePair })
 
   return {
     courseType,
