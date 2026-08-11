@@ -11,7 +11,7 @@ export default function Header() {
   // 추천 로딩·결과도 여행 계획 흐름에 포함해 같은 메뉴를 활성화합니다.
   const isPlanning = location.pathname.startsWith("/planner") || location.pathname.startsWith("/course")
   const isSchedules = location.pathname.startsWith("/schedules")
-  const isInquiries = location.pathname.startsWith("/inquiries")
+  const isInquiries = location.pathname.startsWith("/inquiry")
   const isProfile = location.pathname.startsWith("/profile")
 
   async function handleLogout() {
@@ -30,7 +30,7 @@ export default function Header() {
 
   function handleInquiryClick() {
     // 변경: 문의 JSON API가 아닌 사용자의 문의 목록 화면으로 이동합니다.
-    navigate("/inquiries")
+    navigate("/inquiry")
   }
   
   return (

@@ -87,6 +87,21 @@
   font-weight: 800;
 }
 
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.listHeader select {
+  border: 1px solid #e3e5ec;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .contentGrid {
   display: grid;
   grid-template-columns: 1.1fr 1fr;

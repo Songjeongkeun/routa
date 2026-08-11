@@ -16,6 +16,8 @@ export default function UserManagementPage() {
   const [users, setUsers] = useState([])
   const [page, setPage] = useState(1)
   const [loadError, setLoadError] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [totalFiltered, setTotalFiltered] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -27,11 +29,17 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     let active = true
-    getUsers({ page, pageSize: 5 })
-      .then((data) => { if (active) setUsers(data.users) })
+    getUsers({ page, pageSize: 5, status: statusFilter })
+      .then((data) => { if (active) setUsers(data.users); setTotalFiltered(data.total) })
       .catch((error) => { if (active) setLoadError(error.message) })
     return () => { active = false }
-  }, [page])
+  }, [page, statusFilter])
+
+  /** 필터 바뀌면 1페이지로 돌아가는 핸들러 추가 */
+  function handleStatusFilterChange(e) {
+    setStatusFilter(e.target.value)
+    setPage(1)
+}
 
   if (loadError) return <main className={styles.page}>{loadError}</main>
   if (!stats) return <main className={styles.page}>불러오는 중...</main>
@@ -102,7 +110,15 @@ export default function UserManagementPage() {
         </section>
 
         <section className={styles.listCard}>
-          <h2><img className={styles.titleIcon} src={usersIcon} alt="" /> 유저 목록</h2>
+          <div className={styles.listHeader}>
+            <h2><img className={styles.titleIcon} src={usersIcon} alt="" /> 유저 목록</h2>
+            <select value={statusFilter} onChange={handleStatusFilterChange}>
+              <option value="">모두</option>
+              <option value="ACTIVE">활성</option>
+              <option value="DORMANT">휴면</option>
+              <option value="WITHDRAWN">탈퇴</option>
+            </select>
+          </div>
           <div className={styles.tableWrap}>
             <table className={styles.userTable}>
               <thead>
@@ -142,7 +158,7 @@ export default function UserManagementPage() {
               >
                 이전
               </button>
-              <span>{page} / {Math.max(1, Math.ceil(stats.totalUsers / 5))}</span>
+              <span>{page} / {Math.max(1, Math.ceil(totalFiltered / 5))}</span>
               <button
                 type="button"
                 disabled={page >= Math.ceil(stats.totalUsers / 5)}
