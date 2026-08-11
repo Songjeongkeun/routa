@@ -5,7 +5,7 @@ const url = 'https://places.googleapis.com/v1/places:searchText';
 
 export async function GoogleAPI(placeName) {
     if (!GOOGLE_API_KEY) {
-        throw new Error("GOOGLE_PLACES_API_KEY environment variable is required");
+        throw new Error("구글 키 없음");
     }
     const requestBody = { textQuery: placeName, languageCode: "ko" };
 
@@ -93,7 +93,9 @@ export async function GoogleAPI(placeName) {
                 pet_allowed: false 
             };
         } 
+
         return null;
+
     } catch (error) {
         console.error(`[구글 API 에러] ${placeName}: `, error);
         return null;
