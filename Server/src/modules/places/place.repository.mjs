@@ -39,9 +39,12 @@ export async function findPlaces({
          AND (place_category ILIKE '%공원%' OR place_category ILIKE '%산책%')
        )
      )
-     -- 변경: 검색어와 별개로 장소 대분류를 정확히 제한합니다.
-     -- placeCategory가 '음식점'이면 PLACE의 음식점 행만 반환합니다.
-     AND ($6::TEXT IS NULL OR place_category = $6)
+     -- 장소 선택 화면의 전체 조회는 여행 장소 세 분류만 보여줍니다.
+     -- 음식점 화면처럼 placeCategory가 명시되면 해당 분류만 조회합니다.
+     AND (
+       ($6::TEXT IS NULL AND place_category IN ('관광명소', '문화시설', '전망대'))
+       OR place_category = $6
+     )
      AND (NOT $2::BOOLEAN OR pet_is_allowed = TRUE)
      AND (
        $3::TEXT IS NULL
