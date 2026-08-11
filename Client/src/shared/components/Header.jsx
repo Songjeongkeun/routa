@@ -1,9 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../../app/providers/authContext.js"
+import { usePlan } from "../../app/providers/planContext.js"
 import styles from "./Header.module.css"
 
 export default function Header() {
   const { user, logout } = useAuth()
+  const { resetPlan } = usePlan()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -25,6 +27,13 @@ export default function Header() {
     navigate("/schedules")
   }
 
+  function handleStartNewTrip() {
+    // 변경: 헤더에서 새 여행 계획을 시작하면 이전 초안의 tripPlanId까지 비웁니다.
+    // 남아 있던 ID로 PUT 요청을 보내 과거 저장 일정의 원본 계획 날짜가 바뀌는 것을 막습니다.
+    resetPlan()
+    navigate("/planner/condition")
+  }
+
   function handleProfileClick() {
     navigate("/profile")
   }
@@ -42,7 +51,7 @@ export default function Header() {
         <button
           className={isPlanning ? styles.activeMenu : styles.menuButton}
           type="button"
-          onClick={() => navigate("/planner/condition")}
+          onClick={handleStartNewTrip}
         >
           여행 계획
         </button>

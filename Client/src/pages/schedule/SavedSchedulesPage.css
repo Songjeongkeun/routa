@@ -16,11 +16,21 @@
 .saved-schedules-filter label { display: grid; gap: 6px; color: #475569; font-size: 13px; font-weight: 700; }
 .saved-schedules-filter input, .saved-schedules-filter select { min-height: 40px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 10px; color: #172033; background: #fff; }
 .saved-schedules-reset { align-self: end; min-height: 40px; border: 1px solid #c7d2fe; border-radius: 8px; background: #fff; color: #4f46e5; cursor: pointer; }
+.saved-schedules-period-tabs { display: flex; gap: 8px; margin-top: 18px; }
+/* 변경: 기간 탭은 서버 필터 상태를 반영하므로 선택된 탭을 명확한 배경색으로 구분합니다. */
+.saved-schedules-period-tabs button { min-height: 38px; border: 1px solid #cbd5e1; border-radius: 999px; padding: 0 14px; color: #475569; background: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.saved-schedules-period-tabs button.is-active { border-color: #4f46e5; color: #fff; background: #4f46e5; }
 .saved-schedules-error { margin: 16px 0 0; color: #b91c1c; }
 
 .saved-schedule-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
 .saved-schedule-card { display: flex; flex-direction: column; gap: 12px; min-height: 260px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; box-shadow: 0 4px 16px rgba(15, 23, 42, .04); }
+.saved-schedule-card__badges { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .saved-schedule-card__badge { width: fit-content; padding: 5px 9px; border-radius: 999px; background: #eef2ff; color: #4338ca; font-size: 12px; font-weight: 700; }
+/* 변경: 일정 상태는 코스 종류와 별개이므로 보조 배지로 표시해 날짜와 함께 빠르게 파악할 수 있게 합니다. */
+.saved-schedule-card__period { flex: none; padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.saved-schedule-card__period--upcoming { color: #0369a1; background: #e0f2fe; }
+.saved-schedule-card__period--ongoing { color: #047857; background: #d1fae5; }
+.saved-schedule-card__period--past { color: #64748b; background: #f1f5f9; }
 .saved-schedule-card__title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .saved-schedule-card h2 { min-width: 0; margin: 0; overflow: hidden; font-size: 19px; text-overflow: ellipsis; white-space: nowrap; }
 .saved-schedule-card__edit { flex: none; border: 0; color: #4f46e5; background: transparent; font-size: 12px; font-weight: 700; cursor: pointer; }

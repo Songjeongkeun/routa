@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../app/providers/authContext.js"
+import { usePlan } from "../../app/providers/planContext.js"
 import { API_URL } from "../../shared/api/httpClient.js"
 import { getSavedItineraries } from "../../features/schedule/schedule.api.js"
 import { changePassword, withdrawUser } from "../../features/profile/profile.api.js"
@@ -17,6 +18,7 @@ import passwordRowIcon from "../../shared/assets/icons/Account row icon 0.png"
  */
 export default function ProfilePage() {
   const { user, logout } = useAuth()
+  const { resetPlan } = usePlan()
   const navigate = useNavigate()
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [passwordError, setPasswordError] = useState("")
@@ -81,6 +83,12 @@ export default function ProfilePage() {
     }
   }
 
+  function handleStartNewTrip() {
+    // 변경: 프로필의 새 여행 진입점도 이전 tripPlanId를 제거해 저장된 일정의 원본 계획을 덮어쓰지 않습니다.
+    resetPlan()
+    navigate("/planner/condition")
+  }
+
   const avatarSrc = user?.profileImageUrl
     ? user.profileImageUrl.startsWith("blob:")
       ? user.profileImageUrl
@@ -121,7 +129,7 @@ export default function ProfilePage() {
           <section className={styles.nextPlanCard}>
             <h2>다음 여행을 준비해 볼까요?</h2>
             <p>관심 테마와 식사 방식은 여행 계획을 만들 때 선택하고 추천 경로에 바로 반영할 수 있어요.</p>
-            <button type="button" onClick={() => navigate("/planner/condition")}>여행 일정 만들기</button>
+            <button type="button" onClick={handleStartNewTrip}>여행 일정 만들기</button>
           </section>
         </div>
 

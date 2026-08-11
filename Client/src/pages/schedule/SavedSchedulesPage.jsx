@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { usePlan } from "../../app/providers/planContext.js"
 import {
   deleteSavedItinerary,
   getSavedItineraries,
@@ -14,15 +15,32 @@ const COURSE_TYPE_LABELS = {
   BALANCED: "추천 코스",
 }
 
+const SCHEDULE_PERIOD_LABELS = {
+  UPCOMING: "다가오는 여행",
+  ONGOING: "진행 중",
+  PAST: "지난 여행",
+}
+
+const SCHEDULE_PERIOD_TABS = [
+  // 변경: 전체 탭은 period 값을 비워 서버의 기간 조건 없이 모든 저장 일정을 함께 조회합니다.
+  { value: "", label: "전체 여행" },
+  { value: "UPCOMING", label: "다가오는 여행" },
+  { value: "PAST", label: "지난 여행" },
+]
+
 /**
  * 변경: 저장 일정은 추천 결과(DRAFT)와 분리된 SAVED 목록 API로 조회합니다.
  * 검색·필터·삭제 성공 후의 목록과 상단 건수는 이 화면의 단일 상태로 함께 갱신합니다.
  */
 export default function SavedSchedulesPage() {
   const navigate = useNavigate()
+  const { resetPlan } = usePlan()
   const [keyword, setKeyword] = useState("")
   const [courseType, setCourseType] = useState("")
   const [travelDate, setTravelDate] = useState("")
+  // 변경: 기간별 목록은 서버에서 필터링해 총 건수와 페이지 번호가 실제 카드 수와 일치하게 합니다.
+  // 변경: 저장 일정 화면의 기본값을 전체 여행으로 두어 지난·다가오는 일정을 한눈에 확인하게 합니다.
+  const [period, setPeriod] = useState("")
   const [page, setPage] = useState(1)
   const [schedules, setSchedules] = useState([])
   const [totalCount, setTotalCount] = useState(0)
@@ -43,7 +61,7 @@ export default function SavedSchedulesPage() {
       try {
         setIsLoading(true)
         setError("")
-        const result = await getSavedItineraries({ keyword, courseType, travelDate, page, pageSize })
+        const result = await getSavedItineraries({ keyword, courseType, travelDate, period, page, pageSize })
         if (isCancelled) return
         setSchedules(result.itineraries ?? [])
         setTotalCount(result.totalCount ?? 0)
@@ -62,13 +80,27 @@ export default function SavedSchedulesPage() {
       isCancelled = true
       window.clearTimeout(loadTimer)
     }
-  }, [courseType, keyword, page, pageSize, travelDate])
+  }, [courseType, keyword, page, pageSize, period, travelDate])
 
   function resetFilters() {
     setKeyword("")
     setCourseType("")
     setTravelDate("")
+    setPeriod("")
     setPage(1)
+  }
+
+  function changePeriod(nextPeriod) {
+    // 변경: 기간을 바꾸면 이전 탭의 페이지 번호가 남지 않도록 첫 페이지부터 다시 읽습니다.
+    setPeriod(nextPeriod)
+    setPage(1)
+  }
+
+  function handleStartNewTrip() {
+    // 변경: 저장 일정 화면에서 새 여행을 만들 때는 이전 초안의 tripPlanId까지 초기화합니다.
+    // 그렇지 않으면 다음 저장이 기존 TRIP_PLAN을 PUT으로 수정해 과거 일정의 원본 날짜가 바뀔 수 있습니다.
+    resetPlan()
+    navigate("/planner/condition")
   }
 
   async function confirmDelete() {
@@ -160,20 +192,41 @@ export default function SavedSchedulesPage() {
           <button type="button" className="saved-schedules-reset" onClick={resetFilters}>초기화</button>
         </section>
 
+        <div className="saved-schedules-period-tabs" role="tablist" aria-label="저장 일정 기간">
+          {SCHEDULE_PERIOD_TABS.map((tab) => (
+            <button
+              key={tab.label}
+              type="button"
+              role="tab"
+              aria-selected={period === tab.value}
+              className={period === tab.value ? "is-active" : ""}
+              onClick={() => changePeriod(tab.value)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {error && <p className="saved-schedules-error" role="alert">{error}</p>}
         {isLoading ? (
           <section className="saved-schedules-state" aria-live="polite">저장 일정을 불러오는 중입니다.</section>
         ) : schedules.length === 0 ? (
           <section className="saved-schedules-state">
-            <h2>{keyword || courseType || travelDate ? "검색 조건에 맞는 일정이 없어요" : "아직 저장한 일정이 없어요"}</h2>
-            <p>{keyword || courseType || travelDate ? "검색어나 필터를 바꿔 다시 찾아보세요." : "추천 결과에서 마음에 드는 코스를 저장해 보세요."}</p>
-            {!(keyword || courseType || travelDate) && <button type="button" onClick={() => navigate("/planner/condition")}>여행 일정 만들기</button>}
+            <h2>{keyword || courseType || travelDate ? "검색 조건에 맞는 일정이 없어요" : period ? `${SCHEDULE_PERIOD_LABELS[period]}이 없어요` : "아직 저장한 일정이 없어요"}</h2>
+            <p>{keyword || courseType || travelDate ? "검색어나 필터를 바꿔 다시 찾아보세요." : period === "PAST" ? "지난 여행은 여행 종료 시각이 지나면 이곳에 표시됩니다." : "새 여행을 계획하고 마음에 드는 경로를 저장해 보세요."}</p>
+            {!(keyword || courseType || travelDate) && period !== "PAST" && <button type="button" onClick={handleStartNewTrip}>여행 일정 만들기</button>}
           </section>
         ) : (
           <section className="saved-schedule-grid" aria-label="저장 일정 목록">
             {schedules.map((schedule) => (
               <article className="saved-schedule-card" key={schedule.itineraryId}>
-                <span className="saved-schedule-card__badge">{COURSE_TYPE_LABELS[schedule.courseKind]}</span>
+                <div className="saved-schedule-card__badges">
+                  <span className="saved-schedule-card__badge">{COURSE_TYPE_LABELS[schedule.courseKind]}</span>
+                  {/* 변경: 다가오는 탭 안에서도 현재 진행 중인 일정은 별도 상태로 명확히 알립니다. */}
+                  <span className={`saved-schedule-card__period saved-schedule-card__period--${String(schedule.schedulePeriod ?? "UPCOMING").toLowerCase()}`}>
+                    {SCHEDULE_PERIOD_LABELS[schedule.schedulePeriod] ?? SCHEDULE_PERIOD_LABELS.UPCOMING}
+                  </span>
+                </div>
                 <div className="saved-schedule-card__title-row">
                   <h2>{schedule.title}</h2>
                   <button type="button" className="saved-schedule-card__edit" onClick={() => openTitleEditor(schedule)}>제목 수정</button>

@@ -9,6 +9,8 @@ export async function getItineraries(req, res) {
       keyword: req.query.keyword,
       courseType: req.query.courseType,
       travelDate: req.query.travelDate,
+      // 변경: 저장 일정 화면의 다가오는·지난 여행 탭을 서버 필터로 처리해 페이지 수와 총 건수를 정확히 맞춥니다.
+      schedulePeriod: req.query.period,
       page: req.query.page,
       pageSize: req.query.pageSize,
     })

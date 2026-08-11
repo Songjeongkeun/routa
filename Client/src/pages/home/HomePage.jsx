@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../../app/providers/authContext.js"
+import { usePlan } from "../../app/providers/planContext.js"
 import { getSavedItineraries } from "../../features/schedule/schedule.api.js"
 import styles from "./HomePage.module.css"
 
@@ -9,6 +10,7 @@ import styles from "./HomePage.module.css"
 
 export default function HomePage() {
   const { user } = useAuth()
+  const { resetPlan } = usePlan()
   const navigate = useNavigate()
   const location = useLocation()
   const hasHandledLoginAlert = useRef(false)
@@ -63,6 +65,9 @@ export default function HomePage() {
 
   // Plan 생성 페이지
   const handlePlanClick = () => {
+    // 변경: 홈의 "여행 일정 생성"은 기존 초안 수정이 아니라 새 계획 시작입니다.
+    // tripPlanId를 초기화해야 다음 저장이 POST로 새 TRIP_PLAN을 생성합니다.
+    resetPlan()
     navigate("/planner/condition")
   }
 

@@ -59,6 +59,47 @@ function formatTime(value) {
   }).format(new Date(value))
 }
 
+function createSnapshotTravelTime(snapshot, timeField) {
+  const travelDate = snapshot?.travelDate
+  const time = snapshot?.[timeField]
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(travelDate ?? "") || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time ?? "")) {
+    return null
+  }
+
+  const parsedTime = new Date(`${travelDate}T${time}:00+09:00`)
+  return Number.isNaN(parsedTime.getTime()) ? null : parsedTime
+}
+
+/**
+ * 변경: 저장 일정의 여행 시각은 원본 계획의 현재 값이 아니라 저장 시점 값을 우선합니다.
+ * 새 컬럼이 없는 과거 일정은 저장 스냅샷을 한 번 더 확인해 기존 카드 날짜도 최대한 복원합니다.
+ */
+function getCourseTravelTimes(course) {
+  const snapshot = getSavedSnapshot(course)
+  const snapshotStartTime = createSnapshotTravelTime(snapshot, "startTime")
+  const snapshotEndTime = createSnapshotTravelTime(snapshot, "endTime")
+
+  return {
+    startTime: course.status === "SAVED"
+      ? course.savedTravelStartTime ?? snapshotStartTime ?? course.startTime
+      : course.startTime,
+    endTime: course.status === "SAVED"
+      ? course.savedTravelEndTime ?? snapshotEndTime ?? course.endTime
+      : course.endTime,
+  }
+}
+
+function getSchedulePeriod({ startTime, endTime }) {
+  const now = new Date()
+  const start = new Date(startTime)
+  const end = new Date(endTime)
+
+  // 변경: 종료 전인 오늘 일정은 다가오는 목록에 남기되, 카드에서는 "진행 중"으로 구분합니다.
+  if (!Number.isNaN(end.getTime()) && end < now) return "PAST"
+  if (!Number.isNaN(start.getTime()) && start <= now) return "ONGOING"
+  return "UPCOMING"
+}
+
 /**
  * 변경: COURSE_NODE에는 식사 시간 창·사용자가 고른 시각이 없으므로 TRIP_PLAN의
  * meal_preference를 합쳐 결과 화면이 계산 결과를 설명할 수 있는 정보로 복원합니다.
@@ -92,6 +133,7 @@ function getMealTimingDetails({ node, meal, courseStartTime }) {
 function formatCourse(course) {
   const meta = COURSE_META[course.courseKind] ?? COURSE_META.BALANCED
   const isSaved = course.status === "SAVED"
+  const travelTimes = getCourseTravelTimes(course)
   return {
     itineraryId: course.itineraryId,
     tripPlanId: course.tripPlanId,
@@ -99,9 +141,13 @@ function formatCourse(course) {
     // 변경: DRAFT는 코스 종류 제목을 쓰고, SAVED는 사용자가 입력한 일정 제목을 우선 표시합니다.
     title: isSaved && course.savedTitle ? course.savedTitle : meta.title,
     description: meta.description,
-    travelDate: formatDate(course.startTime),
-    startTime: formatTime(course.startTime),
-    endTime: formatTime(course.endTime),
+    // 변경: 목록·필터·상세가 같은 저장 당시 여행 날짜를 사용하도록 통일합니다.
+    travelDate: formatDate(travelTimes.startTime),
+    startTime: formatTime(travelTimes.startTime),
+    endTime: formatTime(travelTimes.endTime),
+    travelStartAt: new Date(travelTimes.startTime).toISOString(),
+    travelEndAt: new Date(travelTimes.endTime).toISOString(),
+    schedulePeriod: isSaved ? getSchedulePeriod(travelTimes) : null,
     summary: {
       totalMinutes: course.totalMinutes,
       walkingDistanceMeters: course.walkingDistanceMeters,
@@ -160,6 +206,14 @@ function normalizeTravelDate(value) {
   return value
 }
 
+function normalizeSchedulePeriod(value) {
+  if (!value) return null
+  if (!["UPCOMING", "PAST"].includes(value)) {
+    throw createHttpError("일정 기간 필터가 올바르지 않습니다.")
+  }
+  return value
+}
+
 export async function getItineraries({ userId, tripPlanId }) {
   const courses = await itineraryRepository.findOwnedCourses({
     userId,
@@ -169,7 +223,7 @@ export async function getItineraries({ userId, tripPlanId }) {
 }
 
 /** 변경: 저장 일정 목록은 DRAFT 추천 코스를 제외하고 현재 사용자 소유의 SAVED 코스만 반환합니다. */
-export async function getSavedItineraries({ userId, keyword, courseType, travelDate, page, pageSize }) {
+export async function getSavedItineraries({ userId, keyword, courseType, travelDate, schedulePeriod, page, pageSize }) {
   const normalizedPage = normalizePage(page)
   const normalizedPageSize = normalizePage(pageSize, 12, 50)
   const result = await itineraryRepository.findSavedOwnedCourses({
@@ -177,6 +231,7 @@ export async function getSavedItineraries({ userId, keyword, courseType, travelD
     keyword: String(keyword ?? ""),
     courseType: normalizeCourseType(courseType),
     travelDate: normalizeTravelDate(travelDate),
+    schedulePeriod: normalizeSchedulePeriod(schedulePeriod),
     page: normalizedPage,
     pageSize: normalizedPageSize,
   })
