@@ -73,7 +73,7 @@ export default function TransitionCriterion({
                         onChange={(event) => handleLocationChange("start", event.target.value)}
                         onBlur={(event) => handleLocationBlur("start", event.target.value)}
                         onKeyDown={handleLocationKeyDown}
-                        placeholder="출발지 입력 (선택)"
+                        placeholder="출발지 입력"
                         aria-invalid={Boolean(locationErrors.start)}
                     />
                     {searchingField === "start" && <small>검색 중...</small>}

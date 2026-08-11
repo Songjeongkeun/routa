@@ -17,6 +17,7 @@ import timeIcon from "../../shared/assets/icons/Travel_conditions/Row icon 5.png
 import placesIcon from "../../shared/assets/icons/Travel_conditions/Row icon 6.png"
 // 관심 테마: Row icon 7.png 없음 (이 페이지엔 관심 테마 줄 자체가 없음)
 import mealIcon from "../../shared/assets/icons/Travel_conditions/Row icon 8.png"
+import transform_condition from "../../shared/assets/icons/condition.png"
 
 function formatTimeWithPeriod(time) {
     // "14:05" > [14, 5]
@@ -183,7 +184,7 @@ export default function PlanConditionPage() {
                     </section>
 
                     <section className={styles.card}>
-                        <h2><span aria-hidden="true">▦</span> 날짜와 교통</h2>
+                        <h2><span aria-hidden="true"><img className={styles.summaryIcon} src={dateIcon} alt="" /></span>날짜와 교통</h2>
                         <DateSelector
                             dateValue={selectDate}
                             transportValue={selectTransport}
@@ -193,7 +194,7 @@ export default function PlanConditionPage() {
                     </section>
 
                     <section className={styles.card}>
-                        <h2><span aria-hidden="true">⌘</span> 이동 조건</h2>
+                        <h2><span aria-hidden="true"><img className={styles.summaryIcon} src={transform_condition} alt="" /></span>이동 조건</h2>
                         <TransitCriterion
                             startLocation={transitCondition.startLocation}
                             startAddress={transitCondition.startAddress}

@@ -46,7 +46,7 @@
 .stepper .currentStep > span { color: var(--color-surface); background: var(--color-primary); }
 
 .layout {
-    width: min(100%, 1240px);
+    width: min(100%, 1280px);
     display: grid;
     grid-template-columns: minmax(0, 1fr) 365px;
     gap: 30px;
@@ -72,19 +72,19 @@
 .summary dl > div,
 .summaryRow { min-height: 48px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-border); }
 .summary dt,
-.summaryRow span { color: var(--color-text-muted); font-size: 12px; }
+.summaryRow span { color: var(--color-text-muted); font-size: 13px; }
 .summary dt span { display: inline-block; width: 19px; color: #354462; }
 .summary dd,
-.summaryRow strong { margin: 0; color: var(--color-text); font-size: 12px; font-weight: 700; text-align: right; }
+.summaryRow strong { margin: 0; color: var(--color-text); font-size: 13px; font-weight: 700; text-align: right; }
 .summary .accent { color: #5740ee; }
 .summarySection { padding: 20px 0 17px; border-bottom: 1px solid var(--color-border); }
-.summaryTitle { display: flex; justify-content: space-between; font-size: 12px; }
+.summaryTitle { display: flex; justify-content: space-between; font-size: 13px; }
 .summaryTitle span { color: var(--color-text-muted); }
 .summaryTitle strong { color: var(--color-text); }
-.summarySection ul { display: grid; gap: 14px; margin: 18px 0 0 27px; padding: 0; list-style: none; font-size: 12px; }
+.summarySection ul { display: grid; gap: 14px; margin: 18px 0 0 27px; padding: 0; list-style: none; font-size: 13px; }
 .summarySection li { display: flex; justify-content: space-between; }
 .summarySection time { color: var(--color-text-subtle); }
-.summaryEmpty { margin: 15px 0 0 27px; color: var(--color-text-subtle); font-size: 12px; }
+.summaryEmpty { margin: 15px 0 0 27px; color: var(--color-text-subtle); font-size: 13px; }
 
 .summaryIcon {
   width: 16px;
