@@ -1,4 +1,5 @@
 import styles from "./TripTypeSelector.module.css"
+import tripTypeIcon from "../../../shared/assets/icons/Travel_conditions/Row icon 0.png"
 
 // 여행 타입 지정
 const TRIP_TYPES = [
@@ -21,7 +22,7 @@ export default function TripTypeSelector({ value, onChange }) {
     return (
         <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>
-                <span aria-hidden="true">▥</span>
+                <span aria-hidden="true"><img className={styles.summaryIcon} src={tripTypeIcon} alt="" /></span>
                 여행 성격
             </legend>
 

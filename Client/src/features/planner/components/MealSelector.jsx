@@ -30,7 +30,8 @@ export default function MealSelector({
     <section className={styles.panel} aria-labelledby="selected-meals-title">
       <header className={styles.header}>
         <h2 id="selected-meals-title">식사 계획</h2>
-        <span>방식·순서·시간 변경 가능</span>
+        {/* 변경: 점심·저녁은 시간대가 고정된 슬롯이므로 실제 제공하는 방식·시간 변경만 안내합니다. */}
+        <span>방식·시간 변경 가능</span>
       </header>
 
       <div className={styles.list}>
@@ -81,18 +82,6 @@ export default function MealSelector({
                   <strong>{restaurant.name}</strong>
                   <span className={styles.meta}>({restaurant.categoryLabel} · {restaurant.district})</span>
 
-                  <label className={styles.timeControl}>
-                    <span className="sr-only">{restaurant.name} 방문 시간</span>
-                    <input
-                      type="time"
-                      value={mealTimes[slot] ?? SLOT_META[slot].fallbackTime}
-                      min={SLOT_META[slot].minTime}
-                      max={SLOT_META[slot].maxTime}
-                      onChange={(event) => onTimeChange(slot, event.target.value)}
-                    />
-                    <span>({SLOT_META[slot].label} {SLOT_META[slot].minTime}~{SLOT_META[slot].maxTime})</span>
-                  </label>
-
                   <button
                     className={styles.remove}
                     type="button"
@@ -102,6 +91,22 @@ export default function MealSelector({
                     ♲
                   </button>
                 </article>
+              )}
+
+              {mode !== "SKIP" && (
+                // 변경: 주변 음식점 추천도 점심·저녁 도착 시각을 기준으로 계산하므로,
+                // 지정 음식점일 때만 숨기던 시간 입력을 모든 포함 식사에 제공합니다.
+                <label className={styles.mealTimeControl}>
+                  <span>{SLOT_META[slot].label} 예정 시각</span>
+                  <input
+                    type="time"
+                    value={mealTimes[slot] ?? SLOT_META[slot].fallbackTime}
+                    min={SLOT_META[slot].minTime}
+                    max={SLOT_META[slot].maxTime}
+                    onChange={(event) => onTimeChange(slot, event.target.value)}
+                  />
+                  <small>{SLOT_META[slot].minTime}~{SLOT_META[slot].maxTime} 사이에 도착하도록 경로를 계산합니다.</small>
+                </label>
               )}
             </div>
           )

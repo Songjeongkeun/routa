@@ -1,4 +1,11 @@
 import { config } from "../config.mjs"
+import {
+  createRouteCacheKey,
+  getOrCreateRouteCache,
+  TRANSIT_GEOMETRY_CACHE_TTL_MS,
+  TRANSIT_ROUTE_CACHE_TTL_MS,
+} from "./routeCache.mjs"
+import { searchWalkingRoute } from "./kakaoWalk.mjs"
 
 const ODSAY_PUBLIC_TRANSIT_URL = "https://api.odsay.com/v1/api/searchPubTransPathT"
 const ODSAY_LOAD_LANE_URL = "https://api.odsay.com/v1/api/loadLane"
@@ -55,6 +62,19 @@ function createWalkingFallback(from, to) {
       durationMinutes,
       distanceMeters: walkingDistanceMeters,
     }],
+  }
+}
+
+/**
+ * 변경: ODsay가 근거리 또는 대중교통 불가 구간을 반환하면 먼저 카카오의 실제 보행 경로를 사용합니다.
+ * 카카오 API 설정·쿼터·네트워크 문제가 있어도 추천 기능을 멈추지 않도록, 그때만 기존 직선거리 추정으로
+ * 안전하게 되돌아갑니다. WALK_FALLBACK은 결과 경고와 지도 점선으로 사용자에게 구분됩니다.
+ */
+async function createWalkingRouteOrFallback(from, to) {
+  try {
+    return await searchWalkingRoute({ from, to })
+  } catch {
+    return createWalkingFallback(from, to)
   }
 }
 
@@ -164,21 +184,29 @@ function normalizePath(path) {
 export async function loadPublicTransitRouteGeometry(mapObject) {
   if (!mapObject || !config.odsay.serverApiKey) return []
 
-  const params = new URLSearchParams({
-    // ODsay 공식 가이드의 loadLane 호출 형식입니다. mapObj 앞에 경로 선택 접두어를 붙입니다.
-    mapObject: `0:0@${mapObject}`,
-    apiKey: config.odsay.serverApiKey,
-  })
-
   try {
-    const response = await fetch(`${ODSAY_LOAD_LANE_URL}?${params.toString()}`, {
-      signal: AbortSignal.timeout(10_000),
-    })
-    if (!response.ok) return []
+    // 변경: 노선 그래픽도 외부 ODsay 호출이므로, 같은 mapObject를 다시 그릴 때는
+    // 1시간 동안 서버 메모리의 좌표 배열을 재사용합니다. mapObject 자체가 ODsay 경로의 식별자입니다.
+    return await getOrCreateRouteCache({
+      key: `ODSAY:TRANSIT_GEOMETRY:${mapObject}`,
+      ttlMilliseconds: TRANSIT_GEOMETRY_CACHE_TTL_MS,
+      load: async () => {
+        const params = new URLSearchParams({
+          // ODsay 공식 가이드의 loadLane 호출 형식입니다. mapObj 앞에 경로 선택 접두어를 붙입니다.
+          mapObject: `0:0@${mapObject}`,
+          apiKey: config.odsay.serverApiKey,
+        })
+        const response = await fetch(`${ODSAY_LOAD_LANE_URL}?${params.toString()}`, {
+          signal: AbortSignal.timeout(10_000),
+        })
+        // 변경: HTTP 실패는 캐시에 저장하지 않습니다. 다음 추천 요청에서 다시 조회할 수 있습니다.
+        if (!response.ok) throw new Error("ODsay 노선 그래픽 요청 실패")
 
-    const payload = await response.json()
-    if (payload?.error) return []
-    return normalizeLaneGeometry(payload)
+        const payload = await response.json()
+        if (payload?.error) return []
+        return normalizeLaneGeometry(payload)
+      },
+    })
   } catch {
     // 변경: 지도 그래픽은 부가 정보이므로 API 일시 오류가 추천 코스 생성 전체를 중단시키지 않게 합니다.
     return []
@@ -209,10 +237,10 @@ export async function searchPublicTransitRoutes({ from, to }) {
   }
 
   // 변경: ODsay는 출발·도착지가 700m 이내이면 -98 오류를 반환합니다.
-  // 가까운 장소는 대중교통보다 도보가 자연스럽고, 동일 장소는 이동 자체가 없으므로
-  // 외부 API를 호출하지 않고 바로 도보 대체 경로(동일 장소는 0분·0m)를 반환합니다.
+  // 가까운 장소는 대중교통보다 도보가 자연스러우므로, 카카오 실제 보행 경로를 먼저 조회합니다.
+  // 카카오도 사용할 수 없는 상황에만 기존 직선거리 추정으로 안전하게 처리합니다.
   if (calculateDistanceMeters(from, to) < 700) {
-    return [createWalkingFallback(from, to)]
+    return [await createWalkingRouteOrFallback(from, to)]
   }
 
   const params = new URLSearchParams({
@@ -224,49 +252,63 @@ export async function searchPublicTransitRoutes({ from, to }) {
     apiKey: config.odsay.serverApiKey,
   })
 
-  let response
-  try {
-    // 변경: API 키가 URL에 포함되지만 URL 자체는 로그에 남기지 않아 키가 노출되지 않게 합니다.
-    response = await fetch(`${ODSAY_PUBLIC_TRANSIT_URL}?${params.toString()}`, {
-      signal: AbortSignal.timeout(10_000),
-    })
-  } catch (error) {
-    if (error?.name === "TimeoutError") {
-      throw createProviderError("ODsay 길찾기 요청 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.", 504)
-    }
-    throw createProviderError("ODsay 길찾기 API에 연결하지 못했습니다. Server 키와 등록 IP를 확인해 주세요.")
-  }
+  // 변경: 출발·도착 좌표와 ODsay 탐색 옵션이 같은 요청은 15분 동안 재사용합니다.
+  // 추천 계산이 여러 갈래를 비교하거나 여러 코스가 같은 구간을 사용해도 ODsay 호출은 한 번뿐입니다.
+  return getOrCreateRouteCache({
+    key: createRouteCacheKey({
+      provider: "ODSAY",
+      mode: "TRANSIT",
+      from,
+      to,
+      option: "OPT_0",
+    }),
+    ttlMilliseconds: TRANSIT_ROUTE_CACHE_TTL_MS,
+    load: async () => {
+      let response
+      try {
+        // API 키가 URL에 포함되지만 URL 자체는 로그에 남기지 않아 키가 노출되지 않게 합니다.
+        response = await fetch(`${ODSAY_PUBLIC_TRANSIT_URL}?${params.toString()}`, {
+          signal: AbortSignal.timeout(10_000),
+        })
+      } catch (error) {
+        if (error?.name === "TimeoutError") {
+          throw createProviderError("ODsay 길찾기 요청 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.", 504)
+        }
+        throw createProviderError("ODsay 길찾기 API에 연결하지 못했습니다. Server 키와 등록 IP를 확인해 주세요.")
+      }
 
-  let payload
-  try {
-    payload = await response.json()
-  } catch {
-    throw createProviderError("ODsay 길찾기 API가 읽을 수 없는 응답을 반환했습니다.")
-  }
+      let payload
+      try {
+        payload = await response.json()
+      } catch {
+        throw createProviderError("ODsay 길찾기 API가 읽을 수 없는 응답을 반환했습니다.")
+      }
 
-  if (!response.ok) {
-    throw createProviderError("ODsay 길찾기 요청이 거절되었습니다. Server 키와 등록 IP를 확인해 주세요.")
-  }
+      if (!response.ok) {
+        throw createProviderError("ODsay 길찾기 요청이 거절되었습니다. Server 키와 등록 IP를 확인해 주세요.")
+      }
 
-  if (payload?.error) {
-    // 변경: API 요청 직전 거리 계산의 경계값 차이로 ODsay가 -98을 반환할 수도 있으므로,
-    // 이 경우도 추천 전체를 실패시키지 않고 같은 도보 대체 경로로 처리합니다.
-    if (isNearbyPlaceError(payload.error)) {
-      return [createWalkingFallback(from, to)]
-    }
+      if (payload?.error) {
+        // API 요청 직전 거리 계산의 경계값 차이로 ODsay가 -98을 반환할 수도 있으므로,
+        // 이 경우도 카카오 실제 도보 경로를 먼저 사용하고 추천 전체를 중단하지 않습니다.
+        if (isNearbyPlaceError(payload.error)) {
+          return [await createWalkingRouteOrFallback(from, to)]
+        }
 
-    // 변경: 인증·입력 오류를 '대중교통 경로 없음'으로 오인해 도보로 숨기지 않습니다.
-    throw createProviderError("ODsay 길찾기 API가 오류를 반환했습니다. Server 키, 등록 IP, 좌표를 확인해 주세요.")
-  }
+        // 인증·입력 오류를 '대중교통 경로 없음'으로 오인해 도보로 숨기지 않습니다.
+        throw createProviderError("ODsay 길찾기 API가 오류를 반환했습니다. Server 키, 등록 IP, 좌표를 확인해 주세요.")
+      }
 
-  const alternatives = Array.isArray(payload?.result?.path)
-    ? payload.result.path.map(normalizePath).filter((path) => path.durationMinutes > 0)
-    : []
+      const alternatives = Array.isArray(payload?.result?.path)
+        ? payload.result.path.map(normalizePath).filter((path) => path.durationMinutes > 0)
+        : []
 
-  if (alternatives.length === 0) {
-    // 변경: 근거리 장소처럼 대중교통 후보가 없는 경우에도 추천 전체가 실패하지 않게 도보 구간을 만듭니다.
-    return [createWalkingFallback(from, to)]
-  }
+      if (alternatives.length === 0) {
+        // 대중교통 후보가 없는 구간은 카카오 실제 도보 경로로 이어 붙입니다.
+        return [await createWalkingRouteOrFallback(from, to)]
+      }
 
-  return alternatives
+      return alternatives
+    },
+  })
 }

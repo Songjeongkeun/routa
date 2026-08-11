@@ -59,7 +59,8 @@ export async function countNewUsersToday() {
 export async function countActiveUsers() {
     const result = await query(
         `SELECT COUNT(*)::int AS count FROM public."USER"
-        WHERE last_login_at >= CURRENT_TIMESTAMP - interval '30 days'`,
+        WHERE last_login_at >= CURRENT_TIMESTAMP - interval '30 days'
+        AND account_status = 'ACTIVE'`,
     )
     return result.rows[0].count
 }
@@ -81,15 +82,44 @@ export async function findMonthlyUserTrend(months = 6) {
 }
 
 /** 최근 가입한 순서로 유저 정렬 (디폴트는 0번째부터 50명까지) */
-export async function findUsers({ limit = 50, offset = 0 } = {}) {
+export async function findUsers({ limit = 50, offset = 0, status } = {}) {
+    const conditions = []
+    const params = []
+
+    if (status) {
+        params.push(status)
+        conditions.push(`account_status = $${params.length}`)
+    }
+    const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : ""
+
+    params.push(limit, offset)
     const result = await query(
         `SELECT user_id, nickname, email, created_at, account_status
         FROM public."USER"
+        ${whereClause}
         ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2`,
-        [limit, offset],
+        LIMIT $${params.length - 1} OFFSET $${params.length}`,
+        params,
     )
     return result.rows
+}
+
+/** 필터 조건에 맞는 유저 총 개수 (페이지네이션용) */
+export async function countUsersByStatus(status) {
+    const conditions = []
+    const params = []
+
+    if (status) {
+        params.push(status)
+        conditions.push(`account_status = $${params.length}`)
+    }
+    const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : ""
+
+    const result = await query(
+        `SELECT COUNT(*)::int AS count FROM public."USER" ${whereClause}`,
+        params,
+    )
+    return result.rows[0].count
 }
 
 /** 특정 유저 1명의 account_status 조회 */

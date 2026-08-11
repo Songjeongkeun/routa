@@ -20,7 +20,7 @@
 
 .headerRow p {
   margin: 0;
-  color: #69748d;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 
@@ -28,11 +28,11 @@
   padding: 12px 20px;
   border: 0;
   border-radius: 10px;
-  color: #fff;
+  color: var(--color-surface);
   font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
-  background: linear-gradient(135deg, #4b3fd6, #6447ff);
+  background: linear-gradient(135deg, #4b3fd6, var(--color-primary));
   cursor: pointer;
 }
 
@@ -47,9 +47,9 @@
 .chartCard,
 .listCard {
   padding: 24px;
-  border: 1px solid #eceef3;
+  border: 1px solid var(--color-border-card);
   border-radius: 16px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .statCard {
@@ -67,7 +67,7 @@
   border-radius: 50%;
 }
 
-.iconPurple { color: #6447ff; background: #efebff; }
+.iconPurple { color: var(--color-primary); background: var(--color-primary-soft); }
 .iconGreen  { color: #17b26a; background: #e3faf0; }
 .iconBlue   { color: #4d7cff; background: #eaf0ff; }
 
@@ -78,13 +78,28 @@
 }
 
 .statLabel {
-  color: #69748d;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
 .statValue {
   font-size: 26px;
   font-weight: 800;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.listHeader select {
+  border: 1px solid var(--color-border-ui);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .contentGrid {
@@ -115,7 +130,7 @@
   flex-direction: column;
   justify-content: space-between;
   padding-bottom: 24px;
-  color: #a3abbd;
+  color:  var(--color-text-subtle);
   font-size: 12px;
   text-align: right;
 }
@@ -137,7 +152,7 @@
 
 .barValue {
   margin-bottom: 6px;
-  color: #6447ff;
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -153,12 +168,12 @@
 .bar {
   width: 100%;
   border-radius: 6px 6px 0 0;
-  background: linear-gradient(180deg, #7c6cff, #6447ff);
+  background: linear-gradient(180deg, #7c6cff, var(--color-primary));
 }
 
 .barLabel {
   margin-top: 8px;
-  color: #69748d;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
@@ -174,7 +189,7 @@
 
 .userTable th {
   padding: 0 8px 10px;
-  color: #a3abbd;
+  color:  var(--color-text-subtle);
   font-weight: 600;
   text-align: left;
 }
@@ -189,44 +204,44 @@
 }
 
 .emailCell {
-  color: #69748d;
+  color: var(--color-text-muted);
 }
 
 .dateCell {
-  color: #69748d;
+  color: var(--color-text-muted);
 }
 
 .statusBadge {
   display: inline-block;
   padding: 4px 12px;
-  border: 1px solid #e3e5ec;
+  border: 1px solid var(--color-border-ui);
   border-radius: 20px;
-  color: #69748d;
+  color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 600;
 }
 
 .statusActive {
-  border-color: #6447ff;
-  color: #6447ff;
-  background: #efebff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .statusDormant {
-  border-color: #e3e5ec;
+  border-color: var(--color-border-ui);
   color: #8a93a6;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .statusWithdrawn {
   border-color: #f3d4d4;
-  color: #d9534f;
+  color: var(--color-danger);
   background: #fdf2f2;
 }
 
 .emptyState {
   padding: 24px 0;
-  color: #a3abbd;
+  color:  var(--color-text-subtle);
   font-size: 13px;
   text-align: center;
 }
@@ -238,14 +253,14 @@
   gap: 12px;
   margin-top: 16px;
   font-size: 13px;
-  color: #69748d;
+  color: var(--color-text-muted);
 }
 
 .pagination button {
   padding: 6px 14px;
-  border: 1px solid #e3e5ec;
+  border: 1px solid var(--color-border-ui);
   border-radius: 8px;
-  background: #fff;
+  background: var(--color-surface);
   cursor: pointer;
 }
 

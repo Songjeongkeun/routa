@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
-import { getItineraries, getItinerary, updateItineraryNodes } from "../../features/course/course.api.js"
+import { useNavigate, useSearchParams } from "react-router-dom"
+import {
+  getItineraries,
+  getItinerary,
+  saveItinerary,
+  updateItineraryNodes,
+} from "../../features/course/course.api.js"
 import { searchPlaces } from "../../features/place/place.api.js"
 import { usePlan } from "../../app/providers/planContext.js"
 import KakaoCourseMap from "../../features/course/KakaoCourseMap"
@@ -47,6 +52,7 @@ function getConstraintMessage(error) {
  */
 export default function CourseResultPage() {
   const { plan } = usePlan()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [courses, setCourses] = useState([])
   const [selectedCourseId, setSelectedCourseId] = useState(null)
@@ -56,6 +62,10 @@ export default function CourseResultPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
+  const [saveTitle, setSaveTitle] = useState("")
+  const [saveError, setSaveError] = useState("")
+  const [isSavingItinerary, setIsSavingItinerary] = useState(false)
+  const [isSaveSuccess, setIsSaveSuccess] = useState(false)
   const [isRecalculating, setIsRecalculating] = useState(false)
   const [editError, setEditError] = useState("")
   const [draggingItemId, setDraggingItemId] = useState(null)
@@ -66,12 +76,24 @@ export default function CourseResultPage() {
 
   const tripPlanId = Number(searchParams.get("tripPlanId") ?? plan.tripPlanId)
   const requestedItineraryId = Number(searchParams.get("itineraryId"))
+  const isSavedView = searchParams.get("saved") === "1"
 
   useEffect(() => {
     let isCancelled = false
 
     async function loadCourses() {
       try {
+        // 변경: 저장 일정 목록에서 들어온 경우에는 해당 SAVED 코스 하나만 스냅샷으로 조회합니다.
+        // 현재 PlanProvider 값이 다른 여행 계획이어도 저장 일정 상세를 정상 표시할 수 있습니다.
+        if (isSavedView && Number.isSafeInteger(requestedItineraryId) && requestedItineraryId > 0) {
+          const { itinerary } = await getItinerary(requestedItineraryId)
+          if (isCancelled) return
+          setCourses([itinerary])
+          setSelectedCourseId(itinerary.itineraryId)
+          setCourseLoadError("")
+          return
+        }
+
         if (!Number.isSafeInteger(tripPlanId) || tripPlanId <= 0) {
           throw new Error("추천 결과에 필요한 여행 계획 정보를 찾을 수 없습니다.")
         }
@@ -106,7 +128,7 @@ export default function CourseResultPage() {
       isCancelled = true
       window.clearTimeout(loadTimer)
     }
-  }, [requestedItineraryId, tripPlanId])
+  }, [isSavedView, requestedItineraryId, tripPlanId])
 
   const activeCourse = courses.find((course) => course.itineraryId === selectedCourseId)
   const travelDate = activeCourse?.travelDate || plan.date
@@ -137,6 +159,62 @@ export default function CourseResultPage() {
     } finally {
       setIsRecalculating(false)
     }
+  }
+
+  function openSaveModal() {
+    if (!activeCourse) return
+    setSaveTitle(activeCourse.status === "SAVED" ? activeCourse.title : `${travelDate} ${activeCourse.title}`)
+    setSaveError("")
+    setIsSaveSuccess(activeCourse.status === "SAVED")
+    setIsSaveModalOpen(true)
+  }
+
+  async function confirmSaveItinerary() {
+    if (!activeCourse || isSavingItinerary) return
+
+    try {
+      setIsSavingItinerary(true)
+      setSaveError("")
+      // 변경: 브라우저가 만든 UUID를 서버에도 보내, 더블 클릭·네트워크 재전송에도 같은 일정만 저장하게 합니다.
+      const saveRequestId = window.crypto?.randomUUID?.()
+      const { itinerary } = await saveItinerary(activeCourse.itineraryId, {
+        title: saveTitle,
+        saveRequestId,
+      })
+      setCourses((previousCourses) => previousCourses.map((course) =>
+        course.itineraryId === itinerary.itineraryId ? itinerary : course,
+      ))
+      setSelectedCourseId(itinerary.itineraryId)
+      setSearchParams({
+        tripPlanId: String(itinerary.tripPlanId),
+        itineraryId: String(itinerary.itineraryId),
+        saved: "1",
+      })
+      setIsSaveSuccess(true)
+    } catch (error) {
+      setSaveError(error.message || "일정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.")
+    } finally {
+      setIsSavingItinerary(false)
+    }
+  }
+
+  // 변경: 저장 일정 상세에서는 뒤로 가기 대신 목록으로 돌아가야 사용자가 길을 잃지 않습니다.
+  function handleConditionAction() {
+    navigate(isSavedView ? "/schedules" : "/planner/meals")
+  }
+
+  // 변경: HTML5 drag-and-drop이 어려운 모바일·키보드 사용자도 버튼으로 방문 순서를 바꿀 수 있게 합니다.
+  function moveItemByOffset(itemId, offset) {
+    if (!activeCourse || isRecalculating) return
+
+    const editableItems = activeCourse.items.filter((item) => item.kind === "VISIT" || item.kind === "MEAL")
+    const sourceIndex = editableItems.findIndex((item) => item.itemId === itemId)
+    const targetIndex = sourceIndex + offset
+    if (sourceIndex < 0 || targetIndex < 0 || targetIndex >= editableItems.length) return
+
+    const reordered = [...editableItems]
+    ;[reordered[sourceIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[sourceIndex]]
+    saveEditedNodes(toEditableNodes(reordered))
   }
 
   function changeStayMinutes(itemId, difference) {
@@ -241,8 +319,13 @@ export default function CourseResultPage() {
             <p className="course-subtitle">{travelDate} · {startTime}–{endTime} · 방문 장소 {selectedPlaceCount}곳</p>
           </div>
           <div className="course-title-actions">
-            <button className="button button--secondary" onClick={() => window.history.back()}>조건 수정</button>
-            <button className="button button--primary" onClick={() => setIsSaveModalOpen(true)}>일정 저장</button>
+            <button className="button button--secondary" onClick={handleConditionAction}>{isSavedView ? "저장 목록" : "조건 수정"}</button>
+            <button
+              className="button button--primary"
+              onClick={activeCourse.status === "SAVED" ? () => navigate("/schedules") : openSaveModal}
+            >
+              {activeCourse.status === "SAVED" ? "저장 일정 보기" : "일정 저장"}
+            </button>
           </div>
         </div>
 
@@ -278,6 +361,8 @@ export default function CourseResultPage() {
             <div className="timeline-list">
               {activeCourse.items.map((item, index) => {
                 const inboundLeg = index === 0 ? null : activeCourse.legs.find((leg) => leg.toItemId === item.itemId)
+                const editableItems = activeCourse.items.filter((candidate) => candidate.kind === "VISIT" || candidate.kind === "MEAL")
+                const editableIndex = editableItems.findIndex((candidate) => candidate.itemId === item.itemId)
                 return (
                   <TimelineItem
                     key={item.itemId}
@@ -289,6 +374,11 @@ export default function CourseResultPage() {
                     onDelete={() => setDeleteTarget(item)}
                     onDecreaseStay={() => changeStayMinutes(item.itemId, -30)}
                     onIncreaseStay={() => changeStayMinutes(item.itemId, 30)}
+                    canMoveUp={editableIndex > 0}
+                    canMoveDown={editableIndex >= 0 && editableIndex < editableItems.length - 1}
+                    onMoveUp={() => moveItemByOffset(item.itemId, -1)}
+                    onMoveDown={() => moveItemByOffset(item.itemId, 1)}
+                    isRecalculating={isRecalculating}
                     onDragStart={(event) => {
                       event.dataTransfer.setData("text/plain", String(item.itemId))
                       setDraggingItemId(item.itemId)
@@ -325,13 +415,41 @@ export default function CourseResultPage() {
       )}
 
       {isSaveModalOpen && (
-        <ConfirmModal
-          title="일정이 저장되어 있습니다"
-          description="장소 추가·삭제·순서·체류시간 변경은 성공할 때마다 서버에 자동 저장됩니다."
-          confirmLabel="확인"
-          onClose={() => setIsSaveModalOpen(false)}
-          onConfirm={() => setIsSaveModalOpen(false)}
-        />
+        <div className="modal-backdrop">
+          <section className="confirm-modal" aria-modal="true" role="dialog" aria-labelledby="save-itinerary-title">
+            {isSaveSuccess ? (
+              <>
+                <h2 id="save-itinerary-title">일정을 저장했어요</h2>
+                <p>저장 일정 목록에서 다시 확인하거나 수정·삭제할 수 있습니다.</p>
+                <div className="confirm-modal__actions">
+                  <button className="button button--secondary" onClick={() => setIsSaveModalOpen(false)}>계속 보기</button>
+                  <button className="button button--primary" onClick={() => navigate("/schedules")}>저장 일정 보기</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="save-itinerary-title">이 일정을 저장할까요?</h2>
+                <p>추천을 다시 계산해도 저장한 일정의 시간표와 이동 경로는 보존됩니다.</p>
+                <label className="save-itinerary-label" htmlFor="save-itinerary-title-input">일정 제목</label>
+                <input
+                  id="save-itinerary-title-input"
+                  className="save-itinerary-input"
+                  value={saveTitle}
+                  onChange={(event) => setSaveTitle(event.target.value)}
+                  maxLength={50}
+                  disabled={isSavingItinerary}
+                />
+                {saveError && <p className="course-edit-error" role="alert">{saveError}</p>}
+                <div className="confirm-modal__actions">
+                  <button className="button button--secondary" onClick={() => setIsSaveModalOpen(false)} disabled={isSavingItinerary}>취소</button>
+                  <button className="button button--primary" onClick={confirmSaveItinerary} disabled={isSavingItinerary}>
+                    {isSavingItinerary ? "저장 중…" : "저장하기"}
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+        </div>
       )}
 
       {isDrawerOpen && (
@@ -379,6 +497,11 @@ function TimelineItem({
   onDelete,
   onDecreaseStay,
   onIncreaseStay,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  isRecalculating,
   onDragStart,
   onDrop,
 }) {
@@ -408,10 +531,14 @@ function TimelineItem({
             <div className="timeline-item__actions">
               <span>체류 {item.stayMinutes}분</span>
               <span className="stay-controls">
-                <button className="stay-button" onClick={onDecreaseStay} aria-label="체류시간 30분 줄이기">−</button>
-                <button className="stay-button" onClick={onIncreaseStay} aria-label="체류시간 30분 늘리기">+</button>
+                <button className="stay-button" disabled={isRecalculating} onClick={onDecreaseStay} aria-label="체류시간 30분 줄이기">−</button>
+                <button className="stay-button" disabled={isRecalculating} onClick={onIncreaseStay} aria-label="체류시간 30분 늘리기">+</button>
               </span>
-              <button className="delete-button" onClick={onDelete} aria-label={`${item.placeName} 삭제`}>🗑️</button>
+              <span className="order-controls" aria-label="방문 순서 변경">
+                <button className="order-button" type="button" disabled={!canMoveUp || isRecalculating} onClick={onMoveUp} aria-label={`${item.placeName} 순서 앞으로`}>↑</button>
+                <button className="order-button" type="button" disabled={!canMoveDown || isRecalculating} onClick={onMoveDown} aria-label={`${item.placeName} 순서 뒤로`}>↓</button>
+              </span>
+              <button className="delete-button" disabled={isRecalculating} onClick={onDelete} aria-label={`${item.placeName} 삭제`}>🗑️</button>
             </div>
           )}
         </div>

@@ -2,6 +2,8 @@ import * as tripRepository from "./trip.repository.mjs"
 import { MEAL_TIME_WINDOWS, isMealTimeWithinWindow } from "../../utils/mealSchedule.mjs"
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+// 변경: 관광지·카페 방문 장소는 음식점과 별도로 최대 5곳까지만 저장합니다.
+const MAX_VISIT_STOPS = 5
 
 function createHttpError(message, status = 400) {
   const error = new Error(message)
@@ -25,10 +27,48 @@ function normalizeCoordinate(value, fieldName) {
   return coordinate
 }
 
+// 변경: 출발·종료 위치를 선택하지 않은 계획에는 null을 저장할 수 있도록 좌표의 빈 값을 허용합니다.
+// 값이 입력된 경우에는 기존과 동일하게 숫자 좌표인지 엄격히 검증합니다.
+function normalizeOptionalCoordinate(value, fieldName) {
+  if (value == null || value === "") return null
+  return normalizeCoordinate(value, fieldName)
+}
+
 function normalizeText(value, fieldName) {
   const text = typeof value === "string" ? value.trim() : ""
   if (!text) throw createHttpError(`${fieldName}을(를) 입력해 주세요.`)
   return text
+}
+
+// 변경: 위치명은 선택 사항이므로 빈 문자열을 DB의 NULL로 통일합니다.
+function normalizeOptionalText(value) {
+  const text = typeof value === "string" ? value.trim() : ""
+  return text || null
+}
+
+// 변경: 위치를 선택했다면 장소명·위도·경도를 한 세트로 저장합니다.
+// 일부 값만 저장되면 이후 ODsay 경로 계산이나 지도 표시가 깨질 수 있으므로 API 단계에서 차단합니다.
+function normalizeOptionalLocation({ location, latitude, longitude, label }) {
+  const normalizedLocation = normalizeOptionalText(location)
+  const normalizedLatitude = normalizeOptionalCoordinate(latitude, `${label} 위도`)
+  const normalizedLongitude = normalizeOptionalCoordinate(longitude, `${label} 경도`)
+  const isCompletelyEmpty = !normalizedLocation
+    && normalizedLatitude == null
+    && normalizedLongitude == null
+
+  if (isCompletelyEmpty) {
+    return { location: null, latitude: null, longitude: null }
+  }
+
+  if (!normalizedLocation || normalizedLatitude == null || normalizedLongitude == null) {
+    throw createHttpError(`${label}는 장소 검색 결과를 선택하거나 비워 주세요.`)
+  }
+
+  return {
+    location: normalizedLocation,
+    latitude: normalizedLatitude,
+    longitude: normalizedLongitude,
+  }
 }
 
 function createTimestamp(date, time, fieldName) {
@@ -55,7 +95,12 @@ function normalizePlaces(selectedPlaces) {
     uniquePlaces.set(placeId, { placeId, stayMinutes })
   })
 
-  return [...uniquePlaces.values()]
+  const normalizedPlaces = [...uniquePlaces.values()]
+  if (normalizedPlaces.length > MAX_VISIT_STOPS) {
+    throw createHttpError(`필수 방문 장소는 최대 ${MAX_VISIT_STOPS}곳까지 선택할 수 있습니다.`)
+  }
+
+  return normalizedPlaces
 }
 
 function normalizeMeals(meals, mealTimes, mealModes) {
@@ -94,7 +139,9 @@ function normalizeMeals(meals, mealTimes, mealModes) {
       mealSlot,
       scheduledTime,
       mode,
-      stayMinutes: 90,
+      // 변경: 새로 저장하거나 수정하는 여행 계획은 식사 시간을 60분으로 고정합니다.
+      // 클라이언트 값에 의존하지 않아 API를 직접 호출해도 같은 일정 규칙이 적용됩니다.
+      stayMinutes: MEAL_TIME_WINDOWS[mealSlot].defaultStayMinutes,
     }
 
     if (mode === "DESIGNATED") {
@@ -109,6 +156,15 @@ function normalizeMeals(meals, mealTimes, mealModes) {
     // 실제 영업·휴무·반려동물 조건을 통과한 음식점을 골라 COURSE_NODE에만 기록합니다.
     normalizedMeals.push(normalizedMeal)
   })
+
+  // 변경: 화면에서는 같은 음식점을 두 슬롯에 넣지 않지만, API를 직접 호출한 경우까지 막기 위해
+  // 서버에서도 점심·저녁 지정 음식점 중복을 저장 단계에서 차단합니다.
+  const designatedPlaceIds = normalizedMeals
+    .filter((meal) => meal.mode === "DESIGNATED")
+    .map((meal) => Number(meal.placeId))
+  if (new Set(designatedPlaceIds).size !== designatedPlaceIds.length) {
+    throw createHttpError("점심과 저녁에는 서로 다른 지정 음식점을 선택해 주세요.")
+  }
 
   return normalizedMeals
 }
@@ -125,16 +181,31 @@ function normalizePlanPayload(payload) {
     throw createHttpError("종료 시간은 출발 시간보다 늦어야 합니다.")
   }
 
+  // 변경: 출발·종료 위치를 비워도 여행 계획을 만들 수 있게 하고,
+  // 입력한 경우에만 이름과 좌표를 함께 저장합니다.
+  const start = normalizeOptionalLocation({
+    location: payload.startLocation,
+    latitude: payload.startLatitude,
+    longitude: payload.startLongitude,
+    label: "출발 위치",
+  })
+  const end = normalizeOptionalLocation({
+    location: payload.endLocation,
+    latitude: payload.endLatitude,
+    longitude: payload.endLongitude,
+    label: "종료 위치",
+  })
+
   return {
     tripType,
     startTimestamp,
     endTimestamp,
-    startLocation: normalizeText(payload.startLocation, "출발 위치"),
-    startLatitude: normalizeCoordinate(payload.startLatitude, "출발지 위도"),
-    startLongitude: normalizeCoordinate(payload.startLongitude, "출발지 경도"),
-    endLocation: normalizeText(payload.endLocation, "종료 위치"),
-    endLatitude: normalizeCoordinate(payload.endLatitude, "종료지 위도"),
-    endLongitude: normalizeCoordinate(payload.endLongitude, "종료지 경도"),
+    startLocation: start.location,
+    startLatitude: start.latitude,
+    startLongitude: start.longitude,
+    endLocation: end.location,
+    endLatitude: end.latitude,
+    endLongitude: end.longitude,
     // 변경: 실제 스키마에 별도 식사 테이블이 없으므로 기존 meal_preference 컬럼에 JSON으로 식사 계획을 저장합니다.
     mealPreference: JSON.stringify({
       transport: typeof payload.transport === "string" ? payload.transport : "",

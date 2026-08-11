@@ -255,6 +255,31 @@ button {
   line-height: 1.5;
 }
 
+/* 변경: 지도 선의 색만으로 교통수단을 추측하지 않아도 되도록 고정 범례를 제공합니다. */
+.kakao-course-map__legend {
+  position: absolute;
+  z-index: 4;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 8px 10px;
+  border-radius: 9px;
+  color: #344263;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 2px 10px rgb(6 17 43 / 14%);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.kakao-course-map__legend span { display: inline-flex; gap: 4px; align-items: center; }
+.kakao-course-map__legend i { width: 18px; height: 4px; border-radius: 99px; background: #4f46e5; }
+.kakao-course-map__legend .legend-bus { background: #16a34a; }
+.kakao-course-map__legend .legend-walk { background: #f97316; }
+.kakao-course-map__legend .legend-estimate { background: repeating-linear-gradient(90deg, #94a3b8 0 5px, transparent 5px 8px); }
+
 /* Kakao CustomOverlay 내부에서 쓰는 장소 순서·장소명 라벨입니다. */
 .kakao-map-place-label {
   display: inline-flex;
@@ -401,8 +426,8 @@ button {
 }
 
 .stay-button {
-  width: 17px;
-  height: 17px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 1px solid var(--routa-border);
   border-radius: 50%;
@@ -410,6 +435,11 @@ button {
   font-size: 12px;
   line-height: 1;
 }
+
+/* 변경: 드래그 외에도 순서를 바꿀 수 있는 명시적 버튼을 제공해 모바일에서도 편집할 수 있습니다. */
+.order-controls { display: inline-flex; gap: 2px; }
+.order-button { width: 24px; height: 24px; padding: 0; border: 1px solid var(--routa-border); border-radius: 6px; color: var(--routa-brand); background: #fff; font-size: 12px; cursor: pointer; }
+.order-button:disabled, .stay-button:disabled, .delete-button:disabled { cursor: not-allowed; opacity: .45; }
 
 .delete-button {
   margin-left: auto;
@@ -638,6 +668,32 @@ button {
   color: var(--routa-success);
   font-size: 12px;
   font-weight: 700;
+}
+
+/* 변경: 저장 전 제목을 확인·수정할 수 있게 기존 확인 모달 안에 입력 필드를 추가합니다. */
+.save-itinerary-label {
+  display: block;
+  margin-top: 18px;
+  color: var(--routa-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.save-itinerary-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--routa-border);
+  border-radius: 8px;
+  color: var(--routa-text);
+  font: inherit;
+}
+
+.save-itinerary-input:focus {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 1px;
 }
 
 @keyframes spin {

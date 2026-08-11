@@ -11,6 +11,7 @@ import placeRouter from "./modules/places/place.router.mjs"
 import tripRouter from "./modules/trips/trip.router.mjs"
 import recommendationRouter from "./modules/recommendations/recommendation.router.mjs"
 import itineraryRouter from "./modules/itineraries/itinerary.router.mjs"
+import inquiryRouter from "./modules/inquiries/inquiry.router.mjs"
 
 const app = express()
 
@@ -32,6 +33,7 @@ app.use("/places", placeRouter)
 app.use("/trip-plans", tripRouter)
 app.use("/recommendations", recommendationRouter)
 app.use("/itineraries", itineraryRouter)
+app.use("/inquiries", inquiryRouter)
 app.use(notFound)
 app.use(errorHandler)
 
