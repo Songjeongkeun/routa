@@ -14,8 +14,7 @@
   font-size: 14px;
 }
 
-.dateInput,
-.transportInput {
+.dateInput {
   width: 100%;
   box-sizing: border-box;
   min-height: 48px;
@@ -25,6 +24,38 @@
   color: var(--color-text-muted);
   font: inherit;
   background: var(--color-surface);
+}
+
+/* 이전 구현은 .transportInput select가 날짜 입력과 같은 모양을 사용했습니다.
+   변경: 자동 계산 결과임을 알 수 있도록 읽기 전용 결과 카드로 분리합니다. */
+.transportResult {
+  min-height: 48px;
+  display: flex;
+  box-sizing: border-box;
+  padding: 8px 16px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid var(--color-primary);
+  border-radius: 10px;
+  color: var(--color-text);
+  background: var(--color-primary-soft);
+}
+
+.transportResult strong {
+  color: var(--color-primary);
+  font-size: 15px;
+}
+
+.transportResult small,
+.transportResult > span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.emptyTransportResult {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
 }
 
 .dateInputWrapper {
@@ -47,8 +78,7 @@
   color: transparent;
 }
 
-.dateInput:focus,
-.transportInput:focus {
+.dateInput:focus {
   border-color: var(--color-primary);
   outline: 3px solid rgb(76 60 244 / 14%);
 }
@@ -67,7 +97,7 @@
   }
 
   .dateInput,
-  .transportInput {
+  .transportResult {
     width: 100%;
   }
 }

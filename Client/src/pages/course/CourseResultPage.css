@@ -456,22 +456,202 @@ button {
 }
 
 .transit-detail {
-  margin: 7px 0 3px 60px;
-  padding: 10px 13px;
+  margin: 10px 0 5px 60px;
+  padding: 14px;
   border: 1px solid var(--routa-border);
-  border-radius: 9px;
+  border-radius: 12px;
   background: #f8f9fc;
   font-size: 12px;
 }
 
-.transit-detail ol {
-  margin: 7px 0 0;
-  padding-left: 17px;
+/* 변경: 구간의 출발 시각·이동 출처·소요 시간을 첫 줄에서 한눈에 비교할 수 있게 배치합니다. */
+.transit-detail__header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.transit-detail__heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transit-detail__heading > strong {
+  color: #263657;
+  line-height: 1.45;
+}
+
+.transit-detail__duration {
+  flex: none;
+  color: var(--routa-brand);
+  font-size: 14px;
+}
+
+.route-source {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.route-source--transit {
+  color: #3543c8;
+  background: #e9ebff;
+}
+
+.route-source--walk {
+  color: #078674;
+  background: var(--routa-success-soft);
+}
+
+.route-source--estimate {
+  color: #9a6200;
+  background: #fff3cf;
+}
+
+/* 변경: 구간 전체 수치는 단계 설명과 분리해 긴 경로에서도 핵심 값을 바로 확인할 수 있습니다. */
+.transit-detail__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--routa-border);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.route-metric {
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.route-metric + .route-metric {
+  border-left: 1px solid var(--routa-border);
+}
+
+.route-metric span,
+.route-metric strong {
+  display: block;
+}
+
+.route-metric span {
+  margin-bottom: 2px;
+  color: var(--routa-muted);
+  font-size: 10px;
+}
+
+.route-metric strong {
+  color: #253453;
+  font-size: 12px;
+}
+
+.route-warning {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 7px;
+  color: #815800;
+  background: #fff6dc;
+  line-height: 1.45;
+}
+
+/* 변경: 도보·버스·지하철 단계를 아이콘과 보조 수치가 있는 세로 흐름으로 표현합니다. */
+.transit-step-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transit-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
   color: #344263;
 }
 
-.transit-detail li + li {
-  margin-top: 4px;
+.transit-step + .transit-step {
+  margin-top: 12px;
+}
+
+.transit-step__icon {
+  display: grid;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--routa-border);
+  border-radius: 50%;
+  background: #fff;
+  font-size: 13px;
+}
+
+.transit-step__content {
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.transit-step__content > strong {
+  color: var(--routa-text);
+  font-size: 11px;
+}
+
+/* 변경: 버스 번호와 지하철 노선명을 이동 설명과 분리한 배지로 보여 줍니다. */
+.transit-step__routes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.route-name-badge {
+  display: inline-flex;
+  min-height: 21px;
+  padding: 3px 8px;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.route-name-badge--bus {
+  color: #fff;
+  background: #3564d4;
+}
+
+.route-name-badge--subway {
+  color: #fff;
+  background: #6c45d9;
+}
+
+.route-name-badge--transit {
+  color: #3543c8;
+  background: #e9ebff;
+}
+
+.transit-step__content p,
+.transit-step__legacy-description {
+  margin: 3px 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.transit-step__meta {
+  display: flex;
+  gap: 8px;
+  color: var(--routa-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.transit-detail__empty {
+  margin: 12px 0 0;
+  color: var(--routa-muted);
+  text-align: center;
 }
 
 .timeline-divider {
@@ -561,11 +741,19 @@ button {
 .loading-layer,
 .modal-backdrop {
   position: fixed;
-  z-index: 20;
   inset: 0;
   display: grid;
   place-items: center;
   background: rgb(6 17 43 / 48%);
+}
+
+/* 변경: 삭제 확인 모달을 닫는 렌더링과 재계산 시작이 겹쳐도 로딩 화면이 항상 가장 위에 보입니다. */
+.loading-layer {
+  z-index: 30;
+}
+
+.modal-backdrop {
+  z-index: 20;
 }
 
 .loading-box,
@@ -583,15 +771,25 @@ button {
   font-size: 14px;
 }
 
-.loading-spinner {
-  display: block;
-  width: 34px;
-  height: 34px;
-  margin: 0 auto 16px;
-  border: 4px solid var(--routa-brand-soft);
-  border-top-color: var(--routa-brand);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+/* 변경: 서버가 계산 진행률을 제공하지 않아 숫자를 꾸며내지 않고, 처리 중임을 나타내는 무한 진행바를 사용합니다. */
+.route-loading-bar {
+  position: relative;
+  height: 8px;
+  margin: 20px 0 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--routa-brand-soft);
+}
+
+.route-loading-bar span {
+  position: absolute;
+  top: 0;
+  left: -45%;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--routa-brand);
+  animation: route-loading 1.2s ease-in-out infinite;
 }
 
 .confirm-modal h2 {
@@ -696,9 +894,13 @@ button {
   outline-offset: 1px;
 }
 
-@keyframes spin {
+@keyframes route-loading {
+  from {
+    left: -45%;
+  }
+
   to {
-    transform: rotate(360deg);
+    left: 100%;
   }
 }
 
@@ -751,6 +953,24 @@ button {
 
   .summary-stat + .summary-stat,
   .summary-stat:nth-child(3) {
+    border-top: 1px solid var(--routa-border);
+    border-left: 0;
+  }
+
+  /* 변경: 좁은 화면에서는 상세 카드의 좌측 들여쓰기를 제거하고 수치를 세로로 쌓습니다. */
+  .transit-detail {
+    margin-left: 0;
+  }
+
+  .transit-detail__header {
+    flex-direction: column;
+  }
+
+  .transit-detail__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .route-metric + .route-metric {
     border-top: 1px solid var(--routa-border);
     border-left: 0;
   }

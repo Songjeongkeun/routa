@@ -92,24 +92,33 @@ function getTransitType(trafficType) {
   return "WALK"
 }
 
-function getLaneNames(subPath) {
-  if (!Array.isArray(subPath?.lane)) return ""
+function getRouteNames(subPath, transitType) {
+  if (!Array.isArray(subPath?.lane)) return []
 
-  return subPath.lane
-    .map((lane) => lane?.name)
+  // 변경: 버스 단계는 ODsay lane의 busNo를 우선 사용해 화면에 실제 버스 번호를 표시합니다.
+  // 일부 응답에는 busNo가 없고 name만 있으므로 기존 노선명을 보조값으로 사용합니다.
+  const routeNames = subPath.lane
+    .map((lane) => transitType === "BUS" ? lane?.busNo || lane?.name : lane?.name)
+    .map((name) => String(name ?? "").trim())
     .filter(Boolean)
-    .join(", ")
+
+  // 변경: 같은 버스 번호가 중복 제공되어도 화면에는 한 번만 나타나도록 순서를 유지하며 제거합니다.
+  return [...new Set(routeNames)]
 }
 
 function createStep(subPath) {
   const type = getTransitType(subPath?.trafficType)
   const startName = subPath?.startName || "출발지"
   const endName = subPath?.endName || "도착지"
-  const laneNames = getLaneNames(subPath)
-  const transportName = type === "WALK" ? "도보" : laneNames || (type === "SUBWAY" ? "지하철" : "버스")
+  const routeNames = getRouteNames(subPath, type)
+  const transportName = type === "WALK"
+    ? "도보"
+    : routeNames.join(", ") || (type === "SUBWAY" ? "지하철" : "버스")
 
   return {
     type,
+    // 변경: 설명 문구를 다시 파싱하지 않아도 버스 번호·지하철 노선명을 별도 배지로 그릴 수 있게 보존합니다.
+    routeNames,
     // 변경: 화면은 ODsay 원본 응답에 의존하지 않고 이 공통 문구만 사용합니다.
     description: `${startName}에서 ${endName}까지 ${transportName} 이동`,
     durationMinutes: toNonNegativeInteger(subPath?.sectionTime),

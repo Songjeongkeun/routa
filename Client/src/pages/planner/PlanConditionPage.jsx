@@ -19,6 +19,25 @@ import placesIcon from "../../shared/assets/icons/Travel_conditions/Row icon 6.p
 import mealIcon from "../../shared/assets/icons/Travel_conditions/Row icon 8.png"
 import transform_condition from "../../shared/assets/icons/condition.png"
 
+const KOREAN_WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"]
+
+/**
+ * 변경: 교통 기준은 사용자가 다시 선택하는 값이 아니라 여행 날짜에서 자동으로 계산합니다.
+ * YYYY-MM-DD를 직접 분리해 브라우저 시간대에 따라 날짜가 하루 밀리는 문제를 방지합니다.
+ */
+function getTransportCriterion(dateValue) {
+    if (!dateValue) return { criterion: "", weekday: "" }
+
+    const [year, month, day] = dateValue.split("-").map(Number)
+    const selectedDate = new Date(year, month - 1, day)
+    const weekdayIndex = selectedDate.getDay()
+
+    return {
+        criterion: weekdayIndex === 0 || weekdayIndex === 6 ? "주말" : "평일",
+        weekday: KOREAN_WEEKDAYS[weekdayIndex],
+    }
+}
+
 function formatTimeWithPeriod(time) {
     // "14:05" > [14, 5]
     const [hour, minute] = time.split(":").map(Number)
@@ -60,7 +79,11 @@ export default function PlanConditionPage() {
     // 변경: 이전 단계로 돌아왔을 때 입력값을 유지하기 위해 전역 여행 계획값으로 초기화합니다.
     const [selectOption, setSelectOption] = useState(plan.tripType)
     const [selectDate, setSelectDate] = useState(plan.date)
-    const [selectTransport, setSelectTransport] = useState(plan.transport)
+    // 이전 코드: 교통 기준을 사용자가 직접 고르는 별도 상태였습니다.
+    // const [selectTransport, setSelectTransport] = useState(plan.transport)
+    // 변경: 날짜와 교통 기준이 서로 어긋나지 않도록 날짜에서 항상 같은 값을 파생합니다.
+    const transportCriterion = getTransportCriterion(selectDate)
+    const selectTransport = transportCriterion.criterion
     const [isResolvingLocations, setIsResolvingLocations] = useState(false)
     // 변경: 브라우저 alert 대신 버튼 가까이에 입력 문제를 표시해 사용자가 바로 고칠 수 있게 합니다.
     const [formError, setFormError] = useState("")
@@ -103,10 +126,12 @@ export default function PlanConditionPage() {
             setFormError("여행 날짜를 선택해 주세요.")
             return
         }
-        if (!selectTransport) {
-            setFormError("교통 기준을 선택해 주세요.")
-            return
-        }
+        // 이전 코드: 수동 select가 비어 있을 때 교통 기준을 다시 선택하도록 검사했습니다.
+        // 날짜를 선택하면 평일·주말이 자동 계산되므로 별도 검증은 더 이상 필요하지 않습니다.
+        // if (!selectTransport) {
+        //     setFormError("교통 기준을 선택해 주세요.")
+        //     return
+        // }
         if (!transitCondition.startTime || !transitCondition.endTime || transitCondition.startTime >= transitCondition.endTime) {
             setFormError("여행 종료 시간은 출발 시간보다 늦어야 합니다.")
             return
@@ -185,11 +210,13 @@ export default function PlanConditionPage() {
 
                     <section className={styles.card}>
                         <h2><span aria-hidden="true"><img className={styles.summaryIcon} src={dateIcon} alt="" /></span>날짜와 교통</h2>
+                        {/* 이전 코드에서는 onTransportChange를 전달해 사용자가 평일·주말을 직접 선택했습니다.
+                            변경: 교통 기준을 날짜에서 자동 계산하므로 수동 변경 이벤트를 전달하지 않습니다. */}
                         <DateSelector
                             dateValue={selectDate}
                             transportValue={selectTransport}
+                            weekday={transportCriterion.weekday}
                             onDateChange={setSelectDate}
-                            onTransportChange={setSelectTransport}
                         />
                     </section>
 

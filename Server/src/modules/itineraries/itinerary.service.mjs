@@ -59,6 +59,54 @@ function formatTime(value) {
   }).format(new Date(value))
 }
 
+function getRouteNames(step, type) {
+  const storedRouteNames = Array.isArray(step?.routeNames)
+    ? step.routeNames
+    : (Array.isArray(step?.laneNames) ? step.laneNames : [])
+  const normalizedRouteNames = storedRouteNames
+    .map((name) => String(name ?? "").trim())
+    .filter(Boolean)
+
+  if (normalizedRouteNames.length > 0) return [...new Set(normalizedRouteNames)]
+  if (type !== "BUS" && type !== "SUBWAY") return []
+
+  // 변경: routeNames 필드를 저장하기 전에 생성된 ROUTE_SECTION도 기존 설명 형식에서 노선명을 복원합니다.
+  // 서버가 만든 "출발지에서 도착지까지 {노선명} 이동" 형식만 제한적으로 파싱해 잘못된 표시를 방지합니다.
+  const legacyRouteName = String(step?.description ?? "").match(/까지\s+(.+?)\s+이동$/)?.[1]?.trim()
+  if (!legacyRouteName || legacyRouteName === "버스" || legacyRouteName === "지하철") return []
+
+  return [...new Set(legacyRouteName.split(",").map((name) => name.trim()).filter(Boolean))]
+}
+
+/**
+ * 변경: ODsay·카카오가 반환한 단계별 이동 시간과 거리를 설명 문자열로 축소하지 않습니다.
+ * 프론트가 도보·버스·지하철을 구분해 표시할 수 있도록 공통 객체로 정규화하고,
+ * 과거 캐시에 문자열만 남아 있거나 단계가 비어 있어도 결과 화면이 깨지지 않게 보완합니다.
+ */
+function formatRouteSteps({ steps, fromItem, toItem, fallbackType = "TRANSIT" }) {
+  const routeSteps = Array.isArray(steps) && steps.length > 0
+    ? steps
+    : [`${fromItem.placeName}에서 ${toItem.placeName}까지 이동`]
+
+  return routeSteps.map((step, index) => {
+    const normalizedStep = typeof step === "string"
+      ? { description: step }
+      : (step ?? {})
+    const type = String(normalizedStep.type ?? fallbackType).toUpperCase()
+
+    return {
+      // 변경: 설명 문구가 같은 도보 단계가 반복되어도 React key가 중복되지 않도록 구간 기반 ID를 만듭니다.
+      stepId: `${fromItem.itemId}-${toItem.itemId}-${index}`,
+      type,
+      // 변경: 버스 번호와 지하철 노선명을 설명과 분리해 프론트에서 눈에 띄는 배지로 표시합니다.
+      routeNames: getRouteNames(normalizedStep, type),
+      description: normalizedStep.description || `${fromItem.placeName}에서 ${toItem.placeName}까지 이동`,
+      durationMinutes: Math.max(0, Number(normalizedStep.durationMinutes) || 0),
+      distanceMeters: Math.max(0, Number(normalizedStep.distanceMeters) || 0),
+    }
+  })
+}
+
 function createSnapshotTravelTime(snapshot, timeField) {
   const travelDate = snapshot?.travelDate
   const time = snapshot?.[timeField]
@@ -291,11 +339,21 @@ export async function getItineraryById({ userId, itineraryId }) {
       legs.push({
         fromItemId: fromItem.itemId,
         toItemId: item.itemId,
+        // 변경: 사용자가 이동 구간의 시간 흐름을 이해하도록 이전 장소 출발과 다음 일정 시작 시각을 함께 반환합니다.
+        // 다음 일정 시작은 식사·영업 시작을 기다린 시간이 포함될 수 있으므로 순수 교통 도착 시각과 구분합니다.
+        departureTime: fromItem.departureTime,
+        nextScheduleTime: item.arrivalTime,
         durationMinutes: selectedRoute.durationMinutes,
         walkingDistanceMeters: selectedRoute.walkingDistanceMeters,
         transferCount: selectedRoute.transferCount,
         estimatedFare: selectedRoute.estimatedFare,
-        steps: selectedRoute.steps.map((step) => step.description),
+        // 변경: 단계별 type·시간·거리를 보존해 결과 화면에서 도보·버스·지하철 상세를 표시합니다.
+        steps: formatRouteSteps({
+          steps: selectedRoute.steps,
+          fromItem,
+          toItem: item,
+          fallbackType: selectedRoute.source === "ODSAY" ? "TRANSIT" : "WALK",
+        }),
         // 변경: ODsay loadLane에서 저장한 실제 버스·지하철 좌표를 지도에 전달합니다.
         // 과거에 생성한 경로 또는 도보 대체 경로는 빈 배열이며 프론트가 점선으로 표시합니다.
         geometrySegments: Array.isArray(selectedRoute.geometrySegments)
@@ -313,11 +371,23 @@ export async function getItineraryById({ userId, itineraryId }) {
     legs.push({
       fromItemId: fromItem.itemId,
       toItemId: item.itemId,
+      departureTime: fromItem.departureTime,
+      nextScheduleTime: item.arrivalTime,
       durationMinutes: metric.durationMinutes,
       walkingDistanceMeters: metric.walkingDistanceMeters,
       transferCount: metric.transferCount,
       estimatedFare: metric.estimatedFare,
-      steps: [`${fromItem.placeName}에서 ${item.placeName}까지 ${transportLabel} 이동`],
+      // 변경: 과거 추정 경로도 실제 경로와 같은 응답 형태를 사용해 프론트의 별도 예외 처리를 줄입니다.
+      steps: formatRouteSteps({
+        steps: [{
+          type: itinerary.courseKind === "SHORTEST_WALK" ? "WALK" : "TRANSIT",
+          description: `${fromItem.placeName}에서 ${item.placeName}까지 ${transportLabel} 이동`,
+          durationMinutes: metric.durationMinutes,
+          distanceMeters: metric.walkingDistanceMeters,
+        }],
+        fromItem,
+        toItem: item,
+      }),
       // 변경: 실제 ODsay 캐시가 없는 과거 일정도 지도 렌더링이 깨지지 않게 빈 배열을 반환합니다.
       geometrySegments: [],
       source: "ESTIMATE",
