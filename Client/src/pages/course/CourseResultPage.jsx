@@ -26,8 +26,31 @@ const PLACE_EMOJI = {
   한강공원: "🌳",
 }
 
+// 변경: 서버가 반환하는 이동 출처를 사용자에게 이해하기 쉬운 이름과 색상용 class로 변환합니다.
+// 실제 API 경로와 최후의 추정 경로를 구분해, 사용자가 경로 정보의 정확도를 판단할 수 있게 합니다.
+const ROUTE_SOURCE_META = {
+  ODSAY: { label: "대중교통", className: "transit" },
+  KAKAO_WALK: { label: "실제 도보 경로", className: "walk" },
+  WALK_FALLBACK: { label: "도보 추정 경로", className: "estimate" },
+  ESTIMATE: { label: "예상 경로", className: "estimate" },
+}
+
+// 변경: 구간 안의 각 단계를 도보·버스·지하철로 빠르게 구별할 수 있도록 공통 표시 정보를 둡니다.
+const ROUTE_STEP_META = {
+  WALK: { icon: "🚶", label: "도보" },
+  BUS: { icon: "🚌", label: "버스" },
+  SUBWAY: { icon: "🚇", label: "지하철" },
+  TRANSIT: { icon: "🚌", label: "대중교통" },
+}
+
 const getPlaceEmoji = (item) =>
   PLACE_EMOJI[item.placeName] || (item.kind === "MEAL" ? "🍽️" : "📍")
+
+function formatDistance(distanceMeters = 0) {
+  const normalizedDistance = Math.max(0, Number(distanceMeters) || 0)
+  if (normalizedDistance < 1000) return `${Math.round(normalizedDistance).toLocaleString()}m`
+  return `${(normalizedDistance / 1000).toFixed(1)}km`
+}
 
 function toEditableNodes(items) {
   // 변경: START·END는 사용자가 입력한 좌표를 대신하는 경계 노드라 편집 요청에서 제외합니다.
@@ -67,6 +90,8 @@ export default function CourseResultPage() {
   const [isSavingItinerary, setIsSavingItinerary] = useState(false)
   const [isSaveSuccess, setIsSaveSuccess] = useState(false)
   const [isRecalculating, setIsRecalculating] = useState(false)
+  // 변경: 삭제·추가·일반 재계산 중 어떤 작업인지 로딩 화면에서 정확히 안내하기 위한 상태입니다.
+  const [recalculationContext, setRecalculationContext] = useState(null)
   const [editError, setEditError] = useState("")
   const [draggingItemId, setDraggingItemId] = useState(null)
   const [drawerKeyword, setDrawerKeyword] = useState("")
@@ -140,11 +165,19 @@ export default function CourseResultPage() {
    * 변경: 화면에서 만든 다음 순서를 낙관적으로 그리지 않습니다.
    * 서버 계산이 성공할 때만 COURSE_NODE의 새 itemId·도착 시각·이동 경로가 포함된 응답으로 교체합니다.
    */
-  async function saveEditedNodes(nodes) {
+  async function saveEditedNodes(
+    nodes,
+    context = {
+      type: "RECALCULATE",
+      message: "경로를 다시 계산하고 있어요.",
+    },
+  ) {
     if (!activeCourse || isRecalculating) return false
 
     try {
       setIsRecalculating(true)
+      // 변경: 공통 재계산 API를 그대로 사용하면서 화면 문구만 현재 편집 작업에 맞게 바꿉니다.
+      setRecalculationContext(context)
       setEditError("")
       const { itinerary } = await updateItineraryNodes(activeCourse.itineraryId, nodes)
       setCourses((previousCourses) => previousCourses.map((course) =>
@@ -158,6 +191,7 @@ export default function CourseResultPage() {
       return false
     } finally {
       setIsRecalculating(false)
+      setRecalculationContext(null)
     }
   }
 
@@ -229,10 +263,17 @@ export default function CourseResultPage() {
 
   async function confirmDelete() {
     if (!deleteTarget) return
+    const target = deleteTarget
     // 변경: 같은 장소가 여러 방문 항목으로 존재할 수 있으므로 placeId가 아닌 COURSE_NODE itemId로 삭제합니다.
-    const nodes = toEditableNodes(activeCourse.items.filter((item) => item.itemId !== deleteTarget.itemId))
-    const didSave = await saveEditedNodes(nodes)
-    if (didSave) setDeleteTarget(null)
+    const nodes = toEditableNodes(activeCourse.items.filter((item) => item.itemId !== target.itemId))
+
+    // 변경: 삭제 모달과 로딩 레이어가 겹치지 않도록 모달을 먼저 닫고 재계산을 시작합니다.
+    // 서버 계산이 실패하면 activeCourse를 교체하지 않으므로 삭제 전 일정은 그대로 유지됩니다.
+    setDeleteTarget(null)
+    await saveEditedNodes(nodes, {
+      type: "DELETE",
+      message: `${target.placeName}을 일정에서 삭제하고 있어요.`,
+    })
   }
 
   async function loadDrawerPlaces(keyword = "") {
@@ -244,6 +285,9 @@ export default function CourseResultPage() {
         keyword,
         page: 1,
         pageSize: 12,
+        // 변경: 일정 편집 Drawer에서는 식당·편의점 등이 아니라 관광명소·문화시설·카페만 조회합니다.
+        // 프론트에서 결과를 자르지 않고 서버 필터를 사용해 페이지 개수와 실제 목록이 일치하게 합니다.
+        visitOnly: true,
         tripType: plan.tripType,
         travelDate: plan.date,
         startLatitude: plan.startLatitude,
@@ -276,7 +320,10 @@ export default function CourseResultPage() {
         stayMinutes: Math.max(30, Number(place.defaultStayMins) || 90),
       },
     ]
-    const didSave = await saveEditedNodes(nodes)
+    const didSave = await saveEditedNodes(nodes, {
+      type: "ADD",
+      message: `${place.placeName}을 추가하고 경로를 다시 계산하고 있어요.`,
+    })
     if (didSave) setIsDrawerOpen(false)
   }
 
@@ -398,8 +445,13 @@ export default function CourseResultPage() {
       </section>
 
       {isRecalculating && (
-        <div className="loading-layer">
-          <div className="loading-box"><span className="loading-spinner" /><strong>경로를 다시 계산하고 있어요.</strong><p>운영시간, 식사 시간, 이동시간, 종료시간을 확인하는 중입니다.</p></div>
+        <div className="loading-layer" role="status" aria-live="assertive">
+          <div className="loading-box">
+            <strong>{recalculationContext?.message ?? "경로를 다시 계산하고 있어요."}</strong>
+            {/* 변경: 서버가 실제 진행률을 반환하지 않으므로 잘못된 백분율 대신 무한 진행바를 표시합니다. */}
+            <div className="route-loading-bar" aria-hidden="true"><span /></div>
+            <p>운영시간, 식사 시간, 이동시간, 종료시간을 확인하는 중입니다.</p>
+          </div>
         </div>
       )}
 
@@ -455,7 +507,7 @@ export default function CourseResultPage() {
       {isDrawerOpen && (
         <aside className="place-drawer">
           <div className="place-drawer__header">
-            <div><p className="breadcrumb">일정 편집</p><h2>장소 추가</h2></div>
+            <div><p className="breadcrumb">일정 편집</p><h2>관광지·카페 추가</h2></div>
             <button className="drawer-close" onClick={() => setIsDrawerOpen(false)}>닫기</button>
           </div>
           <form onSubmit={(event) => { event.preventDefault(); loadDrawerPlaces(drawerKeyword.trim()) }}>
@@ -463,7 +515,7 @@ export default function CourseResultPage() {
               className="place-search-input"
               value={drawerKeyword}
               onChange={(event) => setDrawerKeyword(event.target.value)}
-              placeholder="장소명 또는 지역으로 검색"
+              placeholder="관광지·카페 이름 또는 지역으로 검색"
             />
           </form>
           {isSearchingDrawer && <p className="course-subtitle">장소를 불러오는 중입니다.</p>}
@@ -480,7 +532,7 @@ export default function CourseResultPage() {
                 <button className="button button--primary button--small" onClick={() => addPlace(place)} disabled={isRecalculating}>추가</button>
               </article>
             ))}
-            {!isSearchingDrawer && !drawerError && drawerPlaces.length === 0 && <p className="course-subtitle">추가할 장소가 없습니다.</p>}
+            {!isSearchingDrawer && !drawerError && drawerPlaces.length === 0 && <p className="course-subtitle">추가할 관광지나 카페가 없습니다.</p>}
           </div>
         </aside>
       )}
@@ -542,11 +594,133 @@ function TimelineItem({
             </div>
           )}
         </div>
-        {inboundLeg && <button className="transit-toggle" onClick={onToggle}>{isExpanded ? "이동 상세 닫기 ▲" : "이동 상세 보기 ▼"}</button>}
+        {inboundLeg && (
+          <button
+            className="transit-toggle"
+            type="button"
+            aria-expanded={isExpanded}
+            onClick={onToggle}
+          >
+            {isExpanded ? "이동 상세 닫기 ▲" : "이동 상세 보기 ▼"}
+          </button>
+        )}
       </div>
-      {isExpanded && inboundLeg && <div className="transit-detail"><strong>이동 약 {inboundLeg.durationMinutes}분</strong><ol>{inboundLeg.steps.map((step) => <li key={step}>{step}</li>)}</ol></div>}
+      {/* 변경: 한 줄 설명 대신 이동 시간·도보·환승·요금과 단계별 경로를 구조화해서 보여 줍니다. */}
+      {isExpanded && inboundLeg && <TransitDetail leg={inboundLeg} />}
       {index > 0 && <div className="timeline-divider" />}
     </article>
+  )
+}
+
+/**
+ * 변경: 하나의 장소 사이 이동 구간을 요약 수치와 세부 단계로 나눠 표시합니다.
+ * saved_snapshot_json에 문자열 step만 남아 있는 과거 저장 일정도 함께 열 수 있도록
+ * TransitStep에서 문자열과 최신 객체 형식을 모두 지원합니다.
+ */
+function TransitDetail({ leg }) {
+  const sourceMeta = ROUTE_SOURCE_META[leg.source] ?? ROUTE_SOURCE_META.ESTIMATE
+  const steps = Array.isArray(leg.steps) ? leg.steps : []
+  const hasScheduleTimes = leg.departureTime && leg.nextScheduleTime
+
+  return (
+    <section className="transit-detail" aria-label="이동 경로 상세">
+      <div className="transit-detail__header">
+        <div className="transit-detail__heading">
+          <span className={`route-source route-source--${sourceMeta.className}`}>{sourceMeta.label}</span>
+          <strong>
+            {hasScheduleTimes
+              ? `${leg.departureTime} 출발 · ${leg.nextScheduleTime} 다음 일정 시작`
+              : "이동 구간 상세"}
+          </strong>
+        </div>
+        <strong className="transit-detail__duration">약 {Number(leg.durationMinutes) || 0}분</strong>
+      </div>
+
+      <div className="transit-detail__metrics">
+        <RouteMetric label="도보" value={formatDistance(leg.walkingDistanceMeters)} />
+        <RouteMetric label="환승" value={`${Number(leg.transferCount) || 0}회`} />
+        <RouteMetric label="예상 요금" value={`${(Number(leg.estimatedFare) || 0).toLocaleString()}원`} />
+      </div>
+
+      {/* 변경: 직선거리 기반 최후 대체 경로는 실제 보행로와 혼동하지 않도록 정확도 안내를 표시합니다. */}
+      {leg.source === "WALK_FALLBACK" && (
+        <p className="route-warning">실제 도보 경로를 불러오지 못해 직선거리를 기준으로 추정한 정보입니다.</p>
+      )}
+
+      {steps.length > 0 ? (
+        <ol className="transit-step-list">
+          {steps.map((step, index) => (
+            <TransitStep
+              // 변경: 설명 문구 대신 구간 ID와 순서를 사용해 같은 도보 문장이 반복될 때의 React key 경고를 막습니다.
+              key={typeof step === "object" && step?.stepId
+                ? step.stepId
+                : `${leg.fromItemId}-${leg.toItemId}-${index}`}
+              step={step}
+            />
+          ))}
+        </ol>
+      ) : (
+        <p className="transit-detail__empty">단계별 이동 정보가 없는 이전 경로입니다.</p>
+      )}
+    </section>
+  )
+}
+
+function RouteMetric({ label, value }) {
+  return (
+    <div className="route-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+function TransitStep({ step }) {
+  // 변경: 상세 필드가 저장되기 전에 생성된 일정은 문자열 설명만 있으므로 그대로 안전하게 표시합니다.
+  if (typeof step === "string") {
+    return (
+      <li className="transit-step transit-step--legacy">
+        <span className="transit-step__icon" aria-hidden="true">•</span>
+        <p className="transit-step__legacy-description">{step}</p>
+      </li>
+    )
+  }
+
+  const stepType = String(step?.type ?? "TRANSIT").toUpperCase()
+  const stepMeta = ROUTE_STEP_META[stepType] ?? ROUTE_STEP_META.TRANSIT
+  const durationMinutes = Math.max(0, Number(step?.durationMinutes) || 0)
+  const distanceMeters = Math.max(0, Number(step?.distanceMeters) || 0)
+  const routeNames = Array.isArray(step?.routeNames)
+    ? step.routeNames.map((name) => String(name).trim()).filter(Boolean)
+    : []
+
+  return (
+    <li className={`transit-step transit-step--${stepType.toLowerCase()}`}>
+      <span className="transit-step__icon" aria-hidden="true">{stepMeta.icon}</span>
+      <div className="transit-step__content">
+        <strong>{stepMeta.label}</strong>
+        {/* 변경: ODsay 버스 번호·지하철 노선명을 설명 속 문장에 묻지 않고 별도 배지로 강조합니다. */}
+        {routeNames.length > 0 && (
+          <div className="transit-step__routes" aria-label={`${stepMeta.label} 노선`}>
+            {routeNames.map((routeName, index) => (
+              <span
+                className={`route-name-badge route-name-badge--${stepType.toLowerCase()}`}
+                key={`${routeName}-${index}`}
+              >
+                {routeName}
+              </span>
+            ))}
+          </div>
+        )}
+        <p>{step?.description || "이동 정보 없음"}</p>
+        {(durationMinutes > 0 || distanceMeters > 0) && (
+          <div className="transit-step__meta">
+            {durationMinutes > 0 && <span>{durationMinutes}분</span>}
+            {distanceMeters > 0 && <span>{formatDistance(distanceMeters)}</span>}
+          </div>
+        )}
+      </div>
+    </li>
   )
 }
 

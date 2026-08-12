@@ -1,17 +1,41 @@
 .fields {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(170px, 1fr) minmax(285px, 1.65fr);
-  gap: 22px;
+  gap: 24px;
+}
+
+/* 이전 구현은 위치 두 칸과 시간 영역을 3열로 한 줄에 배치했습니다.
+   변경: 위치 입력만 동일한 두 열로 묶어 각 입력의 폭과 설명 공간을 확보합니다. */
+.locationFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .field {
-  min-width: 250px;
+  min-width: 0;
   display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 6px;
+  align-content: start;
+  gap: 8px;
   color: var(--color-text-muted);
   font-size: 14px;
+}
+
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* 변경: 라벨 안의 '(선택)' 문구를 시각적인 배지로 분리해 필수 입력과 쉽게 구분합니다. */
+.optionalBadge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .locationControl {
@@ -35,22 +59,27 @@
 
 .locationInput,
 .timeInput {
+  box-sizing: border-box;
   min-width: 0;
-  margin-right: 20px;
-  padding: 10px 8px;
+  min-height: 48px;
+  padding: 0 14px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--color-text);
   font: inherit;
   font-weight: 700;
-  background: transparent;
+  background: var(--color-surface);
+}
+
+/* 이전 코드의 margin-right: 20px는 두 입력의 오른쪽 여백을 불균형하게 만들어 제거했습니다. */
+.locationInput {
+  width: 100%;
 }
 
 .locationInput:focus,
 .timeInput:focus {
   border-color: var(--color-primary);
-  outline: none;
-  background: var(--color-primary-soft);
+  outline: 3px solid rgb(76 60 244 / 14%);
 }
 
 .locationInput.invalidInput {
@@ -58,18 +87,50 @@
   background: #fff7f8;
 }
 
+.fieldHelp {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* 변경: 시간은 위치와 다른 성격의 값이므로 구분선 아래 독립 영역으로 배치합니다. */
+.timeSection {
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.timeSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.timeSectionHeader strong {
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.timeSectionHeader small {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+}
+
 .timeFields {
   min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 10px;
 }
 
 .timeField {
+  width: min(180px, 100%);
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .timeField span {
@@ -78,37 +139,28 @@
 }
 
 .timeInput {
-  width: 118px;
-  box-sizing: border-box;
-  padding: 9px 7px;
-  font-size: 12px;
+  width: 100%;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .timeDivider {
-  align-self: end;
-  padding-bottom: 11px;
+  padding-bottom: 14px;
   color: var(--color-text-muted);
 }
 
-@media (max-width: 760px) {
-  .fields {
+@media (max-width: 680px) {
+  .locationFields {
     grid-template-columns: 1fr;
-    gap: 14px;
   }
 
   .timeFields {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 1100px) and (min-width: 761px) {
-  .fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
   }
 
-  .timeFields {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
+  .timeField {
+    width: 100%;
   }
 }

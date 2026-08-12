@@ -152,28 +152,23 @@
   background: #fee500;
 }
 
-.kakaoIcon {
-  width: 17px;
-  height: 13px;
-  position: relative;
-  border-radius: 50%;
-  background: #191919;
+/* 변경: CSS로 흉내 낸 말풍선과 문자 G 대신 SVG 원본 비율을 유지하는 공통 로고 크기를 사용합니다. */
+.socialLogo {
+  width: 19px;
+  height: 19px;
+  display: block;
+  flex: none;
+  object-fit: contain;
 }
 
-.kakaoIcon::after {
-  content: "";
-  position: absolute;
-  left: 2px;
-  bottom: -3px;
-  border: 3px solid transparent;
-  border-top-color: #191919;
+/* 카카오 말풍선은 가로 형태라 Google 마크보다 조금 넓혀도 버튼 안의 시각 크기가 같아 보입니다. */
+.kakaoLogo {
+  width: 21px;
 }
 
-.googleIcon {
-  color: #4285f4;
-  font-family: Arial, sans-serif;
-  font-size: 17px;
-  font-weight: 800;
+.googleLogo {
+  width: 18px;
+  height: 18px;
 }
 
 .footer {
