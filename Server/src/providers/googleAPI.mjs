@@ -95,7 +95,7 @@ export async function GoogleAPI(placeName) {
         } 
         return null;
     } catch (error) {
-        console.error(`[구글 API 에러] ${placeName}: `, error);
+        console.error(`구글 API 에러 ${placeName}: `, error);
         return null;
     }
 }
