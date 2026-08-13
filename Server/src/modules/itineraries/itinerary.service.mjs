@@ -7,6 +7,7 @@ import * as recommendationRepository from "../recommendations/recommendation.rep
 import { rebuildCourseForEdit } from "../recommendations/recommendation.service.mjs"
 import { MEAL_TIME_WINDOWS, createKoreanDateTime } from "../../utils/mealSchedule.mjs"
 import { randomUUID } from "node:crypto"
+import { isValidCalendarDate } from "../../utils/tripValidation.mjs"
 
 const COURSE_META = {
   // 변경: ODsay 대중교통 후보 중 도보 거리가 가장 적은 경로이므로 표현을 실제 계산 기준에 맞춥니다.
@@ -57,6 +58,62 @@ function formatTime(value) {
     minute: "2-digit",
     hourCycle: "h23",
   }).format(new Date(value))
+}
+
+function timeToClockMinutes(value) {
+  const [hour, minute] = String(value ?? "").slice(0, 5).split(":").map(Number)
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null
+  return hour * 60 + minute
+}
+
+function formatClockMinutes(value) {
+  const normalized = ((Math.round(value) % (24 * 60)) + (24 * 60)) % (24 * 60)
+  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`
+}
+
+function getLegBufferMinutes({ source, withPet }) {
+  // 변경: 추천 계산과 같은 일반 10분·반려동물 15분의 대중교통 여유시간을 결과 설명에도 사용합니다.
+  return source === "ODSAY" ? (withPet ? 15 : 10) : 0
+}
+
+function addLegScheduleDetails({ leg, fromItem, toItem, withPet }) {
+  const departureMinutes = timeToClockMinutes(fromItem?.departureTime ?? leg.departureTime)
+  const nextScheduleMinutes = timeToClockMinutes(toItem?.arrivalTime ?? leg.nextScheduleTime)
+  const durationMinutes = Math.max(0, Number(leg.durationMinutes) || 0)
+  const bufferMinutes = getLegBufferMinutes({ source: leg.source, withPet })
+
+  if (departureMinutes == null || nextScheduleMinutes == null) {
+    return { ...leg, bufferMinutes, waitMinutes: 0, routeArrivalTime: null }
+  }
+
+  const transitionMinutes = nextScheduleMinutes >= departureMinutes
+    ? nextScheduleMinutes - departureMinutes
+    : nextScheduleMinutes + (24 * 60) - departureMinutes
+  const waitMinutes = Math.max(0, transitionMinutes - durationMinutes - bufferMinutes)
+
+  return {
+    ...leg,
+    departureTime: fromItem?.departureTime ?? leg.departureTime,
+    nextScheduleTime: toItem?.arrivalTime ?? leg.nextScheduleTime,
+    // 변경: 순수 이동, 환승 여유, 다음 장소 시작 전 대기를 분리해 총 시간 차이를 설명합니다.
+    bufferMinutes,
+    waitMinutes,
+    routeArrivalTime: formatClockMinutes(departureMinutes + durationMinutes + bufferMinutes),
+  }
+}
+
+function addItineraryScheduleDetails(itinerary, withPet) {
+  const itemsById = new Map((itinerary?.items ?? []).map((item) => [item.itemId, item]))
+
+  return {
+    ...itinerary,
+    legs: (itinerary?.legs ?? []).map((leg) => addLegScheduleDetails({
+      leg,
+      fromItem: itemsById.get(leg.fromItemId),
+      toItem: itemsById.get(leg.toItemId),
+      withPet,
+    })),
+  }
 }
 
 function getRouteNames(step, type) {
@@ -214,7 +271,7 @@ function getSavedSnapshot(course) {
   if (!snapshot || typeof snapshot !== "object") return null
 
   // 변경: 저장 시점 DTO를 그대로 쓰되, 제목·저장 시각처럼 이후에 바뀔 수 있는 COURSE 값은 덮어씁니다.
-  return {
+  const savedItinerary = {
     ...snapshot,
     itineraryId: course.itineraryId,
     tripPlanId: course.tripPlanId,
@@ -223,6 +280,9 @@ function getSavedSnapshot(course) {
     status: "SAVED",
     savedAt: course.savedAt ? new Date(course.savedAt).toISOString() : null,
   }
+
+  // 변경: 과거 저장 스냅샷도 장소 시각과 이동 수치가 있으면 대기시간을 복원해 최신 화면에서 설명합니다.
+  return addItineraryScheduleDetails(savedItinerary, course.withPet)
 }
 
 function normalizeTitle(value, fallback) {
@@ -248,7 +308,8 @@ function normalizeCourseType(value) {
 
 function normalizeTravelDate(value) {
   if (!value) return null
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  // 변경: 목록 필터도 2026-02-30처럼 형식만 맞는 날짜를 DB에 전달하지 않습니다.
+  if (!isValidCalendarDate(value)) {
     throw createHttpError("여행 날짜 필터는 YYYY-MM-DD 형식이어야 합니다.")
   }
   return value
@@ -394,7 +455,7 @@ export async function getItineraryById({ userId, itineraryId }) {
     })
   }
 
-  return { ...itinerary, items, legs }
+  return addItineraryScheduleDetails({ ...itinerary, items, legs }, course.withPet)
 }
 
 /**

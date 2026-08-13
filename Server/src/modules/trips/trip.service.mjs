@@ -1,7 +1,9 @@
 import * as tripRepository from "./trip.repository.mjs"
 import { MEAL_TIME_WINDOWS, isMealTimeWithinWindow } from "../../utils/mealSchedule.mjs"
+import { getTransportCriterionByDate, isValidCalendarDate } from "../../utils/tripValidation.mjs"
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+const TRIP_TYPES = new Set(["GENERAL", "PET"])
 // 변경: 관광지·카페 방문 장소는 음식점과 별도로 최대 5곳까지만 저장합니다.
 const MAX_VISIT_STOPS = 5
 
@@ -92,7 +94,12 @@ function normalizePlaces(selectedPlaces) {
     const stayMinutes = Number.isFinite(Number(place?.stayMinutes))
       ? Math.max(30, Number(place.stayMinutes))
       : 90
-    uniquePlaces.set(placeId, { placeId, stayMinutes })
+    // 변경: 화면에서 자동으로 채운 장소(RECOMMENDED)와 사용자가 직접 고른 장소(USER)를
+    // 여행 계획 JSON에도 함께 저장합니다. COURSE 추천 단계는 USER 장소는 반드시 포함하고,
+    // 시간 제약 때문에 전체 경로가 실패할 때만 RECOMMENDED 장소를 제외할 수 있습니다.
+    // 과거 계획에 출처가 없다면 사용자가 선택한 장소로 간주해 의도치 않게 빠지지 않게 합니다.
+    const selectionSource = place?.selectionSource === "RECOMMENDED" ? "RECOMMENDED" : "USER"
+    uniquePlaces.set(placeId, { placeId, stayMinutes, selectionSource })
   })
 
   const normalizedPlaces = [...uniquePlaces.values()]
@@ -170,8 +177,16 @@ function normalizeMeals(meals, mealTimes, mealModes) {
 }
 
 function normalizePlanPayload(payload) {
-  const tripType = payload.tripType === "PET" ? "PET" : "GENERAL"
+  // 변경: 잘못된 여행 성격을 일반 여행으로 조용히 바꾸지 않습니다.
+  // 화면 우회·직접 API 요청도 같은 입력 규칙을 적용해 의도와 다른 추천 조건이 저장되는 것을 막습니다.
+  const tripType = payload.tripType
+  if (!TRIP_TYPES.has(tripType)) throw createHttpError("여행 성격을 일반 여행 또는 반려동물 여행으로 선택해 주세요.")
   const date = normalizeText(payload.date, "여행 날짜")
+  // 변경: JavaScript Date의 자동 날짜 보정(예: 2월 30일)을 허용하지 않습니다.
+  if (!isValidCalendarDate(date)) throw createHttpError("여행 날짜가 올바르지 않습니다.")
+  // 변경: 교통 기준은 여행 날짜에서 서버가 다시 계산합니다.
+  // 브라우저 상태를 조작해 평일 날짜를 주말로 저장하는 식의 불일치를 막습니다.
+  const transport = getTransportCriterionByDate(date)
   const startTime = normalizeText(payload.startTime, "출발 시간")
   const endTime = normalizeText(payload.endTime, "종료 시간")
   const startTimestamp = createTimestamp(date, startTime, "출발 시간")
@@ -208,7 +223,7 @@ function normalizePlanPayload(payload) {
     endLongitude: end.longitude,
     // 변경: 실제 스키마에 별도 식사 테이블이 없으므로 기존 meal_preference 컬럼에 JSON으로 식사 계획을 저장합니다.
     mealPreference: JSON.stringify({
-      transport: typeof payload.transport === "string" ? payload.transport : "",
+      transport,
       meals: normalizeMeals(payload.meals, payload.mealTimes, payload.mealModes),
     }),
     // 변경: 테마와 장소별 체류 시간 역시 기존 preferred_themes 컬럼의 JSON에 함께 보존합니다.

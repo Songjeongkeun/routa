@@ -1,4 +1,7 @@
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:18765"
+// 변경: 기본 개발 환경은 현재 브라우저와 같은 origin의 /api를 사용합니다.
+// Vite가 이를 로컬 Express(127.0.0.1:18765)로 프록시하므로 localhost와 LAN IP 접속이 모두 동작합니다.
+// 별도 배포 API를 사용하는 환경만 VITE_API_URL에 전체 주소를 지정하면 됩니다.
+export const API_URL = String(import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, "")
 
 /** ROUTA API에 쿠키를 포함해 요청하고 공통 오류 형식으로 변환한다. */
 export async function apiRequest(path, options = {}) {
