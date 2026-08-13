@@ -9,7 +9,9 @@ const radius = "2000";
 // 🚨 [주의] 테스트하실 때는 "AT4" 1개만 남기고 나머지는 지우는 것을 권장합니다.
 const allCategoryCodes = [
     "MT1", "SW8",  
-    "CT1", "AT4", "AD5", "FD6", "CE7"
+    "CT1", 
+    "AT4", 
+    "AD5", "FD6", "CE7"
 ];
 
 // const allCategoryCodes = [
@@ -36,6 +38,7 @@ function category_time(group_name) {
 // const seoulGridPoints = [{ x: "127.069236", y: "37.540389" }]; // 건대입구역
 // const seoulGridPoints = [{ x: "126.923610", y: "37.556670" }]; // 홍대입구역
 const seoulGridPoints = [
+    // 테스트시 서울시청만 남기기
     { x: "126.9786567", y: "37.566826" }, // 서울 시청
     { x: "127.100133", y: "37.513261" }, // 잠실역
     { x: "127.025393", y: "37.504734" }, // 신논현역
@@ -63,15 +66,25 @@ const seoulGridPoints = [
 ];
 
 async function collectAndSaveData() {
+    // let은 선언된 블록 안에서만 유효하기 때문에 finally{}에서 읽으려 하면 ReferenceError가 터진다.
+    let kakaoCallCount = 0;
+    let googleCallCount = 0;
+
     try {
         if (!KAKAO_API_KEY) {
             throw new Error("KAKAO_REST_API_KEY environment variable is required");
         }
-        await checkDBConnection(); 
+        await checkDBConnection();
+
+    // try {
+    //     if (!KAKAO_API_KEY) {
+    //         throw new Error("KAKAO_REST_API_KEY environment variable is required");
+    //     }
+    //     await checkDBConnection(); 
         
-        // 💡 [추가] API 호출 횟수를 기록할 변수 선언
-        let kakaoCallCount = 0;
-        let googleCallCount = 0;
+    //     // 💡 [추가] API 호출 횟수를 기록할 변수 선언
+    //     let kakaoCallCount = 0;
+    //     let googleCallCount = 0;
 
         for (const point of seoulGridPoints) {
             const { x, y } = point;
@@ -95,8 +108,12 @@ async function collectAndSaveData() {
                         }); 
 
                         if (!response.ok) {
-                            console.error(`[카카오 API 에러] 카테고리: ${categoryCode}`);
-                            break; 
+                            // 에러 내용 확인
+                            const errorBody = await response.text();
+                            console.error(`[카카오 API 에러] 카테고리: ${categoryCode}, status: ${response.status}, body: ${errorBody}`);
+                            break;
+                            // console.error(`[카카오 API 에러] 카테고리: ${categoryCode}`);
+                            // break; 
                         }
 
                         const data = await response.json();
@@ -178,7 +195,8 @@ async function collectAndSaveData() {
     } catch (globalError) {
         console.error("전체 프로세스 에러 발생:", globalError);
     } finally {
-        await closeDB(); 
+        // 서버 전체가 공유하는 DB pool을 닫아버려서 서버 안에서 실행하면 앱 전체가 먹통이 되므로 지운다.
+        // await closeDB(); 
     
         console.log("\n\n🎉 모든 데이터 수집 및 DB 적재 프로세스가 종료되었습니다.");
         console.log(`📊 [최종 결산] 카카오 API: 총 ${kakaoCallCount}회 호출`);
@@ -186,4 +204,10 @@ async function collectAndSaveData() {
     }
 }
 
-collectAndSaveData();
+// collectAndSaveData 외부로 내보내기
+export { collectAndSaveData };
+
+// 이 파일을 "node kakakoAPI.mjs"로 직접 실행했을 때만 자동 실행 + 그때만 DB 커넥션도 닫음
+if (import.meta.url === `file://${process.argv[1]}`) {
+    collectAndSaveData().then(() => closeDB());
+}

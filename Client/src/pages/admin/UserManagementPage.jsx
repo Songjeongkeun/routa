@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { getUserStats, getUsers } from "../../features/admin/admin.api.js"
+import { getUserStats, getUsers, collectPlaces } from "../../features/admin/admin.api.js"
 import totalUsersIcon from "../../shared/assets/icons/Total-users.png"
 import newRegistrationIcon from "../../shared/assets/icons/New-registration-today.png"
 import activeUsersIcon from "../../shared/assets/icons/Active -users.png"
@@ -57,9 +57,14 @@ export default function UserManagementPage() {
           <h1>유저 관리</h1>
           <p>전체 유저 수, 신규 가입자, 활성 상태를 한눈에 확인하고 관리해요.</p>
         </div>
-        <button type="button" className={styles.inquiryButton} onClick={() => navigate("/admin/inquiries")}>
-          문의 관리 →
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button type="button" className={styles.collectButton} onClick={handleCollectPlaces} disabled={isCollecting}>
+            {isCollecting ? "요청 중..." : "장소 데이터 수집"}
+          </button>
+          <button type="button" className={styles.inquiryButton} onClick={() => navigate("/admin/inquiries")}>
+            문의 관리 →
+          </button>
+        </div>
       </div>
 
       <section className={styles.statsRow}>
