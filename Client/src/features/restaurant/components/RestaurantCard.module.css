@@ -35,14 +35,19 @@
 }
 
 .image {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
+  object-position: center;
 }
 
 /* 변경: DB에 thumbnail_url이 없는 음식점도 카드 높이와 이미지 영역의 균형을 유지합니다. */
 .imagePlaceholder {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: grid;
