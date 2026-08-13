@@ -23,7 +23,9 @@ function category_time(group_name) {
     if (!group_name || group_name.trim() === "") return 60;
     switch (group_name) {
         case "관광명소": return 90;
-        case "문화시설": return 120;
+        // 변경: 문화시설도 새 장소를 수집할 때 기본 체류시간을 90분으로 저장합니다.
+        // 기존 DB의 120분 데이터도 함께 90분으로 보정해 추천·화면 값이 일치합니다.
+        case "문화시설": return 90;
         case "음식점":   
         case "카페":     return 60;
         case "대형마트": return 90;

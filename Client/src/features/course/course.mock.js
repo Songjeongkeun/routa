@@ -26,7 +26,8 @@ const createItems = (prefix) => [
     kind: "VISIT",
     placeName: "경복궁",
     arrivalTime: "09:25",
-    stayMinutes: 120,
+    // 변경: 실제 장소의 기본 체류시간 정책(90분)과 Mock 일정도 동일하게 맞춥니다.
+    stayMinutes: 90,
     latitude: 37.5796,
     longitude: 126.977,
   },
@@ -203,7 +204,8 @@ export const mockPlaceCandidates = [
     placeId: "mock-seoul-forest",
     name: "서울숲",
     kind: "VISIT",
-    defaultStayMinutes: 120,
+    // 변경: Mock 장소를 추가했을 때도 90분을 기본값으로 사용합니다.
+    defaultStayMinutes: 90,
     description: "산책과 휴식을 즐길 수 있는 도심 공원",
     latitude: 37.5444,
     longitude: 127.0374,

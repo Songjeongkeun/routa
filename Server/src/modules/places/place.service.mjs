@@ -135,6 +135,7 @@ export async function searchPlaces({
  */
 export async function recommendVisitPlaces({
   selectedPlaceIds,
+  previouslyRecommendedPlaceIds,
   tripType,
   travelDate,
   startLatitude,
@@ -146,6 +147,13 @@ export async function recommendVisitPlaces({
   themes,
 }) {
   const normalizedSelectedPlaceIds = normalizePlaceIds(selectedPlaceIds)
+  // 변경: 직접 선택한 장소는 일정에 남기고, 자동 추천 이력은 다음 후보에서만 제외합니다.
+  // 두 목록을 구분해야 추천 이력의 개수만큼 최대 5곳 제한이 줄어드는 문제가 생기지 않습니다.
+  const normalizedPreviouslyRecommendedPlaceIds = normalizePlaceIds(previouslyRecommendedPlaceIds)
+  const excludedPlaceIds = [...new Set([
+    ...normalizedSelectedPlaceIds,
+    ...normalizedPreviouslyRecommendedPlaceIds,
+  ])]
   if (normalizedSelectedPlaceIds.length > MAX_VISIT_STOPS) {
     const error = new Error(`필수 방문 장소는 최대 ${MAX_VISIT_STOPS}곳까지 선택할 수 있습니다.`)
     error.status = 400
@@ -159,7 +167,9 @@ export async function recommendVisitPlaces({
   }
 
   const places = await placeRepository.findRecommendedVisitPlaces({
-    excludePlaceIds: normalizedSelectedPlaceIds,
+    // 변경: 현재 직접 선택한 장소와 과거 자동 추천 장소를 모두 후보에서 제외합니다.
+    // DB 정렬 기준이 고정돼 있어도 같은 조건에서 같은 장소가 반복 추천되지 않습니다.
+    excludePlaceIds: excludedPlaceIds,
     petOnly: tripType === "PET",
     closedWeekday: getKoreanWeekday(travelDate),
     startTime: normalizeTime(startTime, "시작 시간"),

@@ -25,7 +25,22 @@ function getVisiblePages(currentPage, totalPages) {
     return Array.from({ length }, (_, index) => startPage + index)
 }
 
-export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedPlacesChange }) {
+// 변경: API 요청에 사용할 장소 ID를 숫자·중복 없는 형태로 통일합니다.
+// sessionStorage에 저장된 이전 계획의 ID 타입이 문자열이어도 추천 제외가 정상 동작합니다.
+function collectPlaceIds(...placeIdGroups) {
+    return [...new Set(placeIdGroups
+        .flat()
+        .map(Number)
+        .filter((placeId) => Number.isSafeInteger(placeId) && placeId > 0))]
+}
+
+export default function PlaceSelector({
+    plannerData,
+    selectedPlaces,
+    recommendedPlaceHistoryIds = [],
+    onSelectedPlacesChange,
+    onRecommendedPlaceHistoryChange,
+}) {
     const [keyword, setKeyword] = useState("")
     const [activeFilter, setActiveFilter] = useState(PLACE_FILTERS[0])
     const [searchResults, setSearchResults] = useState([])
@@ -150,10 +165,14 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
     }
 
     const handleRecommendPlaces = async () => {
-        const requestedCount = MAX_VISIT_STOPS - selectedPlaces.length
+        // 변경: 새 추천은 직접 선택한 장소만 보존하고 기존 자동 추천 장소는 교체합니다.
+        // 따라서 5곳이 이미 채워졌더라도 자동 추천 장소가 있으면 새 추천을 받을 수 있습니다.
+        const userSelectedPlaces = selectedPlaces.filter((place) => place.selectionSource !== "RECOMMENDED")
+        const currentRecommendedPlaces = selectedPlaces.filter((place) => place.selectionSource === "RECOMMENDED")
+        const requestedCount = MAX_VISIT_STOPS - userSelectedPlaces.length
 
         if (requestedCount <= 0) {
-            setRecommendationMessage("이미 필수 방문 장소 5곳이 선택되어 있습니다.")
+            setRecommendationMessage("직접 선택한 필수 방문 장소가 이미 5곳입니다. 장소를 삭제한 뒤 다시 추천해 주세요.")
             return
         }
 
@@ -161,10 +180,14 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
             setIsRecommending(true)
             setRecommendationMessage("")
 
-            // 변경: 현재 선택한 장소 ID를 서버에 보내 중복 추천을 막고,
-            // 출발·도착 좌표와 여행 조건에 맞는 부족한 수만 추천받습니다.
+            // 변경: 직접 선택 장소와 과거 자동 추천 장소를 함께 제외합니다.
+            // 현재 자동 추천 장소도 이력에 합쳐, 이전 버전의 저장 데이터에서도 중복을 막습니다.
             const data = await recommendVisitPlaces({
-                selectedPlaceIds: selectedPlaces.map((place) => place.placeId),
+                selectedPlaceIds: userSelectedPlaces.map((place) => place.placeId),
+                previouslyRecommendedPlaceIds: collectPlaceIds(
+                    recommendedPlaceHistoryIds,
+                    currentRecommendedPlaces.map((place) => place.placeId),
+                ),
                 tripType: plannerData.tripType,
                 travelDate: plannerData.date,
                 startLatitude: plannerData.startLatitude,
@@ -175,9 +198,9 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                 endTime: plannerData.endTime,
                 themes: plannerData.themes,
             })
-            const selectedPlaceIds = new Set(selectedPlaces.map((place) => place.placeId))
+            const userSelectedPlaceIds = new Set(userSelectedPlaces.map((place) => Number(place.placeId)))
             const recommendedPlaces = (data.places || [])
-                .filter((place) => !selectedPlaceIds.has(place.placeId))
+                .filter((place) => !userSelectedPlaceIds.has(Number(place.placeId)))
                 .slice(0, requestedCount)
                 .map((place) => ({
                     ...place,
@@ -186,11 +209,28 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                     selectionSource: "RECOMMENDED",
                 }))
 
-            onSelectedPlacesChange([...selectedPlaces, ...recommendedPlaces])
+            // 변경: 조건에 맞는 새 후보가 전혀 없으면 기존 자동 추천 장소를 지킵니다.
+            // 추천 새로고침 한 번으로 사용자의 일정이 빈 목록이 되는 상황을 방지합니다.
+            if (recommendedPlaces.length === 0 && currentRecommendedPlaces.length > 0) {
+                setRecommendationMessage("현재 조건에서 새로운 추천 장소가 없습니다. 기존 추천 장소를 유지합니다.")
+                return
+            }
+
+            // 변경: 직접 선택 장소는 보존하고 자동 추천 장소만 새 후보로 교체합니다.
+            onSelectedPlacesChange([...userSelectedPlaces, ...recommendedPlaces])
+            // 변경: 교체 전·후 자동 추천 장소 모두 이력에 남깁니다.
+            // 이후 추천 요청에서 삭제했거나 교체한 장소가 다시 나오는 것을 막습니다.
+            onRecommendedPlaceHistoryChange(collectPlaceIds(
+                recommendedPlaceHistoryIds,
+                currentRecommendedPlaces.map((place) => place.placeId),
+                recommendedPlaces.map((place) => place.placeId),
+            ))
             setRecommendationMessage(
-                recommendedPlaces.length === requestedCount
-                    ? `${recommendedPlaces.length}곳을 추천 장소로 추가했습니다.`
-                    : `조건에 맞는 장소 ${recommendedPlaces.length}곳을 추가했습니다. 더 많은 장소는 직접 선택해 주세요.`,
+                currentRecommendedPlaces.length > 0
+                    ? `${recommendedPlaces.length}곳의 추천 장소로 새로 바꿨습니다. 직접 선택한 장소는 유지됩니다.`
+                    : recommendedPlaces.length === requestedCount
+                        ? `${recommendedPlaces.length}곳을 추천 장소로 추가했습니다.`
+                        : `조건에 맞는 장소 ${recommendedPlaces.length}곳을 추가했습니다. 더 많은 장소는 직접 선택해 주세요.`,
             )
         } catch (recommendationError) {
             setRecommendationMessage(recommendationError.message || "추천 장소를 불러오지 못했습니다.")
@@ -243,15 +283,26 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
             <section className={styles.recommendationBar} aria-label="필수 방문 장소 자동 추천">
                 <div>
                     <strong>필수 방문 장소 {selectedPlaces.length} / {MAX_VISIT_STOPS}</strong>
-                    <span>부족한 수만큼 관광지·카페를 추천합니다.</span>
+                    <span>
+                        {selectedPlaces.some((place) => place.selectionSource === "RECOMMENDED")
+                            ? "직접 선택은 유지하고 추천 장소만 새 후보로 바꿉니다."
+                            : "부족한 수만큼 관광지·카페를 추천합니다."}
+                    </span>
                 </div>
                 <button
                     className={styles.recommendationButton}
                     type="button"
-                    disabled={isRecommending || selectedPlaces.length >= MAX_VISIT_STOPS}
+                    // 변경: 자동 추천 장소가 있으면 5곳을 채운 뒤에도 새로고침할 수 있습니다.
+                    // 직접 선택 장소만 5곳일 때는 교체할 대상이 없으므로 비활성화합니다.
+                    disabled={isRecommending || (selectedPlaces.length >= MAX_VISIT_STOPS
+                        && !selectedPlaces.some((place) => place.selectionSource === "RECOMMENDED"))}
                     onClick={handleRecommendPlaces}
                 >
-                    {isRecommending ? "추천 중..." : "관광지 추천"}
+                    {isRecommending
+                        ? "추천 중..."
+                        : selectedPlaces.some((place) => place.selectionSource === "RECOMMENDED")
+                            ? "추천 새로고침"
+                            : "관광지 추천"}
                 </button>
             </section>
             {recommendationMessage && <p className={styles.recommendationMessage} role="status">{recommendationMessage}</p>}

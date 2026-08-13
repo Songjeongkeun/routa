@@ -56,7 +56,8 @@
   font-weight: 700;
   cursor: pointer;
   background: 	linear-gradient(135deg, var(--color-primary), #4b3fd6);
-  box-shadow: 0 8px 20px rgbrgb(75 63 214 / 24%);
+  /* 변경: rgbrgb 오타 때문에 무시되던 그림자를 유효한 CSS 색상 함수로 수정합니다. */
+  box-shadow: 0 8px 20px rgb(75 63 214 / 24%);
 }
 
 .planButton:hover {
@@ -158,6 +159,43 @@
   color: var(--color-text-muted);
   font-size: 15px;
   line-height: 1.75;
+}
+
+/* 변경: 기본 브라우저 버튼 대신 ROUTA의 주요 이동 버튼과 같은 보라색 포인트 스타일을 적용합니다. */
+.savedScheduleButton {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--color-primary), #4b3fd6);
+  box-shadow: 0 7px 15px rgb(75 63 214 / 22%);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.savedScheduleButton:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 20px rgb(75 63 214 / 27%);
+  transform: translateY(-2px);
+}
+
+.savedScheduleButton:focus-visible {
+  outline: 3px solid rgb(75 63 214 / 28%);
+  outline-offset: 3px;
+}
+
+.savedScheduleButton:active {
+  box-shadow: 0 4px 10px rgb(75 63 214 / 18%);
+  transform: translateY(0);
 }
 
 /* 변경: 실제 저장 일정 3개를 홈에서 간단히 확인하는 카드 목록입니다. */

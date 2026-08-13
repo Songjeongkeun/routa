@@ -1,5 +1,5 @@
 import { useState } from "react"
-import {useNavigate} from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { usePlan } from "../../app/providers/planContext.js"
 import TripTypeSelector from "../../features/planner/components/TripTypeSelector.jsx"
 import DateSelector from "../../features/planner/components/DateSelector.jsx"
@@ -76,6 +76,7 @@ function createTransitCondition(plan) {
 
 export default function PlanConditionPage() {
     const { plan, updatePlan } = usePlan()
+    const location = useLocation()
     // 변경: 이전 단계로 돌아왔을 때 입력값을 유지하기 위해 전역 여행 계획값으로 초기화합니다.
     const [selectOption, setSelectOption] = useState(plan.tripType)
     const [selectDate, setSelectDate] = useState(plan.date)
@@ -86,7 +87,8 @@ export default function PlanConditionPage() {
     const selectTransport = transportCriterion.criterion
     const [isResolvingLocations, setIsResolvingLocations] = useState(false)
     // 변경: 브라우저 alert 대신 버튼 가까이에 입력 문제를 표시해 사용자가 바로 고칠 수 있게 합니다.
-    const [formError, setFormError] = useState("")
+    // 변경: 이후 단계를 직접 열었다가 Guard로 돌아온 경우 무엇을 먼저 입력해야 하는지 즉시 안내합니다.
+    const [formError, setFormError] = useState(location.state?.plannerMessage ?? "")
 
     const navigate = useNavigate()
 
@@ -248,9 +250,13 @@ export default function PlanConditionPage() {
                 <aside className={styles.summary} aria-label="입력한 여행 조건">
                     <h2>입력한 여행 조건</h2>
                     <dl>
-                        <div><dt><img className={styles.summaryIcon} src={tripTypeIcon} alt="" /> 여행 성격</dt><dd>{selectOption === "GENERAL" ? "일반 여행" : "반려동물 여행"}</dd></div>
+                        <div>
+                            <dt><img className={styles.summaryIcon} src={tripTypeIcon} alt="" /> 여행 성격</dt>
+                            {/* 변경: 빈 값을 반려동물 여행으로 오인하지 않고 실제 선택 전 상태를 표시합니다. */}
+                            <dd>{selectOption === "GENERAL" ? "일반 여행" : selectOption === "PET" ? "반려동물 여행" : "선택해 주세요"}</dd>
+                        </div>
                         <div><dt><img className={styles.summaryIcon} src={dateIcon} alt="" /> 날짜</dt><dd>{selectDate || "날짜를 선택해 주세요"}</dd></div>
-                        <div><dt><img className={styles.summaryIcon} src={transportIcon} alt="" /> 교통 기준</dt><dd>{selectTransport || "교통 기준을 선택해주세요"}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={transportIcon} alt="" /> 교통 기준</dt><dd>{selectTransport || "날짜 선택 시 자동 설정"}</dd></div>
                         <div><dt><img className={styles.summaryIcon} src={startLocationIcon} alt="" /> 출발 위치</dt><dd>{formatLocation(transitCondition.startAddress, transitCondition.startLocation)}</dd></div>
                         <div><dt><img className={styles.summaryIcon} src={startLocationIcon} alt="" /> 종료 위치</dt><dd>{formatLocation(transitCondition.endAddress, transitCondition.endLocation)}</dd></div>
                         <div>
