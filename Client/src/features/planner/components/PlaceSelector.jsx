@@ -271,8 +271,14 @@ export default function PlaceSelector({ plannerData, selectedPlaces, onSelectedP
                         <article className={`${styles.placeCard} ${selected ? styles.selected : ""}`} key={place.placeId}>
                             <div
                                 className={`${styles.thumbnail} ${styles[`thumbnail${index + 1}`] || ""}`}
-                                style={place.thumbnailUrl ? { backgroundImage: `url(${place.thumbnailUrl})` } : undefined}
                             >
+                                {place.thumbnailUrl && (
+                                    <img
+                                        className={styles.thumbnailImage}
+                                        src={place.thumbnailUrl}
+                                        alt={`${place.placeName} 이미지`}
+                                    />
+                                )}
                                 {selected && <span className={styles.check} aria-label="선택됨">✓</span>}
                             </div>
                             <div className={styles.placeInfo}>

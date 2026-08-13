@@ -36,6 +36,7 @@
 .placeCard { min-width: 0; min-height: 140px; display: grid; grid-template-columns: 144px minmax(0, 1fr); grid-template-rows: 1fr auto; gap: 5px 14px; padding: 9px; border: 1px solid var(--color-border); border-radius: 11px; background: var(--color-surface); }
 .placeCard.selected { border-color: var(--color-selected); }
 .thumbnail { position: relative; grid-row: 1 / 3; min-height: 112px; display: flex; align-items: flex-end; padding: 9px; overflow: hidden; border-radius: 8px; color: #fff; background: linear-gradient(145deg, #728aae, #d8b37e); background-position: center; background-size: cover; font-size: 12px; font-weight: 800; text-shadow: 0 1px 4px rgb(0 0 0 / 65%); }
+.thumbnailImage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .thumbnail::after { position: absolute; inset: 55% 0 0; background: linear-gradient(transparent, rgb(13 24 45 / 60%)); content: ""; }
 .thumbnail > span { z-index: 1; }
 .thumbnail1 { background: linear-gradient(155deg, #8fc7dc 0 38%, #334e31 39% 56%, #c58a5c 57%); }
