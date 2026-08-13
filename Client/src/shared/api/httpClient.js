@@ -20,6 +20,9 @@ export async function apiRequest(path, options = {}) {
 
   if (!response.ok) {
     const error = new Error(data?.message ?? "요청을 처리하지 못했습니다.")
+    // 변경: 로딩·저장 화면이 422(조건 충돌), 429(쿼터), 502/504(외부 API)를 구분해 안내할 수 있게 합니다.
+    error.status = response.status
+    error.code = data?.code ?? null
     // 변경: 일정 재계산의 422 응답에는 장소별 제약 사유가 있으므로 호출 화면까지 함께 전달합니다.
     error.conflicts = Array.isArray(data?.conflicts) ? data.conflicts : []
     throw error

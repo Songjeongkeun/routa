@@ -19,7 +19,7 @@
 
 .description {
   margin: 8px 0 0;
-  color: #9ba4b9;
+  color: var(--color-text);
   font-size: 12px;
 }
 
@@ -32,7 +32,7 @@
 .passwordAction {
   padding: 4px;
   border: 0;
-  color: #7d879e;
+  color: var(--color-text-muted);
   font-size: 11px;
   cursor: pointer;
   background: transparent;
@@ -43,7 +43,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #6f7890;
+  color: var(--color-text-muted);
   font-size: 11px;
 }
 
@@ -89,7 +89,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: #4430e7;
+  background: #4b3fd6;
 }
 
 .submitButton:disabled {
@@ -99,7 +99,7 @@
 
 .message {
   margin: -5px 0 0;
-  color: #d64545;
+  color: var(--color-danger);
   font-size: 12px;
   line-height: 1.5;
   text-align: center;
@@ -114,7 +114,7 @@
   align-items: center;
   gap: 14px;
   margin: 28px 0 20px;
-  color: #aeb5c5;
+  color: var(--color-text-subtle);
   font-size: 11px;
 }
 
@@ -138,13 +138,13 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border: 1px solid #dfe4ee;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-text);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .kakaoButton {
@@ -152,33 +152,28 @@
   background: #fee500;
 }
 
-.kakaoIcon {
-  width: 17px;
-  height: 13px;
-  position: relative;
-  border-radius: 50%;
-  background: #191919;
+/* 변경: CSS로 흉내 낸 말풍선과 문자 G 대신 SVG 원본 비율을 유지하는 공통 로고 크기를 사용합니다. */
+.socialLogo {
+  width: 19px;
+  height: 19px;
+  display: block;
+  flex: none;
+  object-fit: contain;
 }
 
-.kakaoIcon::after {
-  content: "";
-  position: absolute;
-  left: 2px;
-  bottom: -3px;
-  border: 3px solid transparent;
-  border-top-color: #191919;
+/* 카카오 말풍선은 가로 형태라 Google 마크보다 조금 넓혀도 버튼 안의 시각 크기가 같아 보입니다. */
+.kakaoLogo {
+  width: 21px;
 }
 
-.googleIcon {
-  color: #4285f4;
-  font-family: Arial, sans-serif;
-  font-size: 17px;
-  font-weight: 800;
+.googleLogo {
+  width: 18px;
+  height: 18px;
 }
 
 .footer {
   margin: 28px 0 0;
-  color: #8e97ab;
+  color: var(--color-text-subtle);
   font-size: 11px;
   text-align: center;
 }

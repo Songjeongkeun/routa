@@ -19,7 +19,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid rgb(82 61 245 / 28%);
+  outline: 3px solid rgb(100 71 255 / 28%);
   outline-offset: 2px;
 }
 

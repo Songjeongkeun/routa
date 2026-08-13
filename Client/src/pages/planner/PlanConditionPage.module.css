@@ -1,8 +1,10 @@
+
+
 .page {
   min-height: calc(100vh - 68px);
   padding: 28px 40px 52px;
-  color: #14203a;
-  background: #f8f9fd;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
 }
 
 .intro {
@@ -18,7 +20,7 @@
 
 .intro p {
   margin: 7px 0 0;
-  color: #8190ad;
+  color: var(--color-text-subtle);
   font-size: 13px;
 }
 
@@ -26,7 +28,7 @@
   max-width: 610px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  margin: 22px auto 38px;
+  margin: 12px auto 20px;
   padding: 0;
   list-style: none;
 }
@@ -37,7 +39,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #71809d;
+  color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 600;
 }
@@ -48,7 +50,7 @@
   right: -18px;
   width: 54px;
   height: 1px;
-  background: #dce3f0;
+  background: var(--color-border);
   content: "";
 }
 
@@ -58,20 +60,20 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #f0f3f9;
+  background: var(--color-surface-muted);
 }
 
 .stepper .currentStep {
-  color: #14203a;
+  color: var(--color-text);
 }
 
 .currentStep span {
-  color: #fff;
-  background: #5138ef;
+  color: var(--color-surface);
+  background: var(--color-primary);
 }
 
 .layout {
-  width: min(100%, 1390px);
+  width: min(100%, 1280px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 22px;
@@ -86,9 +88,9 @@
 
 .card,
 .summary {
-  border: 1px solid #d8e0ee;
+  border: 1px solid var(--color-border);
   border-radius: 13px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .card {
@@ -113,6 +115,19 @@
   margin-top: 8px;
 }
 
+/* 변경: 다음 버튼을 누른 뒤에도 문맥을 잃지 않도록 카드 하단에 인라인 오류를 표시합니다. */
+.formError {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #f1bcc6;
+  border-radius: 9px;
+  color: var(--color-danger);
+  background: #fff4f6;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .actions button {
   min-height: 54px;
   border-radius: 11px;
@@ -123,20 +138,25 @@
 }
 
 .cancelButton {
-  border: 1px solid #664cff;
-  color: #543af0;
-  background: #fff;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-surface);
 }
 
 .nextButton {
-  border: 1px solid #5138ef;
-  color: #fff;
-  background: #5138ef;
+  border: 1px solid var(--color-primary);
+  color: var(--color-surface);
+  background: var(--color-primary);
 }
 
 .summary {
   align-self: stretch;
-  padding: 27px 24px;
+  padding: 24px;
+}
+
+.summary h2 {
+  margin: 0 0 18px;
+  font-size: 17px;
 }
 
 .summary dl {
@@ -144,23 +164,23 @@
 }
 
 .summary dl > div {
-  min-height: 57px;
+  min-height: 48px;
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 14px;
-  border-bottom: 1px solid #e0e5ef;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .summary dt {
-  color: #74829d;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
 .summary dd {
   max-width: 190px;
   margin: 0;
-  color: #18233d;
+  color: var(--color-text);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.45;
@@ -169,7 +189,19 @@
 }
 
 .summary .accent {
-  color: #5740ee;
+  color: var(--color-primary);
+}
+
+.summaryIcon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 4px;
+}
+
+.card .summaryIcon {
+  width: 22px;
+  height: 22px;
 }
 
 @media (max-width: 980px) {
@@ -178,7 +210,8 @@
   }
 
   .summary {
-    grid-row: 1;
+    /* 변경: 태블릿에서는 입력 폼을 먼저 두어, 읽기 전용 요약이 실제 입력보다 앞서는 흐름을 막습니다. */
+    grid-row: auto;
   }
 }
 

@@ -14,9 +14,13 @@ export async function getUserStats() {
 }
 
 /** 유저 목록 조회 (페이지네이션 지원)*/
-export async function getUsers({ page = 1, pageSize = 20 } = {}) {
+export async function getUsers({ page = 1, pageSize = 20, status } = {}) {
     const offset = (page - 1) * pageSize
-    return userRepository.findUsers({ limit: pageSize, offset })
+    const [users, total] = await Promise.all([
+        userRepository.findUsers({ limit: pageSize, offset, status }),
+        userRepository.countUsersByStatus(status),
+    ])
+    return { users, total }
 }
 
 /** 유저 상태 변경 */

@@ -1,78 +1,415 @@
 /*JSX=화면구조  CSS=디자인*/
-.inquiry-page{
 
-    padding:40px;
 
-    background:#f6f7fb;
 
-    min-height:100vh;
-
-}
-
-/*제목*/
-.page-title{
-
-    font-size:38px;
-
-    font-weight:bold;
-
-    color:#222;
-
-}
-
-/*설명*/
-.page-description{
-
-    margin-top:10px;
-
-    color:#777;
-
-}
-
-/*통계 카드를 감싸는 부모*/
-.stats-container{
-    display:flex;
-    gap:20px;
-     margin-top:35px;
-}
-
-/*검색+버튼*/
-.top-action{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    margin-top:35px;
-
-}
-
-/*버튼*/
-.new-button{
-
-    border:none;
-
-    background:#5146f0;
-
-    color:white;
-
-    padding:14px 28px;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    font-size:15px;
-
+/* 변경: 이 파일은 문의 화면에서만 쓰여야 합니다.
+   전역 * / body 선택자를 제거해 헤더·여행 계획·관리자 화면의 여백과 배경을 덮어쓰지 않습니다. */
+.inquiry-page {
+  font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+  color: #1a1a1a;            
 }
 
 
-/* 마우스를 올렸을 때 */
+/*페이지 공통 레이아웃*/
 
-.new-button:hover{
+.inquiry-page {
+  max-width: 1330px;   /* 콘텐츠 최대 너비 제한 (너무 넓게 퍼지지 않도록) */
+  margin: 0 auto;       /* 좌우 auto → 페이지 가운데 정렬 */
+  padding: 40px 24px;
+}
+ 
+.inquiry-page h1 {
+  font-size: 36px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
 
-    background:#4037d8;
+/* h1 바로 아래 안내 문구 (예: "ROUTA에 접수해 주신...")
+   ">"를 붙여서 .inquiry-page의 "바로 아래(direct child)" p에만 적용되게 했습니다.
+   이렇게 안 하면 form 안쪽 깊숙한 곳에 있는 .inquiry-form__error(p 태그)까지
+   덮어써서 에러 문구가 회색으로 나오는 문제가 생깁니다. */
+.inquiry-page > p {
+  font-size: 14px;
+  color: var(--color-text-subtle);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
 
+/*상단 통계 영역*/
+.inquiry-stats {
+  display: flex;       /* 3개의 통계 박스를 가로로 나란히 */
+  gap: 16px;  /* 박스 사이 간격 */
+  margin-bottom: 24px;
+}
+
+/* .inquiry-stats의 "바로 아래(direct child)" div만 선택 */
+.inquiry-stats > div {
+  flex: 1;    /* 3칸을 똑같은 너비로 균등 분할 */
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  padding: 20px 24px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/*각 박스 안의 숫자 부분*/
+.inquiry-stats > div strong {
+  display: block;      /* 숫자를 다음 줄로 내려서 라벨과 분리 */
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-top: 6px;
+}
+
+.inquiry-stat__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.inquiry-stat__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inquiry-stat__icon img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.inquiry-stat__label {
+  display: block;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+/*검색.필터/새문의 작성 버튼 줄*/
+
+.inquiry-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.inquiry-toolbar input {
+  flex: 1;                    /* 남는 공간을 검색창이 채우도록 */
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-ui);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  outline: none;               /* 클릭 시 생기는 파란 테두리 제거 */
+}
+
+
+.inquiry-toolbar input:focus {
+  border-color: var(--color-primary);       /* 입력창 클릭했을 때 보라색 테두리로 강조 */
+}
+ 
+.inquiry-toolbar select {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-ui);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+ 
+.inquiry-toolbar button {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;          /* "새 문의 작성" 글자가 줄바꿈되지 않도록 */
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+ 
+.inquiry-toolbar button:hover {
+  background-color: #4b3fd0;
+}
+
+.inquiry-item {
+  cursor: default;
+}
+
+.inquiry-item__content {
+  margin-top: 10px;
+  color: #4a4d59;
+  line-height: 1.6;
+}
+
+.inquiry-item__answer {
+  margin-top: 14px;
+  background-color: #F3F5FC;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.inquiry-item__answer strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--color-primary);
+}
+
+.inquiry-item__answer p {
+  color: #4a4d59;
+  line-height: 1.6;
+}
+
+
+
+
+/*에러 상태일때*/
+.inquiry-state--error {
+  color: var(--color-danger);
+}
+
+.inquiry-state--error p {
+  margin-bottom: 12px;      /* 에러 문구와 "다시 시도" 버튼 사이 간격 */
+}
+
+.inquiry-state--error button {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+
+/*문의 목록*/
+.inquiry-list {
+  list-style: none;         /* ul의 기본 점(•) 없애기 */
+  display: flex;
+  flex-direction: column;   /* 카드를 세로로 쌓기 */
+  gap: 14px;
+  padding: 0;
+}
+
+.inquiry-item {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  width: 100%;
+  border-radius: 13px;
+  padding: 24px;
+  transition: box-shadow 0.15s ease;
+}
+
+/* 카드에 마우스를 올렸을 때 살짝 그림자를 줘서 클릭 가능함을 강조 */
+.inquiry-item:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+ 
+/* 카드 상단: 배지 + 날짜 */
+.inquiry-item__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+ 
+/* 상태 배지 공통 스타일 (알약 모양) */
+.inquiry-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;   /* 숫자를 크게 주면 완전히 둥근 알약 형태가 됨 */
+}
+
+
+.inquiry-badge--waiting {
+  background-color: #eef0f4;
+  color: var(--color-text-muted);         /* 답변 대기 → 회색 계열 */
+}
+ 
+.inquiry-badge--answered {
+  background-color: #e3f9ec;
+  color: #16a34a;         /* 답변 완료 → 초록 계열 */
+}
+ 
+/* 날짜 텍스트 */
+.inquiry-item__date {
+  font-size: 13px;
+  color: #9a9da8;
+}
+ 
+.inquiry-item__title {
+  font-size: 16px;
+  font-weight: 700;
+}
+ 
+
+
+/* 새 문의 작성 페이지 상단 제목 영역
+   (h1 "새 문의 작성" + 그 아래 안내 문구를 감싸는 wrapper)
+   가운데 정렬해서 스크린샷처럼 보이게 합니다. */
+.new-inquiry-header {
+  text-align: center;      /* 안의 글자들을 모두 가운데 정렬 */
+  max-width: 640px;         /* 폼 카드와 같은 폭으로 맞춰서 줄이 너무 길어지지 않게 */
+  margin: 0 auto 28px auto; /* 위/아래 여백 주고, 좌우는 auto로 가운데 배치 */
+}
+
+.new-inquiry-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.new-inquiry-header p {
+  font-size: 14px;
+  color: var(--color-text-subtle);
+  line-height: 1.6;
+}
+
+/* 변경: 일정에서 진입한 문의는 연결 대상이 있음을 작성 전에 명확히 보여 줍니다. */
+.inquiry-linked-schedule {
+  max-width: 640px;
+  margin: 0 auto 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 13px;
+}
+
+/*폼 전체 레이아웃*/
+.inquiry-page form {
+  display: flex;
+  flex-direction: column;   /* 필드들을 위에서 아래로 쌓음 */
+  gap: 20px;                 /* 필드 사이 간격 */
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  padding: 32px;
+  max-width: 640px;          /* 카드 폭을 스크린샷처럼 좁게 제한 */
+  margin: 0 auto;             /* 좌우 auto → 페이지 가운데 정렬 */
+}
+ 
+/* 제목/내용 입력 필드 하나하나를 감싸는 블록 */
+.inquiry-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;                 /* 라벨 - 입력창 - 안내문구 사이 간격 */
+}
+ 
+.inquiry-form__field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+ 
+.inquiry-form__field input,
+.inquiry-form__field textarea {
+  border: 1px solid var(--color-border-ui);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;      /* textarea는 기본 폰트가 다르게 나오는 브라우저가 있어서 명시 */
+  outline: none;
+  resize: vertical;           /* textarea는 세로로만 크기 조절 가능하게 (가로는 고정) */
+}
+ 
+.inquiry-form__field input:focus,
+.inquiry-form__field textarea:focus {
+  border-color: var(--color-primary);      /* 입력 중일 때 보라색 테두리로 강조 */
+}
+ 
+/* 제목 글자수 카운터 (예: "12 / 50") */
+.inquiry-form__meta {
+  align-self: flex-end;       /* 카운터를 오른쪽 끝으로 정렬 */
+  font-size: 12px;
+  color: #9a9da8;
+}
+ 
+/* 유효성 검사 에러 문구 (제목 필수, 내용 필수 등) */
+.inquiry-form__error {
+  font-size: 13px;
+  color: var(--color-danger);
+}
+ 
+/* 하단 "취소" / "등록" 버튼 줄 */
+.inquiry-form__actions {
+  display: flex;
+  justify-content: flex-end;  /* 버튼을 오른쪽으로 정렬 */
+  gap: 10px;
+  margin-top: 8px;
+}
+ 
+.inquiry-form__actions button {
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+ 
+/* 취소 버튼: type="button" (첫 번째 버튼) → 흰 배경 + 보라 테두리/글자
+   (버튼을 구분하는 type="button" / type="submit" 속성값을 CSS 선택자로 그대로 사용) */
+.inquiry-form__actions button[type="button"] {
+  background-color: var(--color-surface);
+  border: 1px solid #7c6ff0;
+  color: #7c6ff0;
+}
+ 
+.inquiry-form__actions button[type="button"]:hover {
+  background-color: var(--color-primary-soft);   /* 마우스 올리면 아주 연한 보라 배경 */
+}
+ 
+/* 등록 버튼: type="submit" → 인디고(보라) 배경으로 강조 */
+.inquiry-form__actions button[type="submit"] {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+}
+ 
+.inquiry-form__actions button[type="submit"]:hover {
+  background-color: #4b3fd6;   /* 마우스 올리면 살짝 더 진한 보라 */
+}
+ 
+/* 버튼 disabled 상태 (제출 중일 때) 공통 스타일 */
+.inquiry-form__actions button:disabled {
+  opacity: 0.6;               /* 흐리게 표시해서 클릭 불가능함을 암시 */
+  cursor: not-allowed;         /* 마우스를 올리면 금지 표시 아이콘 */
+}
+
+
+/* 폼 카드 아래에 있는 연보라색 안내 박스
+   (예: "접수해 주신 문의는 마이페이지 > 내 문의 내역에서 확인...") */
+.inquiry-notice {
+  display: flex;              /* 아이콘과 텍스트를 가로로 나란히 배치 */
+  align-items: center;
+  gap: 8px;
+  max-width: 640px;            /* 위의 폼 카드와 폭을 맞춤 */
+  margin: 20px auto 0 auto;    /* 폼 카드와의 간격 + 가운데 정렬 */
+  background-color: var(--color-primary-soft);   /* 연한 보라 배경 */
+  border: 1px solid #e4defc;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* 안내 박스 안의 아이콘(ⓘ) - 크기가 줄어들지 않도록 고정 */
+.inquiry-notice__icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--color-primary);
 }

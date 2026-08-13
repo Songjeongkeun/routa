@@ -7,6 +7,37 @@ import TransitCriterion from "../../features/planner/components/TransitCriterion
 import { searchLocation } from "../../features/place/place.api.js"
 import styles from "./PlanConditionPage.module.css"
 
+// 상단 import에 추가
+import tripTypeIcon from "../../shared/assets/icons/Travel_conditions/Row icon 0.png"
+import dateIcon from "../../shared/assets/icons/Travel_conditions/Row icon 1.png"
+import transportIcon from "../../shared/assets/icons/Travel_conditions/Row icon 2.png"
+import startLocationIcon from "../../shared/assets/icons/Travel_conditions/Row icon 3.png"
+// 종료 위치: Row icon 4.png 없음
+import timeIcon from "../../shared/assets/icons/Travel_conditions/Row icon 5.png"
+import placesIcon from "../../shared/assets/icons/Travel_conditions/Row icon 6.png"
+// 관심 테마: Row icon 7.png 없음 (이 페이지엔 관심 테마 줄 자체가 없음)
+import mealIcon from "../../shared/assets/icons/Travel_conditions/Row icon 8.png"
+import transform_condition from "../../shared/assets/icons/condition.png"
+
+const KOREAN_WEEKDAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"]
+
+/**
+ * 변경: 교통 기준은 사용자가 다시 선택하는 값이 아니라 여행 날짜에서 자동으로 계산합니다.
+ * YYYY-MM-DD를 직접 분리해 브라우저 시간대에 따라 날짜가 하루 밀리는 문제를 방지합니다.
+ */
+function getTransportCriterion(dateValue) {
+    if (!dateValue) return { criterion: "", weekday: "" }
+
+    const [year, month, day] = dateValue.split("-").map(Number)
+    const selectedDate = new Date(year, month - 1, day)
+    const weekdayIndex = selectedDate.getDay()
+
+    return {
+        criterion: weekdayIndex === 0 || weekdayIndex === 6 ? "주말" : "평일",
+        weekday: KOREAN_WEEKDAYS[weekdayIndex],
+    }
+}
+
 function formatTimeWithPeriod(time) {
     // "14:05" > [14, 5]
     const [hour, minute] = time.split(":").map(Number)
@@ -24,7 +55,8 @@ function formatTimeWithPeriod(time) {
 
 function formatLocation(address, placeName) {
     if (address && placeName) return `${address} (${placeName})`
-    return address || placeName || "입력해 주세요"
+    // 변경: 출발·종료 위치는 선택 사항이므로 비어 있을 때 검증 오류처럼 보이지 않게 표시합니다.
+    return address || placeName || "선택 안 함"
 }
 
 function createTransitCondition(plan) {
@@ -47,8 +79,14 @@ export default function PlanConditionPage() {
     // 변경: 이전 단계로 돌아왔을 때 입력값을 유지하기 위해 전역 여행 계획값으로 초기화합니다.
     const [selectOption, setSelectOption] = useState(plan.tripType)
     const [selectDate, setSelectDate] = useState(plan.date)
-    const [selectTransport, setSelectTransport] = useState(plan.transport)
+    // 이전 코드: 교통 기준을 사용자가 직접 고르는 별도 상태였습니다.
+    // const [selectTransport, setSelectTransport] = useState(plan.transport)
+    // 변경: 날짜와 교통 기준이 서로 어긋나지 않도록 날짜에서 항상 같은 값을 파생합니다.
+    const transportCriterion = getTransportCriterion(selectDate)
+    const selectTransport = transportCriterion.criterion
     const [isResolvingLocations, setIsResolvingLocations] = useState(false)
+    // 변경: 브라우저 alert 대신 버튼 가까이에 입력 문제를 표시해 사용자가 바로 고칠 수 있게 합니다.
+    const [formError, setFormError] = useState("")
 
     const navigate = useNavigate()
 
@@ -79,8 +117,29 @@ export default function PlanConditionPage() {
     const handleNextClick = async () => {
         if (isResolvingLocations) return
 
+        // 변경: 서버 요청 전 필수 여행 조건과 시간 순서를 검사해 다음 단계에서 갑작스러운 오류가 나지 않게 합니다.
+        if (!selectOption) {
+            setFormError("여행 성격을 선택해 주세요.")
+            return
+        }
+        if (!selectDate) {
+            setFormError("여행 날짜를 선택해 주세요.")
+            return
+        }
+        // 이전 코드: 수동 select가 비어 있을 때 교통 기준을 다시 선택하도록 검사했습니다.
+        // 날짜를 선택하면 평일·주말이 자동 계산되므로 별도 검증은 더 이상 필요하지 않습니다.
+        // if (!selectTransport) {
+        //     setFormError("교통 기준을 선택해 주세요.")
+        //     return
+        // }
+        if (!transitCondition.startTime || !transitCondition.endTime || transitCondition.startTime >= transitCondition.endTime) {
+            setFormError("여행 종료 시간은 출발 시간보다 늦어야 합니다.")
+            return
+        }
+
         try {
             setIsResolvingLocations(true)
+            setFormError("")
             const [startResolved, endResolved] = await Promise.all([
                 resolveLocation(transitCondition, "start"),
                 resolveLocation(transitCondition, "end"),
@@ -120,7 +179,8 @@ export default function PlanConditionPage() {
 
             navigate("/planner/places")
         } catch (error) {
-            window.alert(error.message || "위치를 검색하지 못했습니다.")
+            // 변경: 위치는 선택 사항이지만 입력했다면 찾을 수 있어야 하므로 오류를 화면 안에서 안내합니다.
+            setFormError(error.message || "입력한 위치를 찾지 못했습니다. 위치를 고치거나 비워 주세요.")
         } finally {
             setIsResolvingLocations(false)
         }
@@ -149,17 +209,19 @@ export default function PlanConditionPage() {
                     </section>
 
                     <section className={styles.card}>
-                        <h2><span aria-hidden="true">▦</span> 날짜와 교통</h2>
+                        <h2><span aria-hidden="true"><img className={styles.summaryIcon} src={dateIcon} alt="" /></span>날짜와 교통</h2>
+                        {/* 이전 코드에서는 onTransportChange를 전달해 사용자가 평일·주말을 직접 선택했습니다.
+                            변경: 교통 기준을 날짜에서 자동 계산하므로 수동 변경 이벤트를 전달하지 않습니다. */}
                         <DateSelector
                             dateValue={selectDate}
                             transportValue={selectTransport}
+                            weekday={transportCriterion.weekday}
                             onDateChange={setSelectDate}
-                            onTransportChange={setSelectTransport}
                         />
                     </section>
 
                     <section className={styles.card}>
-                        <h2><span aria-hidden="true">⌘</span> 이동 조건</h2>
+                        <h2><span aria-hidden="true"><img className={styles.summaryIcon} src={transform_condition} alt="" /></span>이동 조건</h2>
                         <TransitCriterion
                             startLocation={transitCondition.startLocation}
                             startAddress={transitCondition.startAddress}
@@ -175,6 +237,7 @@ export default function PlanConditionPage() {
                     </section>
 
                     <div className={styles.actions}>
+                        {formError && <p className={styles.formError} role="alert">{formError}</p>}
                         <button className={styles.cancelButton} type="button" onClick={handleCancelClick}>취소</button>
                         <button className={styles.nextButton} type="button" onClick={handleNextClick} disabled={isResolvingLocations}>
                             {isResolvingLocations ? "위치 검색 중..." : "다음"}
@@ -185,21 +248,21 @@ export default function PlanConditionPage() {
                 <aside className={styles.summary} aria-label="입력한 여행 조건">
                     <h2>입력한 여행 조건</h2>
                     <dl>
-                        <div><dt>▥ 여행 성격</dt><dd>{selectOption === "GENERAL" ? "일반 여행" : "반려동물 여행"}</dd></div>
-                        <div><dt>▦ 날짜</dt><dd>{selectDate || "날짜를 선택해 주세요"}</dd></div>
-                        <div><dt>▣ 교통 기준</dt><dd>{selectTransport || "교통 기준을 선택해주세요"}</dd></div>
-                        <div><dt>⌖ 출발 위치</dt><dd>{formatLocation(transitCondition.startAddress, transitCondition.startLocation)}</dd></div>
-                        <div><dt>⌖ 종료 위치</dt><dd>{formatLocation(transitCondition.endAddress, transitCondition.endLocation)}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={tripTypeIcon} alt="" /> 여행 성격</dt><dd>{selectOption === "GENERAL" ? "일반 여행" : "반려동물 여행"}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={dateIcon} alt="" /> 날짜</dt><dd>{selectDate || "날짜를 선택해 주세요"}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={transportIcon} alt="" /> 교통 기준</dt><dd>{selectTransport || "교통 기준을 선택해주세요"}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={startLocationIcon} alt="" /> 출발 위치</dt><dd>{formatLocation(transitCondition.startAddress, transitCondition.startLocation)}</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={startLocationIcon} alt="" /> 종료 위치</dt><dd>{formatLocation(transitCondition.endAddress, transitCondition.endLocation)}</dd></div>
                         <div>
-                            <dt>◷ 여행 시간</dt>
+                            <dt><img className={styles.summaryIcon} src={timeIcon} alt="" /> 여행 시간</dt>
                             <dd>
                                 {formatTimeWithPeriod(transitCondition.startTime)}
                                 {" ~ "}
                                 {formatTimeWithPeriod(transitCondition.endTime)}
                             </dd>
                         </div>
-                        <div><dt>⌖ 필수 방문 장소</dt><dd>다음 단계에서 선택</dd></div>
-                        <div><dt>♜ 식사 선택</dt><dd>다음 단계에서 선택</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={placesIcon} alt="" /> 필수 방문 장소</dt><dd>다음 단계에서 선택</dd></div>
+                        <div><dt><img className={styles.summaryIcon} src={mealIcon} alt="" /> 식사 선택</dt><dd>다음 단계에서 선택</dd></div>
                     </dl>
                 </aside>
             </div>

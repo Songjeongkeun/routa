@@ -7,7 +7,7 @@ const DEFAULT_CENTER = { latitude: 37.5665, longitude: 126.978 };
  * 일정 장소 목록을 Kakao Maps Web JavaScript SDK 지도에 표시합니다.
  *
  * `items`에는 latitude, longitude가 있어야 마커를 표시하고, `legs`에는 서버가
- * 반환한 대중교통 geometrySegments를 넣어 실제 버스·지하철 노선 모양을 표시합니다.
+ * 반환한 대중교통·실제 도보 geometrySegments를 넣어 실제 이동 경로 모양을 표시합니다.
  */
 export default function KakaoCourseMap({ items, legs = [] }) {
   const mapContainerRef = useRef(null);
@@ -75,8 +75,8 @@ export default function KakaoCourseMap({ items, legs = [] }) {
     const itemsById = new Map(placesWithCoordinates.map((item) => [String(item.itemId), item]));
 
     /**
-     * 변경: 각 일정 구간의 실제 ODsay 노선 그래픽을 그립니다.
-     * route.geometrySegments에는 지하철·버스가 섞여 있을 수 있으므로 구간별 색으로 Polyline을 만듭니다.
+     * 변경: 각 일정 구간의 실제 ODsay 노선·카카오 보행 경로를 그립니다.
+     * route.geometrySegments에는 지하철·버스·도보가 섞일 수 있으므로 구간별 색으로 Polyline을 만듭니다.
      */
     legs.forEach((leg) => {
       const geometrySegments = Array.isArray(leg.geometrySegments) ? leg.geometrySegments : [];
@@ -167,13 +167,21 @@ export default function KakaoCourseMap({ items, legs = [] }) {
           <p>{errorMessage}</p>
         </div>
       )}
+
+      {/* 변경: 지도 선의 색이 의미하는 이동수단과 실제 경로가 없는 추정 구간을 함께 설명합니다. */}
+      <div className="kakao-course-map__legend" aria-label="지도 이동 경로 범례">
+        <span><i />지하철</span>
+        <span><i className="legend-bus" />버스</span>
+        <span><i className="legend-walk" />도보</span>
+        <span><i className="legend-estimate" />경로 추정</span>
+      </div>
     </section>
   );
 }
 
 /**
- * 변경: 한 지도에서 이동수단을 빠르게 구분할 수 있게 ODsay 노선 종류마다 색을 고정합니다.
- * 도보는 실제 도로 그래픽이 없으므로 위의 회색 점선만 사용합니다.
+ * 변경: 한 지도에서 이동수단을 빠르게 구분할 수 있게 노선 종류마다 색을 고정합니다.
+ * WALK는 카카오가 반환한 실제 보행로이고, geometrySegments가 없는 WALK_FALLBACK만 회색 점선으로 표시합니다.
  */
 function getTransitLineStyle(type) {
   if (type === "SUBWAY") {
@@ -190,6 +198,16 @@ function getTransitLineStyle(type) {
     return {
       strokeWeight: 5,
       strokeColor: "#16a34a",
+      strokeOpacity: 0.9,
+      strokeStyle: "solid",
+      zIndex: 2,
+    };
+  }
+
+  if (type === "WALK") {
+    return {
+      strokeWeight: 5,
+      strokeColor: "#f97316",
       strokeOpacity: 0.9,
       strokeStyle: "solid",
       zIndex: 2,

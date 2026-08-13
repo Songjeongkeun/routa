@@ -37,7 +37,7 @@
   position: relative;
   min-width: 132px;
   padding: 2px 18px 0;
-  color: #69748d;
+  color: var(--color-text-muted);
   font-size: 17px;
   font-weight: 600;
 }
@@ -46,13 +46,18 @@
   color: #fff;
 }
 
+/* 변경: 활성 상태가 아닌 메뉴도 같은 버튼 규격을 유지하되, 현재 위치만 밑줄로 구분합니다. */
+.menuButton {
+  color: var(--color-text-muted);
+}
+
 .activeMenu::after {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
   height: 5px;
-  background: #6447ff;
+  background: var(--color-primary);
   content: "";
 }
 
@@ -103,6 +108,16 @@
   transform: translateX(-50%);
 }
 
+/* 변경: 프로필·문의처럼 상단 중앙 메뉴에 없는 화면도 현재 위치를 인지할 수 있게 합니다. */
+.currentUserMenu {
+  color: #bdb4ff !important;
+}
+
+.profileButtonActive {
+  border-color: #9b8cff !important;
+  box-shadow: 0 0 0 3px rgb(100 71 255 / 28%);
+}
+
 .logoutButton {
   padding: 8px 12px !important;
   border: 1px solid rgb(255 255 255 / 55%) !important;
@@ -112,7 +127,7 @@
 
 .header button:hover,
 .header a:hover {
-  color: #bdb4ff;
+  color: #fff;
 }
 
 @media (max-width: 760px) {

@@ -39,8 +39,9 @@ export async function getUsers(req, res) {
     try {
         const page = Number(req.query.page) || 1
         const pageSize = Number(req.query.pageSize) || 20
-        const users = await adminService.getUsers({ page, pageSize })
-        return res.status(200).json({ users })
+        const status = req.query.status || undefined
+        const { users, total } = await adminService.getUsers({ page, pageSize, status })
+        return res.status(200).json({ users, total })
     } catch (error) {
         console.error("유저 목록 조회 오류: ", error)
         return res.status(500).json({ message: "유저 목록을 불러오지 못했습니다." })
