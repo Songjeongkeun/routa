@@ -7,6 +7,7 @@ export async function GoogleAPI(placeName) {
     if (!GOOGLE_API_KEY) {
         throw new Error("GOOGLE_PLACES_API_KEY environment variable is required");
     }
+    // 꼭 ko가 있어야 한국어 검색 가능
     const requestBody = { textQuery: placeName, languageCode: "ko" };
 
     try {
@@ -95,7 +96,7 @@ export async function GoogleAPI(placeName) {
         } 
         return null;
     } catch (error) {
-        console.error(`[구글 API 에러] ${placeName}: `, error);
+        console.error(`구글 API 에러 ${placeName}: `, error);
         return null;
     }
 }
