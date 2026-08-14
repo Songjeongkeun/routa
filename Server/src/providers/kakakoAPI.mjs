@@ -6,11 +6,11 @@ import { GoogleAPI } from './googleAPI.mjs';
 const KAKAO_API_KEY = process.env.KAKAO_REST_API_KEY
 const radius = "2000"; 
 
-// 🚨 [주의] 테스트하실 때는 "AT4" 1개만 남기고 나머지는 지우는 것을 권장합니다.
+// 테스트할 때 1개만 남겨두기 
 const allCategoryCodes = [
     "MT1", "SW8",  
-    "CT1", 
-    "AT4", 
+    "CT1",
+    "AT4",
     "AD5", "FD6", "CE7"
 ];
 
@@ -33,12 +33,7 @@ function category_time(group_name) {
     }
 }
 
-// [테스트용 단일 좌표]
-// const seoulGridPoints = [{ x: "126.9786567", y: "37.566826" }]; // 서울 시청
-// const seoulGridPoints = [{ x: "127.100133", y: "37.513261" }]; // 잠실역
-// const seoulGridPoints = [{ x: "127.025393", y: "37.504734" }]; // 신논현역
-// const seoulGridPoints = [{ x: "127.069236", y: "37.540389" }]; // 건대입구역
-// const seoulGridPoints = [{ x: "126.923610", y: "37.556670" }]; // 홍대입구역
+// 테스트할 때 1개만 남겨두기
 const seoulGridPoints = [
     // 테스트시 서울시청만 남기기
     { x: "126.9786567", y: "37.566826" }, // 서울 시청
@@ -76,21 +71,14 @@ async function collectAndSaveData() {
         if (!KAKAO_API_KEY) {
             throw new Error("KAKAO_REST_API_KEY environment variable is required");
         }
-        await checkDBConnection();
-
-    // try {
-    //     if (!KAKAO_API_KEY) {
-    //         throw new Error("KAKAO_REST_API_KEY environment variable is required");
-    //     }
-    //     await checkDBConnection(); 
+        await checkDBConnection(); 
         
-    //     // 💡 [추가] API 호출 횟수를 기록할 변수 선언
-    //     let kakaoCallCount = 0;
-    //     let googleCallCount = 0;
+        let kakaoCallCount = 0;
+        let googleCallCount = 0;
 
         for (const point of seoulGridPoints) {
             const { x, y } = point;
-            console.log(`\n=== 📍 기준 좌표 탐색 시작 [X: ${x}, Y: ${y}] ===`);
+            console.log(`기준 좌표 탐색 시작 [X: ${x}, Y: ${y}] ===`);
 
             for (const categoryCode of allCategoryCodes) {
                 let page = 1; 
@@ -98,11 +86,10 @@ async function collectAndSaveData() {
 
                 // 테스트할 때 45가 아니라 1로 바꾸는게 API를 아낄 수 있음
                 while (!isEnd && page <= 45) { 
-                    // const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${categoryCode}&x=${x}&y=${y}&radius=${radius}&page=${page}`;
                     const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${categoryCode}&x=${x}&y=${y}&radius=${radius}&page=${page}&sort=distance`;
                     try { 
                         kakaoCallCount++;
-                        console.log(`\n📡 [카카오 API] 호출 횟수: ${kakaoCallCount}회 (카테고리: ${categoryCode}, 페이지: ${page})`);
+                        console.log(`\n카카오 API 호출 횟수: ${kakaoCallCount}회 (카테고리: ${categoryCode}, 페이지: ${page})`);
 
                         const response = await fetch(url, {
                             method: 'GET',
@@ -110,12 +97,8 @@ async function collectAndSaveData() {
                         }); 
 
                         if (!response.ok) {
-                            // 에러 내용 확인
-                            const errorBody = await response.text();
-                            console.error(`[카카오 API 에러] 카테고리: ${categoryCode}, status: ${response.status}, body: ${errorBody}`);
-                            break;
-                            // console.error(`[카카오 API 에러] 카테고리: ${categoryCode}`);
-                            // break; 
+                            console.error(`카카오 API 에러 카테고리: ${categoryCode}`);
+                            break; 
                         }
 
                         const data = await response.json();
@@ -124,14 +107,14 @@ async function collectAndSaveData() {
                         if (documents.length > 0) {
                             for (const place of documents) {
                                 
-                                // 서울만
+                                // 서울만 필터링
                                 const roadAddress = place.road_address_name || "";
                                 const oldAddress = place.address_name || "";
                                 if (!roadAddress.startsWith("서울") && !oldAddress.startsWith("서울")) {
                                     continue; 
                                 }
 
-                                // 2. DB 중복 검사 (구글 API 호출 방어)
+                                // DB 중복 검사 (구글 API 호출 방어)
                                 const checkSql = `SELECT 1 FROM "PLACE" WHERE place_id = $1 LIMIT 1;`;
                                 const checkRes = await query(checkSql, [Number(place.id)]); 
 
@@ -140,19 +123,18 @@ async function collectAndSaveData() {
                                     continue; 
                                 }
 
-                                // 구글 API 호출 카운트 증가 및 터미널 출력
                                 googleCallCount++;
-                                console.log(`🛰️ [구글 API] 호출 횟수: ${googleCallCount}회 (장소: ${place.place_name})`);
+                                console.log(`구글 API 호출 횟수: ${googleCallCount}회 (장소: ${place.place_name})`);
 
-                                // 구글 모듈에 넘겨서 상세 정보 받아오기
+                                // 구글 API 받기
                                 let googleData = await GoogleAPI(place.place_name) || {};
                                 
                                 // // TourAPI에 넘겨서 반려동물 동반 가능 여부 받아오기
                                 // tourCallCount++;
-                                // console.log(`🐾 [TourAPI] 호출 횟수: ${tourCallCount}회 (${place.place_name})`);
+                                // console.log(`TourAPI 호출 횟수: ${tourCallCount}회 (${place.place_name})`);
                                 // let petAllowed = await TourAPI(place.place_name) || false;
 
-                                // 4. DB 쿼리에 넣을 파라미터 매핑
+                                // 쿼리에 넣을 파라미터 매핑
                                 const params = [
                                     Number(place.id),                               
                                     place.place_name,                               
@@ -163,7 +145,7 @@ async function collectAndSaveData() {
                                     googleData.image_url || null,                   
                                     googleData.start_time || null,                  
                                     googleData.closed_days || null,                 
-                                    null, // last_order
+                                    null, // last_order 없는 것 같음
                                     googleData.rating || null,                      
                                     category_time(place.category_group_name),       
                                     // petAllowed, // 팻 체크임              
@@ -182,7 +164,7 @@ async function collectAndSaveData() {
                                     ) ON CONFLICT (place_id) DO NOTHING;
                                 `;
                                 await query(insertSql, params);
-                                console.log(`✅ [${place.place_name}] DB 저장 완료`);
+                                console.log(`[${place.place_name}] DB 저장 완료`);
                             }
                         }
                         isEnd = data.meta.is_end;
@@ -197,12 +179,12 @@ async function collectAndSaveData() {
     } catch (globalError) {
         console.error("전체 프로세스 에러 발생:", globalError);
     } finally {
-        // 서버 전체가 공유하는 DB pool을 닫아버려서 서버 안에서 실행하면 앱 전체가 먹통이 되므로 지운다.
+        // 관리자 모드에서 돌릴 때 
         // await closeDB(); 
     
-        console.log("\n\n🎉 모든 데이터 수집 및 DB 적재 프로세스가 종료되었습니다.");
-        console.log(`📊 [최종 결산] 카카오 API: 총 ${kakaoCallCount}회 호출`);
-        console.log(`📊 [최종 결산] 구글 API: 총 ${googleCallCount}회 호출`);
+        console.log("\n\nDB에 올림");
+        console.log(`최종 결산 카카오 API: 총 ${kakaoCallCount}회 호출`);
+        console.log(`최종 결산 구글 API: 총 ${googleCallCount}회 호출`);
     }
 }
 
