@@ -9,7 +9,9 @@ const radius = "2000";
 // 테스트할 때 1개만 남겨두기 
 const allCategoryCodes = [
     "MT1", "SW8",  
-    "CT1", "AT4", "AD5", "FD6", "CE7"
+    "CT1",
+    "AT4",
+    "AD5", "FD6", "CE7"
 ];
 
 // const allCategoryCodes = [
@@ -21,7 +23,9 @@ function category_time(group_name) {
     if (!group_name || group_name.trim() === "") return 60;
     switch (group_name) {
         case "관광명소": return 90;
-        case "문화시설": return 120;
+        // 변경: 문화시설도 새 장소를 수집할 때 기본 체류시간을 90분으로 저장합니다.
+        // 기존 DB의 120분 데이터도 함께 90분으로 보정해 추천·화면 값이 일치합니다.
+        case "문화시설": return 90;
         case "음식점":   
         case "카페":     return 60;
         case "대형마트": return 90;
@@ -31,6 +35,7 @@ function category_time(group_name) {
 
 // 테스트할 때 1개만 남겨두기
 const seoulGridPoints = [
+    // 테스트시 서울시청만 남기기
     { x: "126.9786567", y: "37.566826" }, // 서울 시청
     { x: "127.100133", y: "37.513261" }, // 잠실역
     { x: "127.025393", y: "37.504734" }, // 신논현역
@@ -58,6 +63,10 @@ const seoulGridPoints = [
 ];
 
 async function collectAndSaveData() {
+    // let은 선언된 블록 안에서만 유효하기 때문에 finally{}에서 읽으려 하면 ReferenceError가 터진다.
+    let kakaoCallCount = 0;
+    let googleCallCount = 0;
+
     try {
         if (!KAKAO_API_KEY) {
             throw new Error("KAKAO_REST_API_KEY environment variable is required");
@@ -179,4 +188,10 @@ async function collectAndSaveData() {
     }
 }
 
-collectAndSaveData();
+// collectAndSaveData 외부로 내보내기
+export { collectAndSaveData };
+
+// 이 파일을 "node kakakoAPI.mjs"로 직접 실행했을 때만 자동 실행 + 그때만 DB 커넥션도 닫음
+if (import.meta.url === `file://${process.argv[1]}`) {
+    collectAndSaveData().then(() => closeDB());
+}

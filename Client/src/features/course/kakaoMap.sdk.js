@@ -3,7 +3,8 @@
  *
  * Vite는 `VITE_`로 시작하는 환경 변수만 브라우저 코드에 전달합니다.
  * JavaScript 키는 브라우저에서 사용하는 키이므로, 카카오 개발자 콘솔에
- * `http://localhost:5173`과 운영 도메인을 JavaScript SDK 도메인으로 등록해야 합니다.
+ * `http://localhost:5173`, LAN 테스트 주소(예: `http://192.168.0.10:5173`),
+ * 운영 도메인을 카카오 JavaScript SDK 허용 도메인으로 등록해야 합니다.
  */
 const KAKAO_SDK_SCRIPT_ID = "routa-kakao-map-sdk";
 let sdkLoadingPromise;

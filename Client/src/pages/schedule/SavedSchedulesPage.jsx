@@ -63,6 +63,13 @@ export default function SavedSchedulesPage() {
         setError("")
         const result = await getSavedItineraries({ keyword, courseType, travelDate, period, page, pageSize })
         if (isCancelled) return
+        const lastPage = Math.max(1, Math.ceil((result.totalCount ?? 0) / pageSize))
+        // 변경: 다른 창에서 삭제했거나 목록 수가 줄어 현재 페이지가 사라진 경우,
+        // 빈 상태를 잘못 보여 주지 않고 마지막 유효 페이지를 다시 요청합니다.
+        if ((result.totalCount ?? 0) > 0 && page > lastPage) {
+          setPage(lastPage)
+          return
+        }
         setSchedules(result.itineraries ?? [])
         setTotalCount(result.totalCount ?? 0)
       } catch (requestError) {

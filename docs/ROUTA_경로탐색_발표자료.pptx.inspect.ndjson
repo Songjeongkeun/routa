@@ -1,0 +1,344 @@
+{"kind":"deck","id":"pr/ae6tc4","name":"Deck"}
+{"kind":"layout","layoutId":"cd481ba0-865b-4cc9-b033-9d8276c3a471","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"65d1fa1e-8968-404a-90cc-74827c54c77a","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/q6l3nt","slide":1,"title":"ROUTA · Route Recommendation","textShapes":6}
+{"kind":"shape","id":"sh/alcb2x4b","slide":1,"bbox":[0,0,20,720]}
+{"kind":"textbox","id":"sh/xo3adsn2","slide":1,"text":"ROUTA · Route Recommendation","textPreview":"ROUTA · Route Recommendation","textChars":28,"textLines":1,"bbox":[72,72,430,28]}
+{"kind":"textbox","id":"sh/cnut4nmh","slide":1,"text":"가능한 일정만\n빠르게 찾는\n여행 경로 탐색","textPreview":"가능한 일정만 | 빠르게 찾는 | 여행 경로 탐색","textChars":23,"textLines":3,"bbox":[72,135,540,235]}
+{"kind":"textbox","id":"sh/3i1s7i50","slide":1,"text":"Branch-and-Bound와 실제 길찾기 API를 결합해\n시간·영업·식사 조건을 만족하는 코스를 추천합니다.","textPreview":"Branch-and-Bound와 실제 길찾기 API를 결합해 | 시간·영업·식사 조건을 만족하는 코스를 추천합니다.","textChars":62,"textLines":2,"bbox":[76,398,520,62]}
+{"kind":"shape","id":"sh/2xsbyd4f","slide":1,"bbox":[76,495,222,34]}
+{"kind":"textbox","id":"sh/pk3a9snq","slide":1,"text":"실제 서버 구현 코드 기준","textPreview":"실제 서버 구현 코드 기준","textChars":14,"textLines":1,"bbox":[90,501,194,24]}
+{"kind":"shape","id":"sh/fu1s3y5o","slide":1,"bbox":[68,680,1144,1]}
+{"kind":"textbox","id":"sh/etsrud43","slide":1,"text":"ROUTA  |  Route Recommendation Engine","textPreview":"ROUTA  |  Route Recommendation Engine","textChars":37,"textLines":1,"bbox":[68,692,350,18]}
+{"kind":"textbox","id":"sh/obmlszad","slide":1,"text":"1 / 6","textPreview":"1 / 6","textChars":5,"textLines":1,"bbox":[1148,692,64,18]}
+{"kind":"image","id":"im/dwzyp8fe","slide":1,"name":"","geometry":"roundRect","alt":"Branch-and-Bound route search illustration","bbox":[618,90,590,531]}
+{"kind":"notes","id":"nt/q6l3nt","slide":1,"text":"발표 멘트:\nROUTA의 경로 추천은 장소를 가까운 순서로 단순 연결하는 기능이 아닙니다.\n여행자가 입력한 출발·종료 시간, 방문 장소, 식사 시간, 영업 조건을 모두 만족하는 방문 순서를 찾습니다.\n오늘은 이 과정에서 탐색량을 줄이는 Branch-and-Bound와 실제 이동 데이터를 붙이는 방식을 실제 서버 코드로 설명하겠습니다.\n코드 위치: Server/src/modules/recommendations/recommendation.service.mjs"}
+{"kind":"slide","id":"sl/yfzoud","slide":2,"title":"02","textShapes":17}
+{"kind":"textbox","id":"sh/5w7algb2","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[68,46,48,24]}
+{"kind":"shape","id":"sh/itwralcr","slide":2,"bbox":[68,78,72,4]}
+{"kind":"textbox","id":"sh/jupsj6tc","slide":2,"text":"장소가 늘수록 방문 순서의 경우의 수가 급격히 늘어납니다","textPreview":"장소가 늘수록 방문 순서의 경우의 수가 급격히 늘어납니다","textChars":31,"textLines":1,"bbox":[68,101,1050,52]}
+{"kind":"textbox","id":"sh/wre98bul","slide":2,"text":"그래서 모든 경로를 끝까지 계산하지 않고, 불가능하거나 불리한 후보를 중간에 제외합니다.","textPreview":"그래서 모든 경로를 끝까지 계산하지 않고, 불가능하거나 불리한 후보를 중간에 제외합니다.","textChars":49,"textLines":1,"bbox":[70,157,1080,31]}
+{"kind":"textbox","id":"sh/xsnahgb6","slide":2,"text":"방문 장소","textPreview":"방문 장소","textChars":5,"textLines":1,"bbox":[80,243,180,28]}
+{"kind":"textbox","id":"sh/a5wr61cf","slide":2,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[80,277,180,80]}
+{"kind":"textbox","id":"sh/v65sf6t0","slide":2,"text":"식사 후보","textPreview":"식사 후보","textChars":5,"textLines":1,"bbox":[354,243,180,28]}
+{"kind":"textbox","id":"sh/83e94rup","slide":2,"text":"+2","textPreview":"+2","textChars":2,"textLines":1,"bbox":[354,277,180,80]}
+{"kind":"textbox","id":"sh/94nadwva","slide":2,"text":"최대 후보","textPreview":"최대 후보","textChars":5,"textLines":1,"bbox":[628,243,180,28]}
+{"kind":"textbox","id":"sh/pcbudgzq","slide":2,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[628,277,180,80]}
+{"kind":"shape","id":"sh/ob2dkbi5","slide":2,"bbox":[275,294,52,30]}
+{"kind":"shape","id":"sh/3atcb6hk","slide":2,"bbox":[549,294,52,30]}
+{"kind":"shape","id":"sh/290vi10z","slide":2,"bbox":[873,225,284,168]}
+{"kind":"textbox","id":"sh/1oru9wje","slide":2,"text":"최대","textPreview":"최대","textChars":2,"textLines":1,"bbox":[900,255,220,28]}
+{"kind":"textbox","id":"sh/gnidgri9","slide":2,"text":"5,040","textPreview":"5,040","textChars":5,"textLines":1,"bbox":[890,293,240,63]}
+{"kind":"textbox","id":"sh/fm9c7m1o","slide":2,"text":"가지의 순서 후보","textPreview":"가지의 순서 후보","textChars":9,"textLines":1,"bbox":[900,360,220,28]}
+{"kind":"shape","id":"sh/el0veh03","slide":2,"bbox":[80,470,1077,112]}
+{"kind":"textbox","id":"sh/tkru5wji","slide":2,"text":"핵심 전략","textPreview":"핵심 전략","textChars":5,"textLines":1,"bbox":[112,500,150,28]}
+{"kind":"textbox","id":"sh/sjidcrix","slide":2,"text":"① 운영·식사·종료 조건을 못 맞추면 즉시 제외   ② 이미 더 좋은 경로보다 점수가 높으면 탐색 중단   ③ 같은 상태를 다시 만나면 더 나쁜 후보는 제외","textPreview":"① 운영·식사·종료 조건을 못 맞추면 즉시 제외   ② 이미 더 좋은 경로보다 점수가 높으면 탐색 중단   ③ 같은 상태를 다시 만나면 더 나쁜 후보는 제외","textChars":87,"textLines":1,"bbox":[286,500,824,38]}
+{"kind":"textbox","id":"sh/k3mdsrqt","slide":2,"text":"입력 제한: 방문 장소 최대 5개, 선택 식사 최대 2개  |  7! = 5,040","textPreview":"입력 제한: 방문 장소 최대 5개, 선택 식사 최대 2개  |  7! = 5,040","textChars":46,"textLines":1,"bbox":[68,639,840,22]}
+{"kind":"shape","id":"sh/love1wre","slide":2,"bbox":[68,680,1144,1]}
+{"kind":"textbox","id":"sh/y1kvqh8n","slide":2,"text":"ROUTA  |  Route Recommendation Engine","textPreview":"ROUTA  |  Route Recommendation Engine","textChars":37,"textLines":1,"bbox":[68,692,350,18]}
+{"kind":"textbox","id":"sh/j2tczm98","slide":2,"text":"2 / 6","textPreview":"2 / 6","textChars":5,"textLines":1,"bbox":[1148,692,64,18]}
+{"kind":"notes","id":"nt/yfzoud","slide":2,"text":"발표 멘트:\nROUTA는 방문 장소를 최대 5개로 제한하고, 점심과 저녁까지 포함하면 최대 7개의 후보를 다룹니다.\n7개의 방문 순서를 모두 비교하면 이론상 7!, 즉 5,040가지입니다. 실제로는 식사 시간 순서도 제한하지만, 장소 수가 증가할수록 탐색량이 커진다는 점은 같습니다.\n따라서 ROUTA는 세 단계의 가지치기를 적용합니다. 먼저 불가능한 일정, 다음으로 이미 최적보다 나쁜 일정, 마지막으로 같은 상태를 다시 만든 일정입니다.\n다음 슬라이드부터 이 세 가지를 코드와 함께 보겠습니다.\n코드 위치: recommendation.service.mjs 상수 및 explore 함수"}
+{"kind":"slide","id":"sl/24xa8d","slide":3,"title":"03","textShapes":55}
+{"kind":"textbox","id":"sh/50jah4bi","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[68,46,48,24]}
+{"kind":"shape","id":"sh/ixsrmpcr","slide":3,"bbox":[68,78,72,4]}
+{"kind":"textbox","id":"sh/jy1sfutc","slide":3,"text":"먼저, 시간 제약을 만족하지 못하는 일정은 후보에서 제거합니다","textPreview":"먼저, 시간 제약을 만족하지 못하는 일정은 후보에서 제거합니다","textChars":34,"textLines":1,"bbox":[68,101,1050,52]}
+{"kind":"textbox","id":"sh/s3utsjut","slide":3,"text":"각 장소 도착 시점에서 방문 가능 여부를 확인하고, 실패하면 null을 반환해 해당 분기를 끝냅니다.","textPreview":"각 장소 도착 시점에서 방문 가능 여부를 확인하고, 실패하면 null을 반환해 해당 분기를 끝냅니다.","textChars":56,"textLines":1,"bbox":[70,157,1080,31]}
+{"kind":"shape","id":"sh/t43alobe","slide":3,"bbox":[68,218,728,404]}
+{"kind":"shape","id":"sh/61cbq9cn","slide":3,"bbox":[68,218,728,42]}
+{"kind":"shape","id":"sh/r2lsjet8","slide":3,"bbox":[84,233,8,8]}
+{"kind":"shape","id":"sh/87q9gfup","slide":3,"bbox":[99,233,8,8]}
+{"kind":"shape","id":"sh/98za9kba","slide":3,"bbox":[114,233,8,8]}
+{"kind":"textbox","id":"sh/1kjm9ofy","slide":3,"text":"recommendation.service.mjs  ·  lines 531–575","textPreview":"recommendation.service.mjs  ·  lines 531–575","textChars":44,"textLines":1,"bbox":[134,228,646,18]}
+{"kind":"textbox","id":"sh/0jal0jyd","slide":3,"text":" 1","textPreview":"1","textChars":2,"textLines":1,"bbox":[83,273,42,16]}
+{"kind":"textbox","id":"sh/zi1k7exs","slide":3,"text":"const placeTiming = evaluatePlaceVisit({","textPreview":"const placeTiming = evaluatePlaceVisit({","textChars":40,"textLines":1,"bbox":[136,273,646,16]}
+{"kind":"textbox","id":"sh/ehs3y9g7","slide":3,"text":" 2","textPreview":"2","textChars":2,"textLines":1,"bbox":[83,289,42,16]}
+{"kind":"textbox","id":"sh/983mdofu","slide":3,"text":"  plan,","textPreview":"plan,","textChars":7,"textLines":1,"bbox":[136,289,646,16]}
+{"kind":"textbox","id":"sh/onul4jy9","slide":3,"text":" 3","textPreview":"3","textChars":2,"textLines":1,"bbox":[83,305,42,16]}
+{"kind":"textbox","id":"sh/nm14bexo","slide":3,"text":"  place: stop,","textPreview":"place: stop,","textChars":14,"textLines":1,"bbox":[136,305,646,16]}
+{"kind":"textbox","id":"sh/mls32tg3","slide":3,"text":" 4","textPreview":"4","textChars":2,"textLines":1,"bbox":[83,321,42,16]}
+{"kind":"textbox","id":"sh/xc3mh8fq","slide":3,"text":"  travelArrivalTime,","textPreview":"travelArrivalTime,","textChars":20,"textLines":1,"bbox":[136,321,646,16]}
+{"kind":"textbox","id":"sh/wbul83yl","slide":3,"text":" 5","textPreview":"5","textChars":2,"textLines":1,"bbox":[83,337,42,16]}
+{"kind":"textbox","id":"sh/grmx0bat","slide":3,"text":"  stayMinutes: stop.stayMinutes,","textPreview":"stayMinutes: stop.stayMinutes,","textChars":32,"textLines":1,"bbox":[136,337,646,16]}
+{"kind":"textbox","id":"sh/hsvetwre","slide":3,"text":" 6","textPreview":"6","textChars":2,"textLines":1,"bbox":[83,353,42,16]}
+{"kind":"textbox","id":"sh/u54fy1sn","slide":3,"text":"  requestedStart: stop.nodeType === \"MEAL\" ? visitStart : null,","textPreview":"requestedStart: stop.nodeType === \"MEAL\" ? visitStart : null,","textChars":63,"textLines":1,"bbox":[136,353,646,16]}
+{"kind":"textbox","id":"sh/fqdwr698","slide":3,"text":" 7","textPreview":"7","textChars":2,"textLines":1,"bbox":[83,369,42,16]}
+{"kind":"textbox","id":"sh/4vmx4bqp","slide":3,"text":"  enforceLastOrder: stop.nodeType === \"MEAL\",","textPreview":"enforceLastOrder: stop.nodeType === \"MEAL\",","textChars":45,"textLines":1,"bbox":[136,369,646,16]}
+{"kind":"textbox","id":"sh/pwfexgra","slide":3,"text":" 8","textPreview":"8","textChars":2,"textLines":1,"bbox":[83,385,42,16]}
+{"kind":"textbox","id":"sh/2t4f218z","slide":3,"text":"})","textPreview":"})","textChars":2,"textLines":1,"bbox":[136,385,646,16]}
+{"kind":"textbox","id":"sh/3udwv69k","slide":3,"text":" 9","textPreview":"9","textChars":2,"textLines":1,"bbox":[83,401,42,16]}
+{"kind":"shape","id":"sh/kz2dsral","slide":3,"bbox":[136,401,646,16]}
+{"kind":"shape","id":"sh/l0belcr6","slide":3,"bbox":[78,416,708,17]}
+{"kind":"shape","id":"sh/nuh07uto","slide":3,"bbox":[78,416,3,17]}
+{"kind":"textbox","id":"sh/mt8zyps3","slide":3,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[83,417,42,16]}
+{"kind":"textbox","id":"sh/9gji9kbu","slide":3,"text":"if (!placeTiming.isFeasible) {","textPreview":"if (!placeTiming.isFeasible) {","textChars":30,"textLines":1,"bbox":[136,417,646,16]}
+{"kind":"shape","id":"sh/ovah0za9","slide":3,"bbox":[78,432,708,17]}
+{"kind":"shape","id":"sh/zqh03ats","slide":3,"bbox":[78,432,3,17]}
+{"kind":"textbox","id":"sh/ep8zu5c7","slide":3,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[83,433,42,16]}
+{"kind":"textbox","id":"sh/1szi5kbi","slide":3,"text":"  placeTiming.conflicts.forEach((conflict) => onConstraint?.(conflict))","textPreview":"placeTiming.conflicts.forEach((conflict) => onConstraint?.(conflict))","textChars":71,"textLines":1,"bbox":[136,433,646,16]}
+{"kind":"shape","id":"sh/0rqhwfax","slide":3,"bbox":[78,448,708,17]}
+{"kind":"shape","id":"sh/rmxgzatg","slide":3,"bbox":[78,448,3,17]}
+{"kind":"textbox","id":"sh/qlozq5cv","slide":3,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[83,449,42,16]}
+{"kind":"textbox","id":"sh/6t83ut8f","slide":3,"text":"  return null","textPreview":"return null","textChars":13,"textLines":1,"bbox":[136,449,646,16]}
+{"kind":"textbox","id":"sh/7u143yp0","slide":3,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[83,465,42,16]}
+{"kind":"textbox","id":"sh/svalw3ql","slide":3,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,465,646,16]}
+{"kind":"textbox","id":"sh/twjm5876","slide":3,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[83,481,42,16]}
+{"kind":"shape","id":"sh/i583qt8j","slide":3,"bbox":[136,481,646,16]}
+{"kind":"shape","id":"sh/j6hkzyp4","slide":3,"bbox":[78,496,708,17]}
+{"kind":"shape","id":"sh/k7qls3qp","slide":3,"bbox":[78,496,3,17]}
+{"kind":"textbox","id":"sh/5szm1o7a","slide":3,"text":"15","textPreview":"15","textChars":2,"textLines":1,"bbox":[83,497,42,16]}
+{"kind":"textbox","id":"sh/a1o3m98n","slide":3,"text":"if (!stop.isFixedReservation && placeTiming.waitMinutes > maxUnplannedWaitMinutes) {","textPreview":"if (!stop.isFixedReservation && placeTiming.waitMinutes > maxUnplannedWaitMinutes) {","textChars":84,"textLines":1,"bbox":[136,497,646,16]}
+{"kind":"shape","id":"sh/v2hkveps","slide":3,"bbox":[78,512,708,17]}
+{"kind":"shape","id":"sh/dwn61cra","slide":3,"bbox":[78,512,3,17]}
+{"kind":"textbox","id":"sh/cve5sra5","slide":3,"text":"16","textPreview":"16","textChars":2,"textLines":1,"bbox":[83,513,42,16]}
+{"kind":"textbox","id":"sh/bu5ozm9k","slide":3,"text":"  return null","textPreview":"return null","textChars":13,"textLines":1,"bbox":[136,513,646,16]}
+{"kind":"textbox","id":"sh/qtwnqhsz","slide":3,"text":"17","textPreview":"17","textChars":2,"textLines":1,"bbox":[83,529,42,16]}
+{"kind":"textbox","id":"sh/ps36xcre","slide":3,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,529,646,16]}
+{"kind":"textbox","id":"sh/oru5o7at","slide":3,"text":"18","textPreview":"18","textChars":2,"textLines":1,"bbox":[83,545,42,16]}
+{"kind":"shape","id":"sh/3qlov298","slide":3,"bbox":[136,545,646,16]}
+{"kind":"shape","id":"sh/2pcnmxsn","slide":3,"bbox":[78,560,708,17]}
+{"kind":"shape","id":"sh/ho36tsri","slide":3,"bbox":[78,560,3,17]}
+{"kind":"textbox","id":"sh/gnu5knax","slide":3,"text":"19","textPreview":"19","textChars":2,"textLines":1,"bbox":[83,561,42,16]}
+{"kind":"textbox","id":"sh/sjyxwrmp","slide":3,"text":"if (departureTime > planEndTime) {","textPreview":"if (departureTime > planEndTime) {","textChars":34,"textLines":1,"bbox":[136,561,646,16]}
+{"kind":"shape","id":"sh/tkrypw3a","slide":3,"bbox":[78,576,708,17]}
+{"kind":"shape","id":"sh/6hgfuh4z","slide":3,"bbox":[78,576,3,17]}
+{"kind":"textbox","id":"sh/7ipgnmlk","slide":3,"text":"20","textPreview":"20","textChars":2,"textLines":1,"bbox":[83,577,42,16]}
+{"kind":"textbox","id":"sh/kfyxsrmt","slide":3,"text":"  return null","textPreview":"return null","textChars":13,"textLines":1,"bbox":[136,577,646,16]}
+{"kind":"textbox","id":"sh/5g7elw3e","slide":3,"text":"21","textPreview":"21","textChars":2,"textLines":1,"bbox":[83,593,42,16]}
+{"kind":"textbox","id":"sh/idgfqh4n","slide":3,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,593,646,16]}
+{"kind":"shape","id":"sh/jepwjml8","slide":3,"bbox":[848,255,22,22]}
+{"kind":"textbox","id":"sh/ob2x4bmx","slide":3,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[851,255,16,19]}
+{"kind":"textbox","id":"sh/pcbyxg3i","slide":3,"text":"운영·식사 조건","textPreview":"운영·식사 조건","textChars":8,"textLines":1,"bbox":[883,251,300,28]}
+{"kind":"textbox","id":"sh/z6d03a5k","slide":3,"text":"영업시간, 휴무일, 식사 시작 시각과 마지막 주문 조건을 확인합니다.","textPreview":"영업시간, 휴무일, 식사 시작 시각과 마지막 주문 조건을 확인합니다.","textChars":38,"textLines":1,"bbox":[883,281,300,48]}
+{"kind":"shape","id":"sh/y54ju5of","slide":3,"bbox":[848,373,22,22]}
+{"kind":"textbox","id":"sh/l8vi5knq","slide":3,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[851,373,16,19]}
+{"kind":"textbox","id":"sh/07m1wf65","slide":3,"text":"과도한 대기","textPreview":"과도한 대기","textChars":6,"textLines":1,"bbox":[883,369,300,28]}
+{"kind":"textbox","id":"sh/nax07u5w","slide":3,"text":"고정 예약이 아니라면 기본 60분보다 긴 대기 일정은 제외합니다.","textPreview":"고정 예약이 아니라면 기본 60분보다 긴 대기 일정은 제외합니다.","textChars":36,"textLines":1,"bbox":[883,399,300,48]}
+{"kind":"shape","id":"sh/m94jypob","slide":3,"bbox":[848,491,22,22]}
+{"kind":"textbox","id":"sh/9cfi94n2","slide":3,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[851,491,16,19]}
+{"kind":"textbox","id":"sh/8b610z6h","slide":3,"text":"여행 종료 시각","textPreview":"여행 종료 시각","textChars":8,"textLines":1,"bbox":[883,487,300,28]}
+{"kind":"textbox","id":"sh/3et0vq5s","slide":3,"text":"마지막 장소를 포함했을 때 종료 시간을 넘으면 해당 후보를 중단합니다.","textPreview":"마지막 장소를 포함했을 때 종료 시간을 넘으면 해당 후보를 중단합니다.","textChars":39,"textLines":1,"bbox":[883,517,300,48]}
+{"kind":"textbox","id":"sh/2dkzmlo7","slide":3,"text":"실제 코드: Server/src/modules/recommendations/recommendation.service.mjs:531–575","textPreview":"실제 코드: Server/src/modules/recommendations/recommendation.service.mjs:531–575","textChars":76,"textLines":1,"bbox":[68,639,840,22]}
+{"kind":"shape","id":"sh/qpg769s7","slide":3,"bbox":[68,680,1144,1]}
+{"kind":"textbox","id":"sh/rqp8zetc","slide":3,"text":"ROUTA  |  Route Recommendation Engine","textPreview":"ROUTA  |  Route Recommendation Engine","textChars":37,"textLines":1,"bbox":[68,692,350,18]}
+{"kind":"textbox","id":"sh/srip8jax","slide":3,"text":"3 / 6","textPreview":"3 / 6","textChars":5,"textLines":1,"bbox":[1148,692,64,18]}
+{"kind":"notes","id":"nt/24xa8d","slide":3,"text":"발표 멘트:\n첫 번째 가지치기는 일정의 실행 가능성을 확인하는 단계입니다.\nevaluatePlaceVisit 함수에 현재 도착 시간과 체류 시간을 전달하면, 해당 장소가 영업 중인지, 식사 시간 조건을 맞출 수 있는지 등을 계산합니다.\n방문이 불가능하면 return null이 실행됩니다. 상위 탐색 함수는 null을 받은 경로를 이어서 탐색하지 않기 때문에, 애초에 실행 불가능한 일정은 추천 후보가 되지 않습니다.\n또한 예약이 아닌 장소에서 대기가 60분을 넘거나, 여행 종료 시간을 넘는 경우도 같은 방식으로 분기를 잘라냅니다.\n발표 포인트: return null은 오류가 아니라, '이 경로 후보는 더 볼 필요가 없다'는 탐색 제어 신호입니다.\n코드 위치: recommendation.service.mjs:531–575"}
+{"kind":"slide","id":"sl/jwgvxa","slide":4,"title":"04","textShapes":39}
+{"kind":"textbox","id":"sh/lc3m90ve","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[68,46,48,24]}
+{"kind":"shape","id":"sh/y9s3e5cn","slide":4,"bbox":[68,78,72,4]}
+{"kind":"textbox","id":"sh/za1k7ad8","slide":4,"text":"좋은 경로를 찾은 뒤에는, 더 나쁜 후보를 끝까지 보지 않습니다","textPreview":"좋은 경로를 찾은 뒤에는, 더 나쁜 후보를 끝까지 보지 않습니다","textChars":35,"textLines":1,"bbox":[68,101,1050,52]}
+{"kind":"textbox","id":"sh/c7alcvuh","slide":4,"text":"Branch-and-Bound의 Bound는 현재까지 누적된 점수입니다. 이후 이동 비용은 음수가 아니므로 점수는 더 낮아지지 않습니다.","textPreview":"Branch-and-Bound의 Bound는 현재까지 누적된 점수입니다. 이후 이동 비용은 음수가 아니므로 점수는 더 낮아지지 않습니다.","textChars":76,"textLines":1,"bbox":[70,157,1080,31]}
+{"kind":"shape","id":"sh/x8j250v2","slide":4,"bbox":[68,216,770,302]}
+{"kind":"shape","id":"sh/a5s3alcr","slide":4,"bbox":[68,216,770,42]}
+{"kind":"shape","id":"sh/b61k3qdc","slide":4,"bbox":[84,231,8,8]}
+{"kind":"shape","id":"sh/ojql8vul","slide":4,"bbox":[99,231,8,8]}
+{"kind":"shape","id":"sh/p4z21gv6","slide":4,"bbox":[114,231,8,8]}
+{"kind":"textbox","id":"sh/hobahkf2","slide":4,"text":"recommendation.service.mjs  ·  lines 888–901","textPreview":"recommendation.service.mjs  ·  lines 888–901","textChars":44,"textLines":1,"bbox":[134,226,688,18]}
+{"kind":"shape","id":"sh/gni98feh","slide":4,"bbox":[78,270,750,19]}
+{"kind":"shape","id":"sh/v298faxw","slide":4,"bbox":[78,270,3,19]}
+{"kind":"textbox","id":"sh/u10r6pwb","slide":4,"text":" 1","textPreview":"1","textChars":2,"textLines":1,"bbox":[83,271,42,18]}
+{"kind":"textbox","id":"sh/t0rqdkfq","slide":4,"text":"const currentScore = getCourseScore(state, courseType)","textPreview":"const currentScore = getCourseScore(state, courseType)","textChars":54,"textLines":1,"bbox":[136,271,688,18]}
+{"kind":"textbox","id":"sh/8zi94fe5","slide":4,"text":" 2","textPreview":"2","textChars":2,"textLines":1,"bbox":[83,289,42,18]}
+{"kind":"shape","id":"sh/7y98baxk","slide":4,"bbox":[136,289,688,18]}
+{"kind":"shape","id":"sh/6x0r25wf","slide":4,"bbox":[78,306,750,19]}
+{"kind":"shape","id":"sh/lwrq90fu","slide":4,"bbox":[78,306,3,19]}
+{"kind":"textbox","id":"sh/kvy90ve9","slide":4,"text":" 3","textPreview":"3","textChars":2,"textLines":1,"bbox":[83,307,42,18]}
+{"kind":"textbox","id":"sh/cf29gvm5","slide":4,"text":"if (currentScore >= bestScore) {","textPreview":"if (currentScore >= bestScore) {","textChars":32,"textLines":1,"bbox":[136,307,688,18]}
+{"kind":"shape","id":"sh/xgbap0nq","slide":4,"bbox":[78,324,750,19]}
+{"kind":"shape","id":"sh/adkre54z","slide":4,"bbox":[78,324,3,19]}
+{"kind":"textbox","id":"sh/betsna5k","slide":4,"text":" 4","textPreview":"4","textChars":2,"textLines":1,"bbox":[83,325,42,18]}
+{"kind":"textbox","id":"sh/ob29cvmt","slide":4,"text":"  searchStats.prunedByBound += 1","textPreview":"searchStats.prunedByBound += 1","textChars":32,"textLines":1,"bbox":[136,325,688,18]}
+{"kind":"shape","id":"sh/pcbql0ne","slide":4,"bbox":[78,342,750,19]}
+{"kind":"shape","id":"sh/290ral43","slide":4,"bbox":[78,342,3,19]}
+{"kind":"textbox","id":"sh/nat8jq58","slide":4,"text":" 5","textPreview":"5","textChars":2,"textLines":1,"bbox":[83,343,42,18]}
+{"kind":"textbox","id":"sh/87m9ofmd","slide":4,"text":"  return","textPreview":"return","textChars":8,"textLines":1,"bbox":[136,343,688,18]}
+{"kind":"textbox","id":"sh/98vaxkny","slide":4,"text":" 6","textPreview":"6","textChars":2,"textLines":1,"bbox":[83,361,42,18]}
+{"kind":"textbox","id":"sh/j2hcnyp0","slide":4,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,361,688,18]}
+{"kind":"textbox","id":"sh/i18butof","slide":4,"text":" 7","textPreview":"7","textChars":2,"textLines":1,"bbox":[83,379,42,18]}
+{"kind":"shape","id":"sh/54zupo76","slide":4,"bbox":[136,379,688,18]}
+{"kind":"shape","id":"sh/43qdwj6l","slide":4,"bbox":[78,396,750,19]}
+{"kind":"shape","id":"sh/r6hcrypw","slide":4,"bbox":[78,396,3,19]}
+{"kind":"textbox","id":"sh/658vytob","slide":4,"text":" 8","textPreview":"8","textChars":2,"textLines":1,"bbox":[83,397,42,18]}
+{"kind":"textbox","id":"sh/tsjut872","slide":4,"text":"const exactStateKey = getExactStateKey(state, remainingVisits, remainingMeals)","textPreview":"const exactStateKey = getExactStateKey(state, remainingVisits, remainingMeals)","textChars":78,"textLines":1,"bbox":[136,397,688,18]}
+{"kind":"shape","id":"sh/s7qd036h","slide":4,"bbox":[78,414,750,19]}
+{"kind":"shape","id":"sh/7axcfups","slide":4,"bbox":[78,414,3,19]}
+{"kind":"textbox","id":"sh/m9obm9o7","slide":4,"text":" 9","textPreview":"9","textChars":2,"textLines":1,"bbox":[83,415,42,18]}
+{"kind":"textbox","id":"sh/yd8v29w3","slide":4,"text":"const previousBestScore = bestScoreByExactState.get(exactStateKey)","textPreview":"const previousBestScore = bestScoreByExactState.get(exactStateKey)","textChars":66,"textLines":1,"bbox":[136,415,688,18]}
+{"kind":"shape","id":"sh/ze1cvexo","slide":4,"bbox":[78,432,750,19]}
+{"kind":"shape","id":"sh/0fad4je9","slide":4,"bbox":[78,432,3,19]}
+{"kind":"textbox","id":"sh/lgjux4fu","slide":4,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[83,433,42,18]}
+{"kind":"textbox","id":"sh/mhsv69wz","slide":4,"text":"if (previousBestScore != null && previousBestScore <= currentScore) {","textPreview":"if (previousBestScore != null && previousBestScore <= currentScore) {","textChars":69,"textLines":1,"bbox":[136,433,688,18]}
+{"kind":"shape","id":"sh/ni1czexk","slide":4,"bbox":[78,450,750,19]}
+{"kind":"shape","id":"sh/8jad8je5","slide":4,"bbox":[78,450,3,19]}
+{"kind":"textbox","id":"sh/9kju1ofq","slide":4,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[83,451,42,18]}
+{"kind":"textbox","id":"sh/alsvatwb","slide":4,"text":"  searchStats.prunedByMemo += 1","textPreview":"searchStats.prunedByMemo += 1","textChars":31,"textLines":1,"bbox":[136,451,688,18]}
+{"kind":"textbox","id":"sh/vmlc3yxw","slide":4,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[83,469,42,18]}
+{"kind":"textbox","id":"sh/5s76pc3a","slide":4,"text":"  return","textPreview":"return","textChars":8,"textLines":1,"bbox":[136,469,688,18]}
+{"kind":"textbox","id":"sh/4rypgr2p","slide":4,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[83,487,42,18]}
+{"kind":"textbox","id":"sh/jq5onml4","slide":4,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,487,688,18]}
+{"kind":"shape","id":"sh/ipwnehkj","slide":4,"bbox":[884,238,300,326]}
+{"kind":"textbox","id":"sh/tg76tw36","slide":4,"text":"코드가 수행하는 일","textPreview":"코드가 수행하는 일","textChars":10,"textLines":1,"bbox":[916,269,236,30]}
+{"kind":"textbox","id":"sh/sfypkr2l","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[914,333,34,34]}
+{"kind":"textbox","id":"sh/reporml0","slide":4,"text":"현재 경로의 점수를 계산","textPreview":"현재 경로의 점수를 계산","textChars":13,"textLines":1,"bbox":[958,338,190,26]}
+{"kind":"textbox","id":"sh/6dg7ihkv","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[914,397,34,34]}
+{"kind":"textbox","id":"sh/1kr6xw3i","slide":4,"text":"최적 점수보다 크면 즉시 return","textPreview":"최적 점수보다 크면 즉시 return","textChars":20,"textLines":1,"bbox":[958,398,210,42]}
+{"kind":"textbox","id":"sh/0jipob2x","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[914,470,34,34]}
+{"kind":"textbox","id":"sh/0nq9kfat","slide":4,"text":"같은 상태는 더 낮은 점수만 유지","textPreview":"같은 상태는 더 낮은 점수만 유지","textChars":18,"textLines":1,"bbox":[958,471,196,42]}
+{"kind":"shape","id":"sh/lozqtkbe","slide":4,"bbox":[875,593,320,34]}
+{"kind":"textbox","id":"sh/ylori5s3","slide":4,"text":"탐색 수와 제외 수를 결과 경고에 기록","textPreview":"탐색 수와 제외 수를 결과 경고에 기록","textChars":21,"textLines":1,"bbox":[889,599,292,24]}
+{"kind":"textbox","id":"sh/zmh8rato","slide":4,"text":"실제 코드: Server/src/modules/recommendations/recommendation.service.mjs:888–901","textPreview":"실제 코드: Server/src/modules/recommendations/recommendation.service.mjs:888–901","textChars":76,"textLines":1,"bbox":[68,639,840,22]}
+{"kind":"shape","id":"sh/8rq9ofa5","slide":4,"bbox":[68,680,1144,1]}
+{"kind":"textbox","id":"sh/9szqxkbq","slide":4,"text":"ROUTA  |  Route Recommendation Engine","textPreview":"ROUTA  |  Route Recommendation Engine","textChars":37,"textLines":1,"bbox":[68,692,350,18]}
+{"kind":"textbox","id":"sh/mp8rmpsz","slide":4,"text":"4 / 6","textPreview":"4 / 6","textChars":5,"textLines":1,"bbox":[1148,692,64,18]}
+{"kind":"notes","id":"nt/jwgvxa","slide":4,"text":"발표 멘트:\n두 번째 가지치기가 Branch-and-Bound의 핵심입니다.\n먼저 현재까지 만들어진 경로의 점수를 계산합니다. 이미 찾은 최적 경로의 점수보다 현재 점수가 크거나 같다면, 뒤에 장소를 더 추가해도 이동 시간·도보 거리·요금은 음수가 될 수 없기 때문에 더 좋은 결과가 될 수 없습니다.\n그래서 prunedByBound를 증가시키고 바로 return 합니다. 이것이 Bound, 즉 하한을 이용한 탐색 중단입니다.\n추가로 exactStateKey로 현재 장소·시간·남은 장소가 같은 상태를 구분합니다. 같은 상태를 더 높은 점수로 다시 만들었다면 memoization으로 한 번 더 제외합니다.\n발표 포인트: Branch-and-Bound만이 아니라, 메모이제이션을 함께 사용해 중복 상태도 줄였습니다.\n코드 위치: recommendation.service.mjs:882–901"}
+{"kind":"slide","id":"sl/ybhl4o","slide":5,"title":"05","textShapes":40}
+{"kind":"textbox","id":"sh/sjytw3e9","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[68,46,48,24]}
+{"kind":"shape","id":"sh/ri5snyd4","slide":5,"bbox":[68,78,72,4]}
+{"kind":"textbox","id":"sh/6hwbutwj","slide":5,"text":"방문 순서를 찾은 뒤, 각 구간은 실제 길찾기 결과로 채웁니다","textPreview":"방문 순서를 찾은 뒤, 각 구간은 실제 길찾기 결과로 채웁니다","textChars":34,"textLines":1,"bbox":[68,101,1050,52]}
+{"kind":"textbox","id":"sh/5gnalovy","slide":5,"text":"거리만으로 시간을 추정하지 않고, 구간별로 카카오 도보 경로와 ODsay 대중교통 후보를 사용합니다.","textPreview":"거리만으로 시간을 추정하지 않고, 구간별로 카카오 도보 경로와 ODsay 대중교통 후보를 사용합니다.","textChars":56,"textLines":1,"bbox":[70,157,1080,31]}
+{"kind":"shape","id":"sh/4ve9sjed","slide":5,"bbox":[68,218,770,320]}
+{"kind":"shape","id":"sh/ju5sjeds","slide":5,"bbox":[68,218,770,42]}
+{"kind":"shape","id":"sh/itwrq9w7","slide":5,"bbox":[84,233,8,8]}
+{"kind":"shape","id":"sh/hsnahovm","slide":5,"bbox":[99,233,8,8]}
+{"kind":"shape","id":"sh/wre9oje1","slide":5,"bbox":[114,233,8,8]}
+{"kind":"textbox","id":"sh/edobut8f","slide":5,"text":"odsay.mjs  ·  lines 251–275","textPreview":"odsay.mjs  ·  lines 251–275","textChars":27,"textLines":1,"bbox":[134,228,688,18]}
+{"kind":"shape","id":"sh/fexs3y90","slide":5,"bbox":[78,272,750,19]}
+{"kind":"shape","id":"sh/0fqtw3ql","slide":5,"bbox":[78,272,3,19]}
+{"kind":"textbox","id":"sh/1gzu58r6","slide":5,"text":" 1","textPreview":"1","textChars":2,"textLines":1,"bbox":[83,273,42,18]}
+{"kind":"textbox","id":"sh/q9obqt83","slide":5,"text":"if (calculateDistanceMeters(from, to) < 700) {","textPreview":"if (calculateDistanceMeters(from, to) < 700) {","textChars":46,"textLines":1,"bbox":[136,273,688,18]}
+{"kind":"shape","id":"sh/raxszy9o","slide":5,"bbox":[78,290,750,19]}
+{"kind":"shape","id":"sh/sb6ts3q9","slide":5,"bbox":[78,290,3,19]}
+{"kind":"textbox","id":"sh/dcfa18ru","slide":5,"text":" 2","textPreview":"2","textChars":2,"textLines":1,"bbox":[83,291,42,18]}
+{"kind":"textbox","id":"sh/il4bm987","slide":5,"text":"  return [await createWalkingRouteOrFallback(from, to)]","textPreview":"return [await createWalkingRouteOrFallback(from, to)]","textChars":55,"textLines":1,"bbox":[136,291,688,18]}
+{"kind":"textbox","id":"sh/36dsve9s","slide":5,"text":" 3","textPreview":"3","textChars":2,"textLines":1,"bbox":[83,309,42,18]}
+{"kind":"textbox","id":"sh/7qt83apk","slide":5,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,309,688,18]}
+{"kind":"textbox","id":"sh/6pk7u5oz","slide":5,"text":" 4","textPreview":"4","textChars":2,"textLines":1,"bbox":[83,327,42,18]}
+{"kind":"shape","id":"sh/tcbq5k7q","slide":5,"bbox":[136,327,688,18]}
+{"kind":"shape","id":"sh/8r2pwf65","slide":5,"bbox":[78,344,750,19]}
+{"kind":"shape","id":"sh/vet87upg","slide":5,"bbox":[78,344,3,19]}
+{"kind":"textbox","id":"sh/udkrypov","slide":5,"text":" 5","textPreview":"5","textChars":2,"textLines":1,"bbox":[83,345,42,18]}
+{"kind":"textbox","id":"sh/hgvq947m","slide":5,"text":"return getOrCreateRouteCache({","textPreview":"return getOrCreateRouteCache({","textChars":30,"textLines":1,"bbox":[136,345,688,18]}
+{"kind":"shape","id":"sh/gf290z61","slide":5,"bbox":[78,362,750,19]}
+{"kind":"shape","id":"sh/bi98vqpc","slide":5,"bbox":[78,362,3,19]}
+{"kind":"textbox","id":"sh/ah07mlor","slide":5,"text":" 6","textPreview":"6","textChars":2,"textLines":1,"bbox":[83,363,42,18]}
+{"kind":"textbox","id":"sh/0ne5wrmp","slide":5,"text":"  key: createRouteCacheKey({","textPreview":"key: createRouteCacheKey({","textChars":28,"textLines":1,"bbox":[136,363,688,18]}
+{"kind":"shape","id":"sh/1onmpwna","slide":5,"bbox":[78,380,750,19]}
+{"kind":"shape","id":"sh/e1wnu14j","slide":5,"bbox":[78,380,3,19]}
+{"kind":"textbox","id":"sh/fm54nm54","slide":5,"text":" 7","textPreview":"7","textChars":2,"textLines":1,"bbox":[83,381,42,18]}
+{"kind":"textbox","id":"sh/sze5srmd","slide":5,"text":"    provider: \"ODSAY\",","textPreview":"provider: \"ODSAY\",","textChars":22,"textLines":1,"bbox":[136,381,688,18]}
+{"kind":"textbox","id":"sh/d0nmlwny","slide":5,"text":" 8","textPreview":"8","textChars":2,"textLines":1,"bbox":[83,399,42,18]}
+{"kind":"textbox","id":"sh/qxcnqhon","slide":5,"text":"    mode: \"TRANSIT\",","textPreview":"mode: \"TRANSIT\",","textChars":20,"textLines":1,"bbox":[136,399,688,18]}
+{"kind":"textbox","id":"sh/ry54jm58","slide":5,"text":" 9","textPreview":"9","textChars":2,"textLines":1,"bbox":[83,417,42,18]}
+{"kind":"textbox","id":"sh/wvy54bmx","slide":5,"text":"    from,","textPreview":"from,","textChars":9,"textLines":1,"bbox":[136,417,688,18]}
+{"kind":"textbox","id":"sh/xw76xgni","slide":5,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[83,435,42,18]}
+{"kind":"textbox","id":"sh/t0j2p83u","slide":5,"text":"    to,","textPreview":"to,","textChars":7,"textLines":1,"bbox":[136,435,688,18]}
+{"kind":"textbox","id":"sh/8za1w3m9","slide":5,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[83,453,42,18]}
+{"kind":"textbox","id":"sh/7yhknilo","slide":5,"text":"    option: \"OPT_0\",","textPreview":"option: \"OPT_0\",","textChars":20,"textLines":1,"bbox":[136,453,688,18]}
+{"kind":"textbox","id":"sh/6x8jud43","slide":5,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[83,471,42,18]}
+{"kind":"textbox","id":"sh/h4j2ts3q","slide":5,"text":"  }),","textPreview":"}),","textChars":5,"textLines":1,"bbox":[136,471,688,18]}
+{"kind":"shape","id":"sh/g3al0n25","slide":5,"bbox":[78,488,750,19]}
+{"kind":"shape","id":"sh/v21kril0","slide":5,"bbox":[78,488,3,19]}
+{"kind":"textbox","id":"sh/u1sjydkf","slide":5,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[83,489,42,18]}
+{"kind":"textbox","id":"sh/5s32xs32","slide":5,"text":"  ttlMilliseconds: TRANSIT_ROUTE_CACHE_TTL_MS,","textPreview":"ttlMilliseconds: TRANSIT_ROUTE_CACHE_TTL_MS,","textChars":46,"textLines":1,"bbox":[136,489,688,18]}
+{"kind":"shape","id":"sh/47ul4n2h","slide":5,"bbox":[78,506,750,19]}
+{"kind":"shape","id":"sh/21k725gn","slide":5,"bbox":[78,506,3,19]}
+{"kind":"textbox","id":"sh/32d8bax8","slide":5,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[83,507,42,18]}
+{"kind":"textbox","id":"sh/o3m94vyt","slide":5,"text":"  load: async () => {","textPreview":"load: async () => {","textChars":21,"textLines":1,"bbox":[136,507,688,18]}
+{"kind":"shape","id":"sh/p4vqd0fe","slide":5,"bbox":[884,242,292,86]}
+{"kind":"textbox","id":"sh/a54r65wj","slide":5,"text":"700m 미만","textPreview":"700m 미만","textChars":7,"textLines":1,"bbox":[910,263,238,25]}
+{"kind":"textbox","id":"sh/b6d8fax4","slide":5,"text":"카카오 실제 도보 경로","textPreview":"카카오 실제 도보 경로","textChars":12,"textLines":1,"bbox":[910,292,238,20]}
+{"kind":"shape","id":"sh/crm98fep","slide":5,"bbox":[884,354,292,86]}
+{"kind":"textbox","id":"sh/xsvqhkfa","slide":5,"text":"700m 이상","textPreview":"700m 이상","textChars":7,"textLines":1,"bbox":[910,375,238,25]}
+{"kind":"textbox","id":"sh/ytorapwv","slide":5,"text":"ODsay 대중교통 후보","textPreview":"ODsay 대중교통 후보","textChars":13,"textLines":1,"bbox":[910,404,238,20]}
+{"kind":"shape","id":"sh/zux8juxg","slide":5,"bbox":[884,466,292,86]}
+{"kind":"textbox","id":"sh/vyx87udo","slide":5,"text":"같은 출발·도착 조합","textPreview":"같은 출발·도착 조합","textChars":11,"textLines":1,"bbox":[910,486,238,25]}
+{"kind":"textbox","id":"sh/uxo7ypc3","slide":5,"text":"15분 동안 캐시 재사용","textPreview":"15분 동안 캐시 재사용","textChars":13,"textLines":1,"bbox":[910,515,238,20]}
+{"kind":"textbox","id":"sh/h0fq9kve","slide":5,"text":"실제 코드: Server/src/providers/odsay.mjs:251–280  |  대중교통 경로 캐시 TTL: 15분","textPreview":"실제 코드: Server/src/providers/odsay.mjs:251–280  |  대중교통 경로 캐시 TTL: 15분","textChars":69,"textLines":1,"bbox":[68,639,840,22]}
+{"kind":"shape","id":"sh/wz6p0zut","slide":5,"bbox":[68,680,1144,1]}
+{"kind":"textbox","id":"sh/7uxo3adc","slide":5,"text":"ROUTA  |  Route Recommendation Engine","textPreview":"ROUTA  |  Route Recommendation Engine","textChars":37,"textLines":1,"bbox":[68,692,350,18]}
+{"kind":"textbox","id":"sh/mto7u5cr","slide":5,"text":"5 / 6","textPreview":"5 / 6","textChars":5,"textLines":1,"bbox":[1148,692,64,18]}
+{"kind":"notes","id":"nt/ybhl4o","slide":5,"text":"발표 멘트:\n방문 순서를 탐색할 때 필요한 구간별 이동 정보는 실제 길찾기 결과를 사용합니다.\n코드처럼 두 장소 사이가 700미터 미만이면 대중교통보다 자연스러운 카카오 도보 경로를 먼저 사용합니다. 그 이상은 ODsay에 대중교통 경로 후보를 요청합니다.\n같은 장소 쌍은 여러 탐색 분기에서 반복해서 등장할 수 있습니다. 그래서 출발지, 도착지, 탐색 옵션이 동일한 요청은 15분 동안 캐시에서 재사용합니다.\n이 처리는 API 호출 수와 응답 시간을 줄이는 역할을 합니다. ODsay에 대중교통 후보가 없으면 카카오 도보 경로로 안전하게 이어지는 fallback도 구현했습니다.\n코드 위치: providers/odsay.mjs:251–320"}
+{"kind":"slide","id":"sl/e2nyxg","slide":6,"title":"06","textShapes":50}
+{"kind":"textbox","id":"sh/7ih4r2xo","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[68,46,48,24]}
+{"kind":"shape","id":"sh/8jql07e9","slide":6,"bbox":[68,78,72,4]}
+{"kind":"textbox","id":"sh/tkzmtcfu","slide":6,"text":"같은 일정도 사용자의 우선순위에 따라 세 가지 코스로 제안합니다","textPreview":"같은 일정도 사용자의 우선순위에 따라 세 가지 코스로 제안합니다","textChars":35,"textLines":1,"bbox":[68,101,1050,52]}
+{"kind":"textbox","id":"sh/ul832hwf","slide":6,"text":"실제 대중교통 후보 중에서 무엇을 우선할지 바꿔, 도보 최소·최단 시간·균형 코스를 분리합니다.","textPreview":"실제 대중교통 후보 중에서 무엇을 우선할지 바꿔, 도보 최소·최단 시간·균형 코스를 분리합니다.","textChars":53,"textLines":1,"bbox":[70,157,1080,31]}
+{"kind":"shape","id":"sh/vm14v2xk","slide":6,"bbox":[68,218,690,356]}
+{"kind":"shape","id":"sh/gnal47e5","slide":6,"bbox":[68,218,690,42]}
+{"kind":"shape","id":"sh/hojmxcfq","slide":6,"bbox":[84,233,8,8]}
+{"kind":"shape","id":"sh/ips36hwb","slide":6,"bbox":[99,233,8,8]}
+{"kind":"shape","id":"sh/3q14zmxw","slide":6,"bbox":[114,233,8,8]}
+{"kind":"textbox","id":"sh/ru5cfmhg","slide":6,"text":"recommendation.scorer.mjs  ·  lines 52–70","textPreview":"recommendation.scorer.mjs  ·  lines 52–70","textChars":41,"textLines":1,"bbox":[134,228,608,18]}
+{"kind":"shape","id":"sh/6twbmh0v","slide":6,"bbox":[78,272,670,17]}
+{"kind":"shape","id":"sh/twnuhwzm","slide":6,"bbox":[78,272,3,17]}
+{"kind":"textbox","id":"sh/svetori1","slide":6,"text":" 1","textPreview":"1","textChars":2,"textLines":1,"bbox":[83,273,42,16]}
+{"kind":"textbox","id":"sh/j6lcbmhk","slide":6,"text":"if (courseType === \"SHORTEST_WALK\") {","textPreview":"if (courseType === \"SHORTEST_WALK\") {","textChars":37,"textLines":1,"bbox":[136,273,608,16]}
+{"kind":"shape","id":"sh/i5cbih0z","slide":6,"bbox":[78,288,670,17]}
+{"kind":"shape","id":"sh/58nudwza","slide":6,"bbox":[78,288,3,17]}
+{"kind":"textbox","id":"sh/47etkrip","slide":6,"text":" 2","textPreview":"2","textChars":2,"textLines":1,"bbox":[83,289,42,16]}
+{"kind":"textbox","id":"sh/32pcn6ho","slide":6,"text":"  return first.walkingDistanceMeters - second.walkingDistanceMeters","textPreview":"return first.walkingDistanceMeters - second.walkingDistanceMeters","textChars":67,"textLines":1,"bbox":[136,289,608,16]}
+{"kind":"textbox","id":"sh/21gvu103","slide":6,"text":" 3","textPreview":"3","textChars":2,"textLines":1,"bbox":[83,305,42,16]}
+{"kind":"textbox","id":"sh/yx0fm5kb","slide":6,"text":"    || first.durationMinutes - second.durationMinutes","textPreview":"|| first.durationMinutes - second.durationMinutes","textChars":53,"textLines":1,"bbox":[136,305,608,16]}
+{"kind":"textbox","id":"sh/zitwfa1w","slide":6,"text":" 4","textPreview":"4","textChars":2,"textLines":1,"bbox":[83,321,42,16]}
+{"kind":"textbox","id":"sh/0j2xof2h","slide":6,"text":"    || first.transferCount - second.transferCount","textPreview":"|| first.transferCount - second.transferCount","textChars":49,"textLines":1,"bbox":[136,321,608,16]}
+{"kind":"textbox","id":"sh/lkbyhkj2","slide":6,"text":" 5","textPreview":"5","textChars":2,"textLines":1,"bbox":[83,337,42,16]}
+{"kind":"textbox","id":"sh/mlkfqpk7","slide":6,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,337,608,16]}
+{"kind":"textbox","id":"sh/7mtgju1s","slide":6,"text":" 6","textPreview":"6","textChars":2,"textLines":1,"bbox":[83,353,42,16]}
+{"kind":"shape","id":"sh/8n2xsz2d","slide":6,"bbox":[136,353,608,16]}
+{"kind":"shape","id":"sh/9obyl4jy","slide":6,"bbox":[78,368,670,17]}
+{"kind":"shape","id":"sh/2pgfelk3","slide":6,"bbox":[78,368,3,17]}
+{"kind":"textbox","id":"sh/3q9w7q1o","slide":6,"text":" 7","textPreview":"7","textChars":2,"textLines":1,"bbox":[83,369,42,16]}
+{"kind":"textbox","id":"sh/5wzq9s7i","slide":6,"text":"if (courseType === \"FASTEST_TRANSIT\") {","textPreview":"if (courseType === \"FASTEST_TRANSIT\") {","textChars":39,"textLines":1,"bbox":[136,369,608,16]}
+{"kind":"shape","id":"sh/4vq90nqx","slide":6,"bbox":[78,384,670,17]}
+{"kind":"shape","id":"sh/3uh87ipc","slide":6,"bbox":[78,384,3,17]}
+{"kind":"textbox","id":"sh/itoryd8r","slide":6,"text":" 8","textPreview":"8","textChars":2,"textLines":1,"bbox":[83,385,42,16]}
+{"kind":"textbox","id":"sh/dkzads7e","slide":6,"text":"  return first.durationMinutes - second.durationMinutes","textPreview":"return first.durationMinutes - second.durationMinutes","textChars":55,"textLines":1,"bbox":[136,385,608,16]}
+{"kind":"textbox","id":"sh/sjq947qt","slide":6,"text":" 9","textPreview":"9","textChars":2,"textLines":1,"bbox":[83,401,42,16]}
+{"kind":"textbox","id":"sh/ryh8b2po","slide":6,"text":"    || first.transferCount - second.transferCount","textPreview":"|| first.transferCount - second.transferCount","textChars":49,"textLines":1,"bbox":[136,401,608,16]}
+{"kind":"textbox","id":"sh/qx8r2x83","slide":6,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[83,417,42,16]}
+{"kind":"textbox","id":"sh/tofq187a","slide":6,"text":"    || first.walkingDistanceMeters - second.walkingDistanceMeters","textPreview":"|| first.walkingDistanceMeters - second.walkingDistanceMeters","textChars":65,"textLines":1,"bbox":[136,417,608,16]}
+{"kind":"textbox","id":"sh/8369s3qp","slide":6,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[83,433,42,16]}
+{"kind":"textbox","id":"sh/cjut0bqd","slide":6,"text":"}","textPreview":"}","textChars":1,"textLines":1,"bbox":[136,433,608,16]}
+{"kind":"textbox","id":"sh/xk3u9gry","slide":6,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[83,449,42,16]}
+{"kind":"shape","id":"sh/ahcby1s7","slide":6,"bbox":[136,449,608,16]}
+{"kind":"shape","id":"sh/bilc769s","slide":6,"bbox":[78,464,670,17]}
+{"kind":"shape","id":"sh/ofutwra1","slide":6,"bbox":[78,464,3,17]}
+{"kind":"textbox","id":"sh/pg3u5wrm","slide":6,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[83,465,42,16]}
+{"kind":"textbox","id":"sh/2dcbu1sb","slide":6,"text":"const getBalancedScore = (route) => (","textPreview":"const getBalancedScore = (route) => (","textChars":37,"textLines":1,"bbox":[136,465,608,16]}
+{"kind":"shape","id":"sh/nelc369w","slide":6,"bbox":[78,480,670,17]}
+{"kind":"shape","id":"sh/0ratsra5","slide":6,"bbox":[78,480,3,17]}
+{"kind":"textbox","id":"sh/1sju1wrq","slide":6,"text":"14","textPreview":"14","textChars":2,"textLines":1,"bbox":[83,481,42,16]}
+{"kind":"textbox","id":"sh/3m1cbmtc","slide":6,"text":"  route.durationMinutes","textPreview":"route.durationMinutes","textChars":23,"textLines":1,"bbox":[136,481,608,16]}
+{"kind":"shape","id":"sh/il8vihcr","slide":6,"bbox":[78,496,670,17]}
+{"kind":"shape","id":"sh/5ojudwbi","slide":6,"bbox":[78,496,3,17]}
+{"kind":"textbox","id":"sh/4nadkrux","slide":6,"text":"15","textPreview":"15","textChars":2,"textLines":1,"bbox":[83,497,42,16]}
+{"kind":"textbox","id":"sh/rq1cfmto","slide":6,"text":"  + (route.walkingDistanceMeters / 1000) * 8","textPreview":"+ (route.walkingDistanceMeters / 1000) * 8","textChars":44,"textLines":1,"bbox":[136,497,608,16]}
+{"kind":"shape","id":"sh/qpsvm1c3","slide":6,"bbox":[78,512,670,17]}
+{"kind":"shape","id":"sh/dcjuhwbe","slide":6,"bbox":[78,512,3,17]}
+{"kind":"textbox","id":"sh/sradoru9","slide":6,"text":"16","textPreview":"16","textChars":2,"textLines":1,"bbox":[83,513,42,16]}
+{"kind":"textbox","id":"sh/felwj6tk","slide":6,"text":"  + route.transferCount * 8","textPreview":"+ route.transferCount * 8","textChars":27,"textLines":1,"bbox":[136,513,608,16]}
+{"kind":"shape","id":"sh/edsvq1cz","slide":6,"bbox":[78,528,670,17]}
+{"kind":"shape","id":"sh/a9wfi5w7","slide":6,"bbox":[78,528,3,17]}
+{"kind":"textbox","id":"sh/ba5gbads","slide":6,"text":"17","textPreview":"17","textChars":2,"textLines":1,"bbox":[83,529,42,16]}
+{"kind":"textbox","id":"sh/cbexkfed","slide":6,"text":"  + route.estimatedFare / 500","textPreview":"+ route.estimatedFare / 500","textChars":29,"textLines":1,"bbox":[136,529,608,16]}
+{"kind":"textbox","id":"sh/xcnydkvy","slide":6,"text":"18","textPreview":"18","textChars":2,"textLines":1,"bbox":[83,545,42,16]}
+{"kind":"textbox","id":"sh/25wfelwb","slide":6,"text":")","textPreview":")","textChars":1,"textLines":1,"bbox":[136,545,608,16]}
+{"kind":"shape","id":"sh/n65g7qdw","slide":6,"bbox":[814,235,354,94]}
+{"kind":"shape","id":"sh/o7exgveh","slide":6,"bbox":[840,262,38,38]}
+{"kind":"textbox","id":"sh/p8ny90vm","slide":6,"text":"도보 최소","textPreview":"도보 최소","textChars":5,"textLines":1,"bbox":[898,253,220,28]}
+{"kind":"textbox","id":"sh/61gzqpwf","slide":6,"text":"도보 거리 → 소요 시간 → 환승","textPreview":"도보 거리 → 소요 시간 → 환승","textChars":18,"textLines":1,"bbox":[898,284,240,22]}
+{"kind":"textbox","id":"sh/72pgjud0","slide":6,"text":"SHORTEST_WALK","textPreview":"SHORTEST_WALK","textChars":13,"textLines":1,"bbox":[884,306,240,16]}
+{"kind":"shape","id":"sh/hwbi9of2","slide":6,"bbox":[814,353,354,94]}
+{"kind":"shape","id":"sh/gvi1gjyh","slide":6,"bbox":[840,380,38,38]}
+{"kind":"textbox","id":"sh/va907exc","slide":6,"text":"최단 시간","textPreview":"최단 시간","textChars":5,"textLines":1,"bbox":[898,371,220,28]}
+{"kind":"textbox","id":"sh/u90je9gr","slide":6,"text":"소요 시간 → 환승 → 도보 거리","textPreview":"소요 시간 → 환승 → 도보 거리","textChars":18,"textLines":1,"bbox":[898,402,240,22]}
+{"kind":"textbox","id":"sh/t8ri5of6","slide":6,"text":"FASTEST_TRANSIT","textPreview":"FASTEST_TRANSIT","textChars":15,"textLines":1,"bbox":[884,424,240,16]}
+{"kind":"shape","id":"sh/87i1cjyl","slide":6,"bbox":[814,471,354,94]}
+{"kind":"shape","id":"sh/76903ex0","slide":6,"bbox":[840,498,38,38]}
+{"kind":"textbox","id":"sh/650ja9gf","slide":6,"text":"균형 코스","textPreview":"균형 코스","textChars":5,"textLines":1,"bbox":[898,489,220,28]}
+{"kind":"textbox","id":"sh/d4v2h8fa","slide":6,"text":"시간 + 도보 + 환승 + 예상 요금","textPreview":"시간 + 도보 + 환승 + 예상 요금","textChars":20,"textLines":1,"bbox":[898,520,240,22]}
+{"kind":"textbox","id":"sh/s3m1o3yp","slide":6,"text":"BALANCED","textPreview":"BALANCED","textChars":8,"textLines":1,"bbox":[884,542,240,16]}
+{"kind":"textbox","id":"sh/obqdwbm9","slide":6,"text":"실제 코드: Server/src/modules/recommendations/recommendation.scorer.mjs:52–70","textPreview":"실제 코드: Server/src/modules/recommendations/recommendation.scorer.mjs:52–70","textChars":73,"textLines":1,"bbox":[68,639,840,22]}
+{"kind":"shape","id":"sh/9wzu5g3u","slide":6,"bbox":[68,680,1144,1]}
+{"kind":"textbox","id":"sh/m98vu143","slide":6,"text":"ROUTA  |  Route Recommendation Engine","textPreview":"ROUTA  |  Route Recommendation Engine","textChars":37,"textLines":1,"bbox":[68,692,350,18]}
+{"kind":"textbox","id":"sh/nahc36lo","slide":6,"text":"6 / 6","textPreview":"6 / 6","textChars":5,"textLines":1,"bbox":[1148,692,64,18]}
+{"kind":"notes","id":"nt/e2nyxg","slide":6,"text":"발표 멘트:\n마지막으로 ROUTA는 하나의 경로만 강요하지 않습니다. 같은 방문 순서 안에서도 대중교통 후보를 어떤 기준으로 고르는지에 따라 서로 다른 코스를 만듭니다.\n도보 최소 코스는 걷는 거리, 최단 시간 코스는 전체 소요 시간, 균형 코스는 시간·도보·환승·요금을 함께 비교합니다.\n오른쪽 카드의 우선순위가 왼쪽 실제 코드의 비교 순서와 연결됩니다. 즉, 결과 화면의 세 탭은 단순한 디자인 차이가 아니라 서버의 서로 다른 평가 기준에서 나온 결과입니다.\n정리하면 ROUTA는 제약 조건으로 불가능한 일정을 제거하고, Branch-and-Bound로 탐색을 줄이며, 실제 길찾기 데이터를 기준으로 사용자 선택지를 제공합니다.\n코드 위치: recommendation.scorer.mjs:48–75"}

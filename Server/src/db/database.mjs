@@ -26,6 +26,19 @@ export async function checkDBConnection() {
   }
 }
 
+/**
+ * /health 요청은 시작 로그를 반복 출력하지 않고 DB 연결 가능 여부만 확인합니다.
+ * 실제 쿼리를 한 번 수행하므로 프로세스가 살아 있는 것뿐 아니라 Postgres 연결도 함께 점검합니다.
+ */
+export async function isDatabaseHealthy() {
+  try {
+    await pool.query("SELECT 1")
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function query(text, params) {
   try {
     return await pool.query(text, params)

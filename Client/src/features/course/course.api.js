@@ -17,9 +17,12 @@ export function getItineraries(tripPlanId) {
   return apiRequest(`/itineraries?${params.toString()}`)
 }
 
-/** 변경: 지도·타임라인에 필요한 선택 코스의 실제 장소 노드를 가져옵니다. */
-export function getItinerary(itineraryId) {
-  return apiRequest(`/itineraries/${itineraryId}`)
+/**
+ * 변경: 지도·타임라인에 필요한 선택 코스의 실제 장소 노드를 가져옵니다.
+ * 재계산 직후에는 fresh를 사용해 브라우저·프록시의 이전 GET 응답 대신 DB의 새 시간표를 읽습니다.
+ */
+export function getItinerary(itineraryId, { fresh = false } = {}) {
+  return apiRequest(`/itineraries/${itineraryId}`, fresh ? { cache: "no-store" } : undefined)
 }
 
 /**

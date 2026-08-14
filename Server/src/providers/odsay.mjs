@@ -245,7 +245,7 @@ export async function searchPublicTransitRoutes({ from, to }) {
     throw createProviderError("실제 길찾기에 필요한 장소 좌표가 없습니다.", 422)
   }
 
-  // 변경: ODsay는 출발·도착지가 700m 이내이면 -98 오류를 반환합니다.
+  // ODsay는 출발·도착지가 700m 이내이면 -98 오류를 반환합니다.
   // 가까운 장소는 대중교통보다 도보가 자연스러우므로, 카카오 실제 보행 경로를 먼저 조회합니다.
   // 카카오도 사용할 수 없는 상황에만 기존 직선거리 추정으로 안전하게 처리합니다.
   if (calculateDistanceMeters(from, to) < 700) {
@@ -261,7 +261,7 @@ export async function searchPublicTransitRoutes({ from, to }) {
     apiKey: config.odsay.serverApiKey,
   })
 
-  // 변경: 출발·도착 좌표와 ODsay 탐색 옵션이 같은 요청은 15분 동안 재사용합니다.
+  // 출발·도착 좌표와 ODsay 탐색 옵션이 같은 요청은 15분 동안 재사용합니다.
   // 추천 계산이 여러 갈래를 비교하거나 여러 코스가 같은 구간을 사용해도 ODsay 호출은 한 번뿐입니다.
   return getOrCreateRouteCache({
     key: createRouteCacheKey({

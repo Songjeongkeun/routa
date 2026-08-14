@@ -106,7 +106,8 @@ export default function HomePage() {
             <div className={styles.featureIcon} aria-hidden="true">★</div>
             <div>
               <h2>추천 코스</h2>
-              <p>지금 인기 있는 명소와 테마를 반영한<br />맞춤 코스를 제안해 드려요</p>
+              {/* 변경: 현재 알고리즘은 실시간 인기 지표가 아니라 사용자가 고른 장소·시간·테마를 기준으로 계산합니다. */}
+              <p>선택한 장소와 시간·테마를 반영한<br />맞춤 코스를 제안해 드려요</p>
             </div>
           </article>
         </section>
@@ -137,7 +138,10 @@ export default function HomePage() {
               <div className={styles.savedIcon} aria-hidden="true">＋</div>
               <p>저장한 일정이 없으면<br />새 일정을 만들어 보세요</p>
               {/* 변경: 저장 일정 API가 아니라 프론트 목록 화면으로 이동합니다. */}
-              <button type="button" onClick={() => navigate("/schedules")}>저장 일정 보기</button>
+              <button className={styles.savedScheduleButton} type="button" onClick={() => navigate("/schedules")}>
+                저장 일정 보기
+                <span aria-hidden="true">→</span>
+              </button>
             </div>
           )}
         </section>

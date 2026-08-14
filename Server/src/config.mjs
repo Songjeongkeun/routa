@@ -14,9 +14,48 @@ if (jwtSecret.length < 32) {
   throw new Error("JWT_SECRET은 최소 32자 이상의 랜덤 문자열이어야 합니다.")
 }
 
+const nodeEnv = process.env.NODE_ENV ?? "development"
+const frontendUrl = required("FRONTEND_URL", "http://localhost:5173")
+
+/**
+ * CORS 비교는 URL 전체가 아니라 브라우저가 보내는 origin(protocol + host + port) 단위로 해야 합니다.
+ * FRONTEND_URL은 OAuth 완료 후 이동 주소로 원본 값을 보존하고, 여기서는 허용 여부 비교용 origin만 만듭니다.
+ */
+function normalizeHttpOrigin(value, key) {
+  try {
+    const url = new URL(value)
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error("unsupported protocol")
+    return url.origin
+  } catch {
+    throw new Error(`${key}은(는) http 또는 https URL이어야 합니다.`)
+  }
+}
+
+const localDevelopmentOrigins = nodeEnv === "development"
+  // 변경: ngrok을 OAuth 기본 주소로 쓰는 동안에도 개발 PC의 Vite 프록시를 테스트할 수 있게 합니다.
+  // production에는 포함하지 않으며, LAN 주소는 CORS_ALLOWED_ORIGINS에서 명시적으로 추가해야 합니다.
+  ? ["http://localhost:5173", "http://127.0.0.1:5173"]
+  : []
+
+const corsAllowedOrigins = [...new Set([
+  normalizeHttpOrigin(frontendUrl, "FRONTEND_URL"),
+  ...localDevelopmentOrigins,
+  // 변경: LAN·ngrok을 함께 테스트해야 할 때만 쉼표로 필요한 주소를 추가합니다.
+  // '*'는 쿠키 인증과 함께 안전하지 않으므로 지원하지 않습니다.
+  ...String(process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .map((origin) => normalizeHttpOrigin(origin, "CORS_ALLOWED_ORIGINS")),
+])]
+
 export const config = {
-    nodeEnv: process.env.NODE_ENV ?? "development",
-    frontendUrl: required("FRONTEND_URL", "http://localhost:5173"),
+    nodeEnv,
+    frontendUrl,
+    cors: {
+        // 변경: OAuth 리디렉션 대상은 하나로 유지하면서, 개발 시 필요한 origin만 명시적으로 허용합니다.
+        allowedOrigins: corsAllowedOrigins,
+    },
     host: {
         port: Number(required("HOST_PORT", "18765")),
     },
@@ -47,7 +86,9 @@ export const config = {
         serverApiKey: process.env.ODSAY_SERVER_API_KEY ?? "",
     },
     cookie: {
-        secure: process.env.NODE_ENV === "production",
+        // 변경: HTTPS 터널로 LAN OAuth를 시험할 때 NODE_ENV 전체를 production으로 바꾸지 않아도
+        // COOKIE_SECURE=true만으로 Secure 쿠키를 사용할 수 있습니다. 미설정 시 기존 동작을 유지합니다.
+        secure: process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production",
     },
     database: {
         url: required("DATABASE_URL")

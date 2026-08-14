@@ -26,6 +26,9 @@ export async function getItineraries(req, res) {
 
 /** 변경: 지도·타임라인에 필요한 장소 노드와 이동 구간을 포함한 실제 코스 상세입니다. */
 export async function getItineraryById(req, res) {
+  // 변경: 재계산 직후에는 같은 URL의 이전 시간표가 브라우저 캐시에 남지 않도록 상세 응답을 저장하지 않습니다.
+  // 장소 추가 후 새 항목의 도착 시각을 즉시 화면에 반영하기 위한 응답 정책입니다.
+  res.set("Cache-Control", "no-store")
   const itinerary = await itineraryService.getItineraryById({
     userId: req.userId,
     itineraryId: req.params.itineraryId,

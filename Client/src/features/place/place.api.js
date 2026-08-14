@@ -41,6 +41,7 @@ export async function searchPlaces({
 // 음식점은 별도 식사 선택 상태에서 관리하므로 이 요청에는 포함하지 않습니다.
 export function recommendVisitPlaces({
   selectedPlaceIds = [],
+  previouslyRecommendedPlaceIds = [],
   tripType = "",
   travelDate = "",
   startLatitude = null,
@@ -55,6 +56,9 @@ export function recommendVisitPlaces({
     method: "POST",
     body: JSON.stringify({
       selectedPlaceIds,
+      // 변경: 현재 선택에는 없더라도 이번 여행에서 이미 제시한 장소를 서버 후보에서 제외합니다.
+      // 따라서 자동 추천 장소를 교체해도 직전과 같은 관광지가 반복되지 않습니다.
+      previouslyRecommendedPlaceIds,
       tripType,
       travelDate,
       startLatitude,

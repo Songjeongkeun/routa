@@ -28,6 +28,30 @@ const COURSE_COLUMNS = `
   plan.with_pet AS "withPet",
   plan.meal_preference AS "mealPreference"`
 
+// 변경: 목록 쿼리와 전체 건수 쿼리가 완전히 같은 조건을 사용하도록 공통 WHERE 절을 둡니다.
+// COUNT(*) OVER()는 현재 페이지가 비었을 때 행 자체가 없어 총 건수를 0으로 잘못 읽는 문제가 있었습니다.
+const SAVED_COURSE_FILTERS = `
+  WHERE plan.user_id = $1
+    AND course.status = 'SAVED'
+    AND (
+      $2 = ''
+      OR COALESCE(course.title, '') ILIKE '%' || $2 || '%'
+      OR EXISTS (
+        SELECT 1
+        FROM public."COURSE_NODE" AS node
+        JOIN public."PLACE" AS place ON place.place_id = node.place_id
+        WHERE node.course_id = course.course_id
+          AND place.place_name ILIKE '%' || $2 || '%'
+      )
+    )
+    AND ($3::VARCHAR IS NULL OR course.course_type = $3)
+    AND ($4::DATE IS NULL OR (COALESCE(course.saved_travel_start_time, plan.start_time) AT TIME ZONE 'Asia/Seoul')::DATE = $4::DATE)
+    AND (
+      $5::VARCHAR IS NULL
+      OR ($5 = 'UPCOMING' AND COALESCE(course.saved_travel_end_time, plan.end_time) >= NOW())
+      OR ($5 = 'PAST' AND COALESCE(course.saved_travel_end_time, plan.end_time) < NOW())
+    )`
+
 export async function findOwnedCourses({ userId, tripPlanId }) {
   const result = await query(
     `SELECT ${COURSE_COLUMNS}
@@ -68,35 +92,23 @@ export async function findSavedOwnedCourses({
 }) {
   const normalizedKeyword = keyword.trim()
   const offset = (page - 1) * pageSize
-  const result = await query(
+  const filterParams = [userId, normalizedKeyword, courseType, travelDate, schedulePeriod]
+  // 변경: 빈 마지막 페이지에서도 totalCount를 보존하기 위해 목록과 건수를 별도로 읽습니다.
+  // 두 쿼리는 같은 필터 상수를 사용하므로 검색·기간 탭·코스 필터의 결과가 어긋나지 않습니다.
+  const [countResult, result] = await Promise.all([
+    query(
+      `SELECT COUNT(*)::INT AS "totalCount"
+       FROM public."COURSE" AS course
+       JOIN public."TRIP_PLAN" AS plan ON plan.plan_id = course.plan_id
+       ${SAVED_COURSE_FILTERS}`,
+      filterParams,
+    ),
+    query(
     `SELECT
-       ${COURSE_COLUMNS},
-       COUNT(*) OVER()::INT AS "totalCount"
+       ${COURSE_COLUMNS}
      FROM public."COURSE" AS course
      JOIN public."TRIP_PLAN" AS plan ON plan.plan_id = course.plan_id
-     WHERE plan.user_id = $1
-       AND course.status = 'SAVED'
-       AND (
-         $2 = ''
-         OR COALESCE(course.title, '') ILIKE '%' || $2 || '%'
-         OR EXISTS (
-           SELECT 1
-           FROM public."COURSE_NODE" AS node
-           JOIN public."PLACE" AS place ON place.place_id = node.place_id
-           WHERE node.course_id = course.course_id
-             AND place.place_name ILIKE '%' || $2 || '%'
-         )
-       )
-       AND ($3::VARCHAR IS NULL OR course.course_type = $3)
-       -- 변경: 날짜 필터도 계획의 현재 날짜가 아닌 저장 당시 날짜를 기준으로 적용합니다.
-       AND ($4::DATE IS NULL OR (COALESCE(course.saved_travel_start_time, plan.start_time) AT TIME ZONE 'Asia/Seoul')::DATE = $4::DATE)
-       -- 변경: 진행 중인 오늘 일정은 끝나기 전까지 다가오는 여행에 포함하고,
-       -- 종료 시각이 지난 일정만 지난 여행으로 분류합니다.
-       AND (
-         $5::VARCHAR IS NULL
-         OR ($5 = 'UPCOMING' AND COALESCE(course.saved_travel_end_time, plan.end_time) >= NOW())
-         OR ($5 = 'PAST' AND COALESCE(course.saved_travel_end_time, plan.end_time) < NOW())
-       )
+     ${SAVED_COURSE_FILTERS}
      ORDER BY
        -- 변경: 다가오는 여행은 가까운 출발일 순, 지난 여행은 최근 종료일 순으로 보여 줍니다.
        CASE WHEN $5 = 'UPCOMING' THEN COALESCE(course.saved_travel_start_time, plan.start_time) END ASC NULLS LAST,
@@ -104,12 +116,13 @@ export async function findSavedOwnedCourses({
        course.saved_at DESC NULLS LAST,
        course.course_id DESC
      LIMIT $6 OFFSET $7`,
-    [userId, normalizedKeyword, courseType, travelDate, schedulePeriod, pageSize, offset],
-  )
+      [...filterParams, pageSize, offset],
+    ),
+  ])
 
   return {
     rows: result.rows,
-    totalCount: result.rows[0]?.totalCount ?? 0,
+    totalCount: Number(countResult.rows[0]?.totalCount ?? 0),
   }
 }
 

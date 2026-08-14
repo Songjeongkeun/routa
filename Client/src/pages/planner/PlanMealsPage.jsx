@@ -26,6 +26,14 @@ const SLOT_META = {
   dinner: { label: "저녁", minTime: "17:00", maxTime: "20:00" },
 }
 
+// 변경: 음식점 자체를 고르지 않아도 주변 추천·식사 제외는 정상적인 여행 계획입니다.
+// 우측 요약에서 "선택 없음"을 오류처럼 보이지 않게 각 식사 방식을 사람이 읽는 문구로 바꿉니다.
+const MEAL_MODE_LABELS = {
+  DESIGNATED: "지정 음식점",
+  NEARBY: "주변 추천",
+  SKIP: "식사 제외",
+}
+
 function isTimeInMealWindow(slot, time) {
   const meta = SLOT_META[slot]
   return Boolean(
@@ -170,6 +178,7 @@ export default function PlanMealsPage() {
   // 선택된 음식점 목록과 ID 목록은 원본 상태에서 파생하므로 별도 state로 중복 저장하지 않습니다.
   const selectedRestaurants = Object.values(selectedMeals).filter(Boolean)
   const selectedPlaceIds = selectedRestaurants.map((restaurant) => restaurant.placeId)
+  const includedMealCount = Object.values(mealModes).filter((mode) => mode !== "SKIP").length
 
   function handleSearch(event) {
     event.preventDefault()
@@ -424,21 +433,30 @@ export default function PlanMealsPage() {
           <section className={styles.summarySection} aria-label="선택한 식사 요약">
             <div className={styles.summaryTitle}>
               <span><img className={styles.summaryIcon} src={mealIcon} alt="" /> 선택한 식사</span>
-              <strong>{selectedRestaurants.length}개</strong>
+              {/* 변경: 지정 식당 수가 아니라 실제 일정에 포함되는 식사 슬롯 수를 표시합니다.
+                  주변 추천 식사도 한 끼 일정으로 정상 반영된다는 점을 요약에서 확인할 수 있습니다. */}
+              <strong>{includedMealCount}끼</strong>
             </div>
-            {selectedRestaurants.length > 0 ? (
+            {includedMealCount > 0 ? (
               <ul>
-                {Object.entries(selectedMeals).map(([slot, restaurant]) => (
-                  restaurant ? (
+                {Object.keys(SLOT_META).map((slot) => {
+                  const mode = mealModes[slot] ?? "SKIP"
+                  const restaurant = selectedMeals[slot]
+                  if (mode === "SKIP") return null
+
+                  return (
                     <li key={slot}>
-                      <span>{restaurant.name}</span>
-                      <time>{mealTimes[slot]} ({SLOT_META[slot].label} {SLOT_META[slot].minTime}~{SLOT_META[slot].maxTime})</time>
+                      <span>
+                        {SLOT_META[slot].label} · {mode === "NEARBY" ? "주변 음식점 추천" : restaurant?.name || "음식점 선택 필요"}
+                      </span>
+                      <time>{mealTimes[slot]} ({MEAL_MODE_LABELS[mode]})</time>
                     </li>
-                  ) : null
-                ))}
+                  )
+                })}
               </ul>
             ) : (
-              <p className={styles.summaryEmpty}>음식점을 선택해 주세요.</p>
+              // 변경: 기본 식사 제외 상태는 오류가 아니라 사용자의 선택이므로 안내 문구를 바꿉니다.
+              <p className={styles.summaryEmpty}>점심·저녁을 모두 식사 제외로 설정했어요.</p>
             )}
           </section>
 

@@ -30,6 +30,8 @@ export async function getPlaces(req, res) {
 export async function recommendVisitPlaces(req, res) {
   const result = await placeService.recommendVisitPlaces({
     selectedPlaceIds: req.body?.selectedPlaceIds,
+    // 변경: 프론트가 기억하는 자동 추천 이력도 전달해 삭제한 추천 장소가 즉시 재등장하지 않게 합니다.
+    previouslyRecommendedPlaceIds: req.body?.previouslyRecommendedPlaceIds,
     tripType: req.body?.tripType,
     travelDate: req.body?.travelDate,
     startLatitude: req.body?.startLatitude,

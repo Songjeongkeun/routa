@@ -33,10 +33,17 @@ export default function PlanPlacesPage() {
     // 변경: 조건 단계의 값과 선택 장소를 한 상태로 공유하기 위해 PlanProvider를 사용합니다.
     const { plan: plannerData, updatePlan } = usePlan()
     const selectedPlaces = plannerData.selectedPlaces
+    const recommendedPlaceHistoryIds = plannerData.recommendedPlaceHistoryIds
 
     const handleSelectedPlacesChange = (places) => {
         // 변경: 선택 장소를 다음 식사·결과 단계에서도 사용할 수 있도록 전역 계획에 반영합니다.
         updatePlan({ selectedPlaces: places })
+    }
+
+    const handleRecommendedPlaceHistoryChange = (placeIds) => {
+        // 변경: 자동 추천 이력은 장소 선택과 별도 상태로 저장합니다.
+        // 추천 장소를 목록에서 삭제해도 이력은 남아 다음 추천 요청에서 다시 제외됩니다.
+        updatePlan({ recommendedPlaceHistoryIds: placeIds })
     }
 
     const handleCancelClick = () => {
@@ -61,7 +68,9 @@ export default function PlanPlacesPage() {
                     <PlaceSelector
                         plannerData={plannerData}
                         selectedPlaces={selectedPlaces}
+                        recommendedPlaceHistoryIds={recommendedPlaceHistoryIds}
                         onSelectedPlacesChange={handleSelectedPlacesChange}
+                        onRecommendedPlaceHistoryChange={handleRecommendedPlaceHistoryChange}
                     />
 
                     <div className={styles.actions}>
