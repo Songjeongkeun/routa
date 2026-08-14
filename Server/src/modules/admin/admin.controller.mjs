@@ -1,12 +1,10 @@
 import * as adminService from "./admin.service.mjs"
-// kakakoAPI 불러오기
-import { collectAndSaveData } from "../../providers/kakakoAPI.mjs"
+import { collectAndSaveData } from "../../providers/kakaoPlaceCollector.mjs"
 
-// <========================================
-// isCollecting : 이미 돌아가는 중에 버튼을 또 눌러서 중복 실행되는 것을 막아준다.
+/** 동시에 여러 장소 수집 작업이 실행되지 않도록 서버 메모리에서 상태를 관리합니다. */
 let isCollecting = false
 
-// collectPlaces : 장소 수집
+/** 장소 수집을 비동기로 시작하고 즉시 202 응답을 반환합니다. */
 export async function collectPlaces(req, res) {
     if (isCollecting) {
         return res.status(409).json({ success: false, message: "이미 데이터 수집이 진행 중입니다." })
@@ -18,9 +16,8 @@ export async function collectPlaces(req, res) {
         .catch((error) => console.error("장소 데이터 수집 실패:", error))
         .finally(() => { isCollecting = false })
 }
-// ========================================>
 
-/** 통계 카드 3개 + 월별 차트 데이터를 한 번에 모아서 반환 */
+/** 통계 카드와 월별 차트 데이터를 함께 반환합니다. */
 export async function getUserStats(req, res) {
     try {
         const stats = await adminService.getUserStats()
@@ -31,10 +28,7 @@ export async function getUserStats(req, res) {
     }
 }
 
-/** 
- * 유저 목록을 가입일 최신순으로 조회
- * 페이지 번호와 한 번에 몇 명씩 받을지 받아서 처리
-*/
+/** 가입일 최신순의 사용자 목록을 페이지 단위로 반환합니다. */
 export async function getUsers(req, res) {
     try {
         const page = Number(req.query.page) || 1

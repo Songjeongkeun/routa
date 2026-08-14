@@ -62,7 +62,7 @@ export async function findClosestPlace(latitude, longitude) {
 }
 
 /**
- * 변경: 주변 음식점 추천은 계획된 경로의 현재·다음 장소 반경에서만 후보를 읽습니다.
+ * 주변 음식점 후보는 계획된 경로의 현재·다음 장소 반경에서만 읽습니다.
  * 영업·휴무·라스트오더의 정확한 판정은 도착 시각이 계산된 뒤 서비스 계층에서 다시 수행합니다.
  */
 export async function findNearbyRestaurants({
@@ -70,8 +70,7 @@ export async function findNearbyRestaurants({
   longitude,
   radiusKm,
   withPet,
-  // 변경: 점심에 이미 확정했거나 다른 슬롯에 지정한 음식점은 SQL 단계에서 제외합니다.
-  // LIMIT 전에 제외해야 상위 20개가 모두 중복 음식점인 경우에도 다음 후보를 정상적으로 찾을 수 있습니다.
+  // LIMIT 전에 중복 식당을 제외해 유효 후보 수를 확보합니다.
   excludePlaceIds = [],
   limit = 20,
 }) {
@@ -93,8 +92,7 @@ export async function findNearbyRestaurants({
      WHERE place_category = '음식점'
        AND latitude IS NOT NULL AND longitude IS NOT NULL
        AND (NOT $4::BOOLEAN OR pet_is_allowed = TRUE)
-       -- 변경: 빈 BIGINT 배열에 대한 "<> ALL" 조건은 항상 참이므로,
-       -- 제외할 음식점이 없을 때도 별도 동적 SQL 없이 같은 쿼리를 사용할 수 있습니다.
+       -- 빈 배열에도 안전한 조건이므로 동적 SQL이 필요하지 않습니다.
        AND place_id <> ALL($5::BIGINT[])
        AND 6371 * 2 * ASIN(SQRT(
          POWER(SIN(RADIANS(latitude - $1) / 2), 2)
@@ -109,7 +107,7 @@ export async function findNearbyRestaurants({
 }
 
 /**
- * 변경: 추천 탐색 전에 저장된 장소 쌍의 이동 후보를 다시 읽어 옵니다.
+ * 추천 탐색 전에 저장된 장소 쌍의 이동 후보를 읽어 옵니다.
  * ROUTE_SECTION은 서버 재시작 뒤에도 남는 공용 캐시이므로, 메모리 캐시가 비어 있어도
  * 같은 장소 쌍에 대해 ODsay·카카오 길찾기 API를 다시 호출하지 않게 합니다.
  */
@@ -133,7 +131,7 @@ export async function findRouteSection({ originPlaceId, destinationPlaceId }) {
 }
 
 /**
- * 변경: ROUTE_SECTION은 장소 쌍마다 하나의 행을 유지하는 실제 대중교통 경로 캐시입니다.
+ * ROUTE_SECTION은 장소 쌍마다 하나의 행을 유지하는 이동 경로 캐시입니다.
  * 같은 장소 쌍을 여러 코스가 사용해도 ODsay를 반복 호출하지 않도록, 후보 경로 전체를
  * path_details(TEXT)에 JSON 문자열로 저장합니다.
  */
@@ -167,15 +165,14 @@ export async function upsertRouteSection({ originPlaceId, destinationPlaceId, ro
       route.durationMinutes,
       route.walkingDistanceMeters,
       route.transferCount,
-      // 변경: 실제 보행 네트워크(KAKAO_WALK)와 최후의 직선거리 추정(WALK_FALLBACK)을
-      // 결과 조회·지도 표시에서 구분할 수 있도록 이동수단 값을 나누어 저장합니다.
+      // 실제 도보 경로와 직선거리 추정을 구분해 저장합니다.
       route.source === "KAKAO_WALK"
         ? "WALK_REAL"
         : (route.source === "WALK_FALLBACK" ? "WALK_FALLBACK" : "PUBLIC_TRANSIT"),
       route.estimatedFare,
-      // 변경: 대표 경로 수치와 함께 후보 전체를 저장해야 코스별로 다른 기준을 적용할 수 있습니다.
+      // 코스별 기준으로 다시 선택할 수 있도록 후보 전체를 보관합니다.
       JSON.stringify({
-        // 변경: 실제 도보 경로가 저장된 경우에는 어느 외부 Provider가 계산했는지도 보존합니다.
+        // 지도 표시를 위해 실제 도보 경로의 제공자를 보존합니다.
         provider: route.source === "KAKAO_WALK" ? "KAKAO" : "ODSAY",
         alternatives: route.alternatives,
       }),
@@ -186,8 +183,7 @@ export async function upsertRouteSection({ originPlaceId, destinationPlaceId, ro
 
 export function replaceCourses({ tripPlanId, courses }) {
   return withTransaction(async (execute) => {
-    // 변경: 같은 계획을 다시 계산하면 이전 DRAFT 추천 코스만 지웁니다.
-    // 사용자가 SAVED로 확정한 일정은 재추천 때문에 삭제되면 안 되므로 그대로 보존합니다.
+    // 재추천 시 DRAFT만 교체하고 사용자가 저장한 일정은 보존합니다.
     await execute(
       `DELETE FROM public."COURSE_NODE"
       WHERE course_id IN (
@@ -246,7 +242,7 @@ export function replaceCourses({ tripPlanId, courses }) {
 }
 
 /**
- * 변경: 결과 화면에서 한 코스만 편집할 때는 다른 두 추천 코스를 보존합니다.
+ * 결과 화면에서 한 코스만 편집해도 다른 두 추천 코스를 보존합니다.
  * 모든 노드·요약 수치를 한 트랜잭션에서 교체하므로 검증 실패 시 이전 일정이 그대로 남습니다.
  */
 export function replaceCourseContents({ itineraryId, course }) {
@@ -256,8 +252,7 @@ export function replaceCourseContents({ itineraryId, course }) {
       `UPDATE public."COURSE"
        SET total_moving_time = $2, total_walking_dist = $3, total_transfer_count = $4,
            total_estimated_fare = $5, warnings_json = $6,
-           -- 변경: 저장 일정 편집은 새 시간표·지도 좌표를 만들므로, 이전 스냅샷을 먼저 비웁니다.
-           -- service가 재계산 상세를 읽은 직후 최신 스냅샷을 다시 저장합니다.
+           -- 편집으로 새 시간표·지도 좌표를 만들므로 기존 스냅샷을 비웁니다.
            saved_snapshot_json = NULL
        WHERE course_id = $1`,
       [

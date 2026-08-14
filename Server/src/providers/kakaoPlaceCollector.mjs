@@ -191,7 +191,7 @@ async function collectAndSaveData() {
 // collectAndSaveData 외부로 내보내기
 export { collectAndSaveData };
 
-// 이 파일을 "node kakakoAPI.mjs"로 직접 실행했을 때만 자동 실행 + 그때만 DB 커넥션도 닫음
+// 이 파일을 "node kakaoPlaceCollector.mjs"로 직접 실행했을 때만 자동 실행하고 DB 연결도 함께 닫습니다.
 if (import.meta.url === `file://${process.argv[1]}`) {
     collectAndSaveData().then(() => closeDB());
 }

@@ -4,7 +4,7 @@ function degreesToRadians(value) {
   return (value * Math.PI) / 180
 }
 
-/** 변경: 외부 길찾기 API가 연결되기 전에도 실제 장소 좌표를 기준으로 코스별 비교 수치를 계산합니다. */
+/** 두 장소 좌표의 직선거리를 Haversine 공식으로 계산합니다. */
 export function calculateDistanceKm(from, to) {
   const latitudeDifference = degreesToRadians(to.latitude - from.latitude)
   const longitudeDifference = degreesToRadians(to.longitude - from.longitude)
@@ -42,7 +42,7 @@ export function createLegMetrics(from, to, courseType) {
 }
 
 /**
- * 변경: ODsay가 반환한 여러 대중교통 후보 중 코스 목적에 맞는 하나를 고릅니다.
+ * ODsay가 반환한 여러 대중교통 후보 중 코스 목적에 맞는 하나를 고릅니다.
  * 실제 이동 수치 자체는 ODsay 값이며, 이 함수는 그 값을 어떤 우선순위로 비교할지만 결정합니다.
  */
 export function selectRouteAlternative(alternatives, courseType) {
@@ -61,7 +61,7 @@ export function selectRouteAlternative(alternatives, courseType) {
         || first.walkingDistanceMeters - second.walkingDistanceMeters
     }
 
-    // 변경: 추천 코스는 시간·도보·환승·요금을 함께 비교해 한 항목만 과도하게 불리하지 않게 합니다.
+    // 균형형은 시간·도보·환승·요금을 함께 비교합니다.
     const getBalancedScore = (route) => (
       route.durationMinutes
       + (route.walkingDistanceMeters / 1000) * 8
@@ -73,4 +73,24 @@ export function selectRouteAlternative(alternatives, courseType) {
   })
 
   return sorted[0]
+}
+
+/**
+ * Branch-and-Bound가 현재 탐색 가지를 계속 살릴지 판단하는 누적 비용입니다.
+ * 이후 이동·대기 비용은 음수가 될 수 없으므로, 현재 점수가 최적 해보다 크면 안전하게 가지를 제거할 수 있습니다.
+ */
+export function getCourseScore({ summary, idleMinutes = 0 }, courseType) {
+  if (courseType === "SHORTEST_WALK") {
+    return summary.walkingDistanceMeters * 10 + summary.totalMinutes + idleMinutes * 20
+  }
+  if (courseType === "FASTEST_TRANSIT") {
+    return (summary.totalMinutes + idleMinutes) * 1_000
+      + summary.transferCount * 10
+      + summary.walkingDistanceMeters / 1_000
+  }
+  return summary.totalMinutes * 0.7
+    + (summary.walkingDistanceMeters / 1_000) * 0.3
+    + summary.transferCount * 8
+    + summary.estimatedFare / 500
+    + idleMinutes * 2
 }

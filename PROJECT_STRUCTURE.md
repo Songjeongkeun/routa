@@ -161,13 +161,22 @@ Client 요청
 - Service에는 실제 업무 규칙을 작성합니다.
 - Repository에는 SQL과 데이터베이스 접근 코드만 작성합니다.
 
-`recommendations/recommendation.scorer.mjs`는 추천 대상의 점수를 계산하는 도메인 로직을 별도로 관리합니다.
+`recommendations/`는 큰 추천 흐름을 작은 책임으로 나누어 관리합니다.
+
+- `recommendation.service.mjs`: 추천 생성·재계산의 전체 흐름과 Branch-and-Bound 탐색
+- `recommendation.scorer.mjs`: Haversine 거리, 이동 후보 선택, 코스 점수 계산
+- `recommendation.schedule.mjs`: 식사 시간창, 영업시간 기준의 시간 계산
+- `recommendation.route-cache.mjs`: 메모리·DB·ODsay 순서의 이동 경로 조회와 캐시 갱신
+- `recommendation.meal-candidates.mjs`: 주변 자동 식당 후보 검색과 중복 제외
+- `recommendation.errors.mjs`: 사용자 수정이 필요한 제약 오류의 공통 형식
 
 ### `Server/src/providers/`
 
 프로젝트 외부 서비스와 통신하는 코드를 관리합니다.
 
-- `kakao.mjs`: Kakao API 연동
+- `kakao.mjs`: Kakao OAuth 로그인 연동
+- `kakaoLocal.mjs`, `kakaoWalk.mjs`: Kakao 장소·도보 경로 API 연동
+- `kakaoPlaceCollector.mjs`: 관리자용 Kakao 장소 수집 작업
 - `google.mjs`: Google API 연동
 - `tourApi.mjs`: 한국관광공사 TourAPI 연동
 - `odsay.mjs`: ODsay 대중교통 API 연동

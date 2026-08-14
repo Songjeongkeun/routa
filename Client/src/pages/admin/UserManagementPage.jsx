@@ -18,6 +18,8 @@ export default function UserManagementPage() {
   const [loadError, setLoadError] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [totalFiltered, setTotalFiltered] = useState(0)
+  const [isCollecting, setIsCollecting] = useState(false)
+  const [collectionMessage, setCollectionMessage] = useState("")
 
   useEffect(() => {
     let active = true
@@ -35,11 +37,23 @@ export default function UserManagementPage() {
     return () => { active = false }
   }, [page, statusFilter])
 
-  /** 필터 바뀌면 1페이지로 돌아가는 핸들러 추가 */
   function handleStatusFilterChange(e) {
     setStatusFilter(e.target.value)
     setPage(1)
-}
+  }
+
+  async function handleCollectPlaces() {
+    setIsCollecting(true)
+    setCollectionMessage("")
+    try {
+      const result = await collectPlaces()
+      setCollectionMessage(result.message ?? "장소 데이터 수집을 시작했습니다.")
+    } catch (error) {
+      setCollectionMessage(error.message ?? "장소 데이터 수집을 시작하지 못했습니다.")
+    } finally {
+      setIsCollecting(false)
+    }
+  }
 
   if (loadError) return <main className={styles.page}>{loadError}</main>
   if (!stats) return <main className={styles.page}>불러오는 중...</main>
@@ -56,6 +70,7 @@ export default function UserManagementPage() {
         <div>
           <h1>유저 관리</h1>
           <p>전체 유저 수, 신규 가입자, 활성 상태를 한눈에 확인하고 관리해요.</p>
+          {collectionMessage && <p role="status">{collectionMessage}</p>}
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
           <button type="button" className={styles.collectButton} onClick={handleCollectPlaces} disabled={isCollecting}>
@@ -166,7 +181,7 @@ export default function UserManagementPage() {
               <span>{page} / {Math.max(1, Math.ceil(totalFiltered / 5))}</span>
               <button
                 type="button"
-                disabled={page >= Math.ceil(stats.totalUsers / 5)}
+                disabled={page >= Math.max(1, Math.ceil(totalFiltered / 5))}
                 onClick={() => setPage((p) => p + 1)}
               >
                 다음
